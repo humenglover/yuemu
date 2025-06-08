@@ -3,14 +3,32 @@
     <!-- 根据设备类型显示不同布局 -->
     <template v-if="!isMobile">
       <!-- PC端瀑布流布局 -->
-      <div class="masonry-wrapper">
-        <div class="masonry-grid">
+      <div class="masonry-wrapper" ref="masonryRef">
+        <!-- 添加空状态组件 -->
+        <div v-if="!loading && (!props.dataList || props.dataList.length === 0)" class="empty-state">
+          <lottie-player
+            src="https://assets10.lottiefiles.com/packages/lf20_AMBEWz.json"
+            background="transparent"
+            speed="1"
+            style="width: 200px; height: 200px;"
+            loop
+            autoplay
+          ></lottie-player>
+          <div class="empty-text">
+            <h3>暂无图片</h3>
+            <p>快来上传一些精彩的照片吧 (｡•́︿•̀｡)</p>
+          </div>
+        </div>
+        <div v-else class="masonry-grid" ref="gridRef">
           <!-- 使用计算后的列数据进行渲染 -->
           <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="masonry-column">
             <div
               v-for="picture in column"
               :key="picture.id"
               class="masonry-item"
+              :style="{
+                background: picture.picColor ? `rgba(${parseInt(picture.picColor.slice(2,4), 16)}, ${parseInt(picture.picColor.slice(4,6), 16)}, ${parseInt(picture.picColor.slice(6,8), 16)}, 0.3)` : '#ffffff'
+              }"
               @click="doClickPicture(picture)"
             >
               <div class="image-wrapper">
@@ -18,6 +36,11 @@
                   class="aspect-ratio-box"
                   :style="{ paddingTop: `${(1 / (picture.picScale || 1)) * 100}%` }"
                 >
+                  <!-- 精选标志 -->
+                  <div v-if="picture.isFeature === 1" class="feature-badge">
+                    <CrownOutlined />
+                    <span>精选</span>
+                  </div>
                   <img
                     :alt="picture.name"
                     class="masonry-image"
@@ -25,45 +48,44 @@
                     @load="handleImageLoad"
                     @error="handleImageError(picture)"
                   />
+                  <!-- 添加图片内部的信息层 -->
+                  <div class="image-overlay">
+                    <div class="overlay-top">
+                      <div class="view-count">
+                        <EyeOutlined />
+                        <span>{{ formatNumber(picture.viewCount) }}</span>
+                      </div>
+                    </div>
+                    <div class="overlay-bottom">
+                      <div class="picture-user" @click.stop="handleUserClick(picture.user)">
+                        <a-avatar class="user-avatar" :src="picture.user?.userAvatar || getDefaultAvatar(picture.user?.userName)"/>
+                        <span class="user-name">{{ picture.user?.userName }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="picture-info">
-                <div class="picture-header">
-                  <div class="picture-user" @click.stop="handleUserClick(picture.user)">
-                    <a-avatar class="user-avatar" :src="picture.user?.userAvatar || getDefaultAvatar(picture.user?.userName)"/>
-                    <span>{{ picture.user?.userName }}</span>
-                  </div>
-                </div>
                 <div class="picture-title">{{ picture.name }}</div>
-                <div class="picture-actions">
-                  <div class="action-item view-count">
-                    <EyeOutlined />
-                    <span>{{ formatNumber(picture.viewCount) }}</span>
-                  </div>
-                  <div class="action-item" @click.stop="(e) => doLike(picture, e)">
-                    <LikeOutlined :class="{ active: picture.isLiked === 1 }" />
-                    <span>{{ formatNumber(picture.likeCount) }}</span>
-                  </div>
-                  <div class="action-item" @click.stop="(e) => doComments(picture, e)">
-                    <CommentOutlined />
-                    <span>{{ formatNumber(picture.commentCount) }}</span>
-                  </div>
-                  <div class="action-item" @click.stop="(e) => doShare(picture, e)">
-                    <ShareAltOutlined :class="{ active: picture.isShared === 1 }" />
-                    <span>{{ formatNumber(picture.shareCount) }}</span>
-                  </div>
-                </div>
               </div>
+            </div>
+            <!-- 在最短的列末尾添加加载动画 -->
+            <div v-if="loading && isShortestColumn(columnIndex)" class="masonry-item loading-item">
+              <svg class="loading-camera" viewBox="0 0 100 100">
+                <path class="camera-body" d="M25,30H75a8,8,0,0,1,8,8V70a8,8,0,0,1-8,8H25a8,8,0,0,1-8-8V38A8,8,0,0,1,25,30Zm5-10H70a2,2,0,0,1,2,2v4a2,2,0,0,1-2,2H30a2,2,0,0,1-2-2V22A2,2,0,0,1,30,20Z"/>
+                <circle class="camera-lens" cx="50" cy="54" r="15"/>
+                <circle class="camera-flash" cx="72" cy="42" r="4"/>
+              </svg>
             </div>
           </div>
         </div>
         <!-- 加载状态 -->
         <div v-if="loading" class="loading-wrapper">
-          <a-spin>
-            <template #indicator>
-              <LoadingOutlined style="font-size: 24px; color: #ff8e53;" spin />
-            </template>
-          </a-spin>
+          <svg class="loading-camera" viewBox="0 0 100 100">
+            <path class="camera-body" d="M25,30H75a8,8,0,0,1,8,8V70a8,8,0,0,1-8,8H25a8,8,0,0,1-8-8V38A8,8,0,0,1,25,30Zm5-10H70a2,2,0,0,1,2,2v4a2,2,0,0,1-2,2H30a2,2,0,0,1-2-2V22A2,2,0,0,1,30,20Z"/>
+            <circle class="camera-lens" cx="50" cy="54" r="15"/>
+            <circle class="camera-flash" cx="72" cy="42" r="4"/>
+          </svg>
         </div>
         <!-- 没有更多数据 -->
         <div v-if="isEndOfData" class="no-more-data">
@@ -71,113 +93,6 @@
         </div>
       </div>
     </template>
-
-    <!-- 分享模态框 -->
-    <ShareModal ref="shareModalRef" :link="shareLink" :imageUrl="shareImage" />
-
-    <!-- 评论抽屉 -->
-    <a-drawer
-      class="comments-drawer"
-      v-model:open="visible"
-      placement="right"
-      title="评论"
-      :footer="false"
-      @cancel="closeModal"
-      :height="'80vh'"
-    >
-      <!-- 修改宠物动画 -->
-      <div class="pet-animation">
-        <lottie-player
-          :src="currentPet.url"
-          background="transparent"
-          speed="1"
-          style="width: 120px; height: 120px;"
-          ref="petAnimation"
-          loop
-          autoplay
-        ></lottie-player>
-      </div>
-
-      <!-- 修改这里，将点击事件限制在非输入区域 -->
-      <div class="drawer-content" ref="scrollContainer" >
-        <div class="comments-area" @click="cancelReply">
-          <!-- 加载中状态 -->
-          <div v-if="commentloading" class="loading-container">
-            <a-spin tip="加载评论中..." />
-          </div>
-
-          <!-- 评论列表 -->
-          <template v-else>
-            <CommentList
-              v-if="showFirstComment"
-              :comments="firstcomment"
-              @reply-clicked="handleReplyClick"
-              @update-comments="updateComments"
-            />
-            <CommentList
-              :comments="comments"
-              @reply-clicked="handleReplyClick"
-              @update-comments="updateComments"
-            />
-            <div v-if="isEndOfData" class="no-more-data">没有更多评论了~</div>
-          </template>
-        </div>
-      </div>
-
-      <!-- 评论输入区域 -->
-      <div class="comment-input-wrapper">
-        <!-- 回复信息提示 -->
-        <div v-if="replyCommentId" class="reply-info">
-          <div class="reply-text">
-            <span class="reply-label">回复评论</span>
-            <ArrowRightOutlined class="reply-arrow" />
-          </div>
-          <CloseCircleOutlined class="cancel-reply" @click="cancelReply" />
-        </div>
-
-        <div class="input-area" :class="{ 'is-replying': replyCommentId }">
-          <!-- 表情按钮 -->
-          <SmileOutlined
-            class="emoji-trigger"
-            :class="{ active: showEmojiPicker }"
-            @click="toggleEmojiPicker"
-          />
-
-          <a-input
-            v-model:value="commentContent"
-            :placeholder="replyCommentId ? '写下你的回复...' : '写下你的评论...'"
-            class="comment-input"
-            :maxLength="200"
-          >
-            <template #prefix v-if="replyCommentId">
-              <MessageOutlined class="reply-icon" />
-            </template>
-            <template #suffix>
-              <span class="word-count">{{ commentContent.length }}/200</span>
-            </template>
-          </a-input>
-
-          <a-button
-            type="primary"
-            class="send-button"
-            :class="{ 'reply-button': replyCommentId }"
-            :disabled="!commentContent.trim()"
-            @click="addComment"
-          >
-            {{ replyCommentId ? '回复' : '发送' }}
-          </a-button>
-        </div>
-
-        <!-- 表情选择器 -->
-        <div v-if="showEmojiPicker" class="emoji-picker-container">
-          <EmojiPicker
-            @select="onEmojiSelect"
-            :i18n="emojiI18n"
-            class="custom-emoji-picker"
-          />
-        </div>
-      </div>
-    </a-drawer>
 
     <!-- 审核详情弹窗 -->
     <a-modal
@@ -210,49 +125,37 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import ShareModal from '@/components/ShareModal.vue'
-import { h, onMounted, onUnmounted, reactive, ref, nextTick, computed, watch } from 'vue'
+import { h, onMounted, onUnmounted, ref, nextTick, computed, watch } from 'vue'
 import {
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-  CloseOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  SmileOutlined,
-  MessageOutlined,
-  ArrowRightOutlined,
-  LikeOutlined,
-  CommentOutlined,
-  ShareAltOutlined,
   EyeOutlined,
   LoadingOutlined,
+  CrownOutlined,
 } from '@ant-design/icons-vue'
-import { deletePictureUsingPost } from '@/api/pictureController.ts'
-import { message, Modal } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
-import CommentList from '@/components/CommentList.vue'
-import { addCommentUsingPost, queryCommentUsingPost } from '@/api/commentsController.ts'
-import { throttle } from 'vant/es/lazyload/vue-lazyload/util'
-// import EmojiPicker from "vue3-emoji-picker";
-import EmojiPicker from '@/components/EmojiPicker.vue'
 import { getDeviceType } from '@/utils/device'
 import { DEVICE_TYPE_ENUM } from '@/constants/device'
 import '@lottiefiles/lottie-player'
+import { getDefaultAvatar } from '@/utils/userUtils.ts'
 
-import { doLikeUsingPost } from '@/api/likeRecordController.ts'
-import { doShareUsingPost } from '@/api/shareRecordController.ts'
+// 自定义 debounce 函数
+const debounce = <T extends (...args: any[]) => void>(fn: T, delay: number) => {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  return function(this: any, ...args: Parameters<T>) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      fn.apply(this, args)
+      timer = null
+    }, delay)
+  }
+}
 
 const loginUserStore = useLoginUserStore()
-const currPicture = ref<API.PictureVO>()
-//回复评论id
-const replyCommentId = ref<string>('')
 
 onMounted(async () => {
-  replyCommentId.value = ''
-  currPicture.value = props.dataList[0]
-  // console.log(props.dataList)
   // 禁用页面初始滚动
   document.body.style.overflowY = 'hidden'
 
@@ -289,225 +192,55 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter()
 
-const handleReplyClick = (commentId: string) => {
-  // console.log('MobilePictureList - 回复被点击，评论 ID:', commentId)
-  replyCommentId.value = commentId
-
-  // 更新输入框占位符
-  const inputEl = document.querySelector('.comment-input') as HTMLInputElement
-  if (inputEl) {
-    nextTick(() => {
-      inputEl.focus()
-      // 滚动到输入框位置
-      inputEl.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    })
-  }
-}
-
-// 获取默认头像
-const getDefaultAvatar = (userName: string) => {
-  const defaultName = userName || 'Guest'
-  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(defaultName)}&backgroundColor=ffd5dc,ffdfbf,ffd5dc`
-}
-// 评论
-// 是否可见
-const visible = ref(false)
-
-// 评论数据
-const comments = ref<API.CommentsQueryRequest[]>([])
-
-// 存储用户输入的评论内容
-const commentContent = ref('')
-
-// 存储第一个评论列表数据
-const firstcomment = ref<API.CommentsQueryRequest[]>([])
-
-// 控制第一个评论列表的显示与隐藏
-const showFirstComment = ref(false)
-
-// 控制加载状态
-const commentloading = ref(true)
-
-// 使用 reactive 包裹 queryRequest 使其具有响应式
-const queryRequest = reactive<API.CommentsQueryRequest>({
-  targetId: 0,
-  targetType: 1,
-  current: 1,
-  pageSize: 15,
-})
-
-// 打开弹窗
-const doComments = async (picture, e) => {
-  currPicture.value = picture
-  queryRequest.targetId = picture.id
-  e.stopPropagation()
-  visible.value = true
-  // 随机切换宠物
-  currentPet.value = PETS[Math.floor(Math.random() * PETS.length)]
-  try {
-    // 数据清理操作
-    comments.value = [] // 先清空评论数据
-    firstcomment.value = []
-    queryRequest.current = 1
-    const res = await queryCommentUsingPost(queryRequest)
-    if (res.data.data != null) {
-      comments.value = res.data.data.records
-      commentloading.value = false // 数据加载完成，关闭加载状态
-    } else {
-      isEndOfData.value = true
-      commentloading.value = false // 关闭加载状态
-    }
-  } catch (error) {
-    console.error('查询评论异常', error)
-    commentloading.value = false // 关闭加载状态
-  }
-}
-
-// 修改评论提交函数
-const addComment = async () => {
-  try {
-    if (!commentContent.value.trim()) {
-      message.warning('评论内容不能为空')
-      return
-    }
-
-    if (!currPicture.value?.id) {
-      message.error('图片信息获取失败')
-      return
-    }
-
-    const requestBody: API.CommentsAddRequest = {
-      targetId: currPicture.value.id,
-      targetType: 1,
-      content: commentContent.value.trim(),
-      parentCommentId: replyCommentId.value || '0'
-    }
-
-    const res = await addCommentUsingPost(requestBody)
-    if (res.data.code === 0) {
-      message.success('评论成功')
-      // 播放宠物庆祝动画
-      if (petAnimation.value) {
-        petAnimation.value.play()
-      }
-      // 清空输入内容和状态
-      commentContent.value = ''
-      replyCommentId.value = ''
-      showEmojiPicker.value = false
-
-      // 刷新评论列表
-      queryRequest.current = 1
-      page.value = 1
-      isEndOfData.value = false
-      await updateComments()
-    } else {
-      message.error('评论失败：' + res.data.message)
-    }
-  } catch (error) {
-    console.error('评论失败:', error)
-    message.error('评论失败，请稍后重试')
-  }
-}
-
-//删除评论刷新操作
-const updateComments = async () => {
-  try {
-    commentloading.value = true // 显示加载状态
-    const res = await queryCommentUsingPost(queryRequest)
-    if (res.data.data != null) {
-      // 确保评论ID作为字符串处理
-      comments.value = res.data.data.records.map((comment) => ({
-        ...comment,
-        commentId: comment.commentId?.toString(),
-        parentCommentId: comment.parentCommentId?.toString(),
-      }))
-      commentloading.value = false
-    } else {
-      comments.value = []
-      isEndOfData.value = true
-      commentloading.value = false
-    }
-  } catch (error) {
-    console.error('查询评论异常', error)
-    commentloading.value = false
-  }
-}
-
-// 宠物动画列表
-const PETS = [
-  {
-    name: 'dog',
-    url: 'https://assets5.lottiefiles.com/packages/lf20_syqnfe7c.json'
-  },
-  {
-    name: 'cat',
-    url: 'https://assets2.lottiefiles.com/packages/lf20_bkqn2x.json'
-  },
-  {
-    name: 'rabbit',
-    url: 'https://assets8.lottiefiles.com/packages/lf20_GofK09iPAE.json'
-  },
-  {
-    name: 'hamster',
-    url: 'https://assets4.lottiefiles.com/packages/lf20_yriifcqx.json'
-  },
-  {
-    name: 'bird',
-    url: 'https://assets3.lottiefiles.com/private_files/lf30_d5nmlcv1.json'
-  },
-  {
-    name: 'panda',
-    url: 'https://assets9.lottiefiles.com/packages/lf20_swnrn2oy.json'
-  },
-  {
-    name: 'penguin',
-    url: 'https://assets10.lottiefiles.com/packages/lf20_dw8rzsix.json'
-  },
-  {
-    name: 'fox',
-    url: 'https://assets1.lottiefiles.com/packages/lf20_zw7jo1.json'
-  }
-]
-
-// 当前宠物动画
-const currentPet = ref(PETS[Math.floor(Math.random() * PETS.length)])
-
 // 新增用于移动端分页的页码变量
 const page = ref(1)
 const isEndOfData = ref(false)
 const isLoading = ref(false)
 
-// 预加载阈值和节流时间
-const SCROLL_THRESHOLD = 2000  // 更早开始预加载
-const THROTTLE_TIME = 500  // 减少节流时间，使滚动更平滑
+// 记录上一次滚动位置
+let lastScrollTop = 0
+
+// 预加载阈值
+const SCROLL_THRESHOLD = 1200  // 增加基础预加载阈值
 
 // 处理滚动事件
-const handleWindowScroll = throttle(() => {
+const handleWindowScroll = debounce(() => {
   if (isLoading.value || isEndOfData.value || !props.onLoadMore) return
 
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop
   const windowHeight = window.innerHeight
   const documentHeight = document.documentElement.scrollHeight
 
-  // 提前更多距离开始加载下一页
-  if (documentHeight - scrollTop - windowHeight < SCROLL_THRESHOLD) {
+  // 检查是否有列高度差异过大
+  const columnHeights = calculateColumnHeights()
+  const maxHeight = Math.max(...columnHeights)
+  const minHeight = Math.min(...columnHeights)
+  const heightDiff = maxHeight - minHeight
+
+  // 如果列高度差异大于一定值，提前触发加载
+  const shouldLoadEarly = heightDiff > windowHeight * 0.3  // 降低高度差异的触发阈值
+
+  // 根据列高度差异和滚动位置动态调整加载阈值
+  let dynamicThreshold = SCROLL_THRESHOLD
+
+  // 根据滚动速度调整阈值
+  const scrollSpeed = Math.abs(lastScrollTop - scrollTop)
+  if (scrollSpeed > 50) {  // 如果滚动速度较快
+    dynamicThreshold *= 1.5
+  }
+
+  // 根据列高度差异调整阈值
+  if (shouldLoadEarly) {
+    dynamicThreshold *= 1.8  // 增加提前加载的倍数
+  }
+
+  // 存储当前滚动位置
+  lastScrollTop = scrollTop
+
+  if (documentHeight - scrollTop - windowHeight < dynamicThreshold) {
     loadMore()
   }
-}, THROTTLE_TIME, { leading: true, trailing: true })
-
-// 关闭弹窗
-const closeModal = () => {
-  replyCommentId.value = ''
-  visible.value = false
-  // 数据清理操作
-  firstcomment.value = []
-  commentContent.value = ''
-  showFirstComment.value = false
-  commentloading.value = false // 关闭加载状态
-}
-
-// 添加宠物动画相关逻辑
-const petAnimation = ref(null)
+}, 50)  // 减少防抖时间，使响应更快速
 
 // 修改图片加载处理函数
 const handleImageLoad = (event: Event) => {
@@ -531,212 +264,30 @@ const doClickPicture = (picture: API.PictureVO) => {
 }
 
 // 修改图片错误处理函数
-const handleImageError = (picture: API.PictureVO) => {
+const handleImageError = (picture: API.PictureVO, event: Event) => {
   const imgElement = event.target as HTMLImageElement
   if (imgElement && picture.url) {
     imgElement.src = picture.url
   }
 }
 
-// 点赞操作
-const doLike = async (picture, e) => {
-  e.stopPropagation()
-  const requestBody: API.LikeRequest = {
-    targetId: picture.id,
-    targetType: 1, // 1 表示图片类型
-    isLiked: picture.isLiked !== 1
-  }
-
-  try {
-    const res = await doLikeUsingPost(requestBody)
-    if (res.data.code === 0) {
-      // 更新前端数据
-      if (requestBody.isLiked) {
-        picture.likeCount++
-        picture.isLiked = 1
-      } else {
-        picture.likeCount--
-        picture.isLiked = 0
-      }
-    }
-  } catch (error) {
-    message.error('操作异常')
-  }
-}
-
-// 分享操作相关变量
-const shareModalRef = ref()
-const shareLink = ref<string>('')
-const shareImage = ref('')
-// 用于存储每个分享按钮的颜色，以图片id作为键
-const shareButtonColor = ref<{ [key: string]: string }>({})
-
-// 处理分享
-const doShare = async (picture: API.PictureVO, e: Event) => {
-  e.stopPropagation()
-
-  // 如果已经分享过,则执行取消分享
-  if (picture.isShared === 1) {
-    try {
-      const requestBody: API.ShareRequest = {
-        targetId: picture.id,
-        targetType: 1,
-        isShared: false
-      }
-      const res = await doShareUsingPost(requestBody)
-      if (res.data.code === 0) {
-        picture.shareCount--
-        picture.isShared = 0
-      }
-    } catch (error) {
-      console.error('取消分享失败:', error)
-      message.error('取消分享失败')
-    }
-    return
-  }
-
-  // 未分享过,显示分享模态框
-  shareLink.value = window.location.origin + '/picture/' + picture.id
-  shareImage.value = picture.url
-  shareModalRef.value?.openModal()
-
-  // 调用分享接口
-  try {
-    const requestBody: API.ShareRequest = {
-      targetId: picture.id,
-      targetType: 1,
-      isShared: true
-    }
-    const res = await doShareUsingPost(requestBody)
-    if (res.data.code === 0) {
-      picture.shareCount++
-      picture.isShared = 1
-    }
-  } catch (error) {
-    console.error('分享失败:', error)
-    message.error('分享失败')
-  }
-}
-
-// 格式化数字的函数，将较大数字转换为带k、w的格式，保留两位小数
+// 格式化数字的函数，将较大数字转换为带k、w的格式
 const formatNumber = (num: number): string => {
+  if (!num) return '0'
   if (num >= 10000) {
-    const wan = (num / 10000).toFixed(2)
-    return `${wan}w`
-  } else if (num >= 1000) {
-    const qian = (num / 1000).toFixed(2)
-    return `${qian}k`
+    return (num / 10000).toFixed(1) + 'w'
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k'
   }
   return num.toString()
-}
-
-// 取消回复
-const cancelReply = () => {
-  replyCommentId.value = ''
-}
-
-// 处理返回键
-const handleBackButton = () => {
-  if (visible.value) {
-    visible.value = false
-    return true
-  }
-  return false
-}
-
-// 监听返回键
-onMounted(() => {
-  window.addEventListener('popstate', () => {
-    if (handleBackButton()) {
-      // 阻止默认的返回行为
-      history.pushState(null, '', document.URL)
-    }
-  })
-
-  // 初始化时添加一个历史记录，用于触发 popstate
-  history.pushState(null, '', document.URL)
-})
-
-// 清理监听器
-onUnmounted(() => {
-  window.removeEventListener('popstate', handleBackButton)
-  window.removeEventListener('scroll', handleWindowScroll)
-  document.body.style.overflowY = 'auto'
-})
-
-// 审核弹窗相关
-const reviewModalVisible = ref(false)
-const currentPicture = ref<API.PictureVO>()
-
-const showReviewModal = (picture: API.PictureVO) => {
-  currentPicture.value = picture
-  reviewModalVisible.value = true
-}
-
-const getReviewModalTitle = (status?: number) => {
-  switch (status) {
-    case 0:
-      return '审核中'
-    case 1:
-      return '审核通过'
-    case 2:
-      return '审核未通过'
-    default:
-      return '审核状态'
-  }
-}
-
-// 评论相关状态
-// 表情选择器相关
-const showEmojiPicker = ref(false)
-
-const toggleEmojiPicker = () => {
-  showEmojiPicker.value = !showEmojiPicker.value
-}
-
-const onEmojiSelect = (emoji: string) => {
-  commentContent.value += emoji
-}
-
-// 处理回复评论
-const handleReply = (commentId: string) => {
-  replyToId.value = commentId
-  // 聚焦输入框
-  const input = document.querySelector('.comment-input')
-  if (input) {
-    (input as HTMLElement).focus()
-  }
-}
-
-// 暴露方法给父组件
-defineExpose({
-  handleReply
-})
-
-// 表情选择器国际化配置
-const emojiI18n = {
-  categories: {
-    recent: '最近使用',
-    smileys: '表情符号',
-    people: '人物',
-    animals: '动物与自然',
-    food: '食物与饮料',
-    activities: '活动',
-    travel: '旅行与地点',
-    objects: '物品',
-    symbols: '符号',
-    flags: '旗帜'
-  },
-  search: '搜索表情',
-  clear: '清除',
-  notFound: '未找到表情'
 }
 
 // 判断是否为移动端
 const isMobile = ref(getDeviceType() === DEVICE_TYPE_ENUM.MOBILE)
 
 // 处理用户点击
-const handleUserClick = (user) => {
+const handleUserClick = (user: API.UserVO | undefined) => {
   if (!user) return
   router.push({
     path: `/user/${user.id}`,
@@ -751,9 +302,6 @@ const handleUserClick = (user) => {
   })
 }
 
-// 滚动加载相关变量
-const currentPage = ref(1)
-
 // 加载更多数据
 const loadMore = async () => {
   if (isLoading.value || isEndOfData.value || !props.onLoadMore) return
@@ -762,18 +310,18 @@ const loadMore = async () => {
   const startTime = Date.now()
 
   try {
-    const hasMore = await props.onLoadMore(currentPage.value + 1)
+    const hasMore = await props.onLoadMore(page.value + 1)
     if (hasMore) {
-      currentPage.value++
+      page.value++
     } else {
       isEndOfData.value = true
     }
   } catch (error) {
     console.error('加载更多数据失败:', error)
   } finally {
-    // 确保加载状态至少显示一定时间
+    // 减少最小加载时间
     const loadTime = Date.now() - startTime
-    const minLoadTime = 300  // 减少最小加载时间
+    const minLoadTime = 150  // 减少最小加载时间
     if (loadTime < minLoadTime) {
       await new Promise(resolve => setTimeout(resolve, minLoadTime - loadTime))
     }
@@ -789,13 +337,14 @@ onMounted(() => {
 // 组件卸载时移除滚动监听
 onUnmounted(() => {
   window.removeEventListener('scroll', handleWindowScroll)
+  document.body.style.overflowY = 'auto'
 })
 
 // 监听数据列表变化，重置状态
 watch(() => props.dataList, (newVal, oldVal) => {
   // 只在数据完全重置时重置状态
   if (oldVal?.length && newVal.length === 0) {
-    currentPage.value = 1
+    page.value = 1
     isEndOfData.value = false
     isLoading.value = false
     // 重置时也暂时禁用滚动
@@ -808,67 +357,207 @@ watch(() => props.dataList, (newVal, oldVal) => {
   }
 })
 
+// 瀑布流容器ref
+const masonryRef = ref<HTMLElement | null>(null)
+const gridRef = ref<HTMLElement | null>(null)
+
 // 计算列数
 const getColumnCount = () => {
-  const width = window.innerWidth
-  if (width > 1920) return 8
-  if (width > 1600) return 7
-  if (width > 1400) return 6
-  if (width > 1200) return 5
-  if (width > 900) return 4
-  return 3
+  const containerWidth = gridRef.value?.clientWidth || window.innerWidth
+  const gap = 20 // 列间距
+  const minColumnWidth = 300 // 最小列宽
+
+  // 根据容器宽度和最小列宽计算最大可能的列数
+  const maxColumns = Math.floor((containerWidth + gap) / (minColumnWidth + gap))
+
+  // 根据容器宽度动态调整列数
+  if (containerWidth > 1920) return Math.min(6, maxColumns)
+  if (containerWidth > 1600) return Math.min(5, maxColumns)
+  if (containerWidth > 1200) return Math.min(4, maxColumns)
+  if (containerWidth > 900) return Math.min(3, maxColumns)
+  return Math.min(2, maxColumns)
 }
 
 // 计算分列数据
 const columns = computed(() => {
   const columnCount = getColumnCount()
   const cols: API.PictureVO[][] = Array.from({ length: columnCount }, () => [])
+  const columnHeights = new Array(columnCount).fill(0)
 
-  // 按照从左到右、从上到下的顺序分配数据
-  props.dataList.forEach((item, index) => {
-    const columnIndex = index % columnCount
-    cols[columnIndex].push(item)
+  // 使用Set来跟踪已经分配的图片ID
+  const assignedPictures = new Set()
+
+  props.dataList.forEach((item) => {
+    // 检查图片是否已经被分配
+    if (assignedPictures.has(item.id)) {
+      return
+    }
+
+    // 找出当前高度最小的列
+    const minHeightIndex = columnHeights.indexOf(Math.min(...columnHeights))
+    cols[minHeightIndex].push(item)
+    assignedPictures.add(item.id)
+
+    // 更新列高度（根据图片宽高比计算）
+    const aspectRatio = item.picWidth / item.picHeight || 1
+    const imageHeight = (gridRef.value?.clientWidth || window.innerWidth) / columnCount / aspectRatio
+    columnHeights[minHeightIndex] += imageHeight + 120 // 120px是卡片其他内容的高度
   })
 
   return cols
 })
 
-// 监听窗口大小变化
+// 使用 ResizeObserver 监听容器大小变化
+let resizeObserver: ResizeObserver | null = null
+
+// 处理容器大小变化
+const handleContainerResize = debounce(() => {
+  if (gridRef.value) {
+    // 强制重新计算列布局
+    const newColumnCount = getColumnCount()
+    const oldColumnCount = columns.value.length
+
+    // 只有当列数发生变化时才重新计算
+    if (newColumnCount !== oldColumnCount) {
+      // 触发响应式更新
+      nextTick(() => {
+        // 重新计算列布局会自动触发computed重新执行
+        gridRef.value?.clientWidth // 访问属性触发响应式更新
+      })
+    }
+  }
+}, 200)
+
 onMounted(() => {
-  window.addEventListener('resize', handleResize)
+  // 创建 ResizeObserver 实例
+  resizeObserver = new ResizeObserver(handleContainerResize)
+
+  // 开始监听容器大小变化
+  if (gridRef.value) {
+    resizeObserver.observe(gridRef.value)
+  }
+
+  // 同时也监听窗口大小变化
+  window.addEventListener('resize', handleContainerResize)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
+  // 清理 ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+
+  // 移除窗口事件监听
+  window.removeEventListener('resize', handleContainerResize)
 })
 
-const handleResize = throttle(() => {
-  // 触发重新计算列
-  columns.value = computed(() => {
-    const columnCount = getColumnCount()
-    const cols: API.PictureVO[][] = Array.from({ length: columnCount }, () => [])
+// 审核弹窗相关
+const reviewModalVisible = ref(false)
+const currentPicture = ref<API.PictureVO>()
+const getReviewModalTitle = (status?: number) => {
+  switch (status) {
+    case 0:
+      return '审核中'
+    case 1:
+      return '审核通过'
+    case 2:
+      return '审核未通过'
+    default:
+      return '审核状态'
+  }
+}
 
-    props.dataList.forEach((item, index) => {
-      const columnIndex = index % columnCount
-      cols[columnIndex].push(item)
-    })
+// 计算列高度
+const calculateColumnHeights = () => {
+  return columns.value.map(column => {
+    return column.reduce((height, item) => {
+      const aspectRatio = (item as any).width / (item as any).height || 1
+      const imageHeight = (gridRef.value?.clientWidth || window.innerWidth) / columns.value.length / aspectRatio
+      return height + imageHeight + 120
+    }, 0)
+  })
+}
 
-    return cols
-  }).value
-}, 200)
+// 判断是否是最短的列
+const isShortestColumn = (columnIndex: number) => {
+  const columnHeights = calculateColumnHeights()
+  const minHeight = Math.min(...columnHeights)
+  return columnHeights[columnIndex] === minHeight
+}
 </script>
 
 <style scoped>
 .waterfall-picture-list {
-  padding: 4px;
   width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.picture-item {
-  margin-bottom: 16px;
-  width: 100% !important;
+.masonry-wrapper {
+  width: 100%;
+  max-height: 100vh;
+  padding: 0;
+  box-sizing: border-box;
 }
+
+.masonry-grid {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  padding: 16px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.masonry-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 280px;
+  box-sizing: border-box;
+}
+
+/* 响应式布局调整 */
+@media screen and (max-width: 1920px) {
+  .masonry-grid {
+    gap: 16px;
+  }
+  .masonry-column {
+    min-width: 260px;
+  }
+}
+
+@media screen and (max-width: 1600px) {
+  .masonry-grid {
+    gap: 14px;
+  }
+  .masonry-column {
+    min-width: 240px;
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  .masonry-grid {
+    gap: 12px;
+    padding: 12px;
+  }
+  .masonry-column {
+    min-width: 220px;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  .masonry-grid {
+    gap: 10px;
+    padding: 10px;
+  }
+  .masonry-column {
+    min-width: 200px;
+  }
+}
+
 
 :deep(.ant-list-items) {
   width: 100%;
@@ -878,274 +567,185 @@ const handleResize = throttle(() => {
   width: 100% !important;
   padding: 0 !important;
 }
+.picture-card :deep(.ant-card-body) {
+  background: rgba(255, 255, 255, 0.8);
+}
 
-.picture-card {
-  width: 100% !important;
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  :deep(.ant-card-body) {
-    background: rgba(255, 255, 255, 0.8);
-  }
-
-  :deep(.ant-card-actions) {
-    background: rgba(255, 255, 255, 0.8);
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-  }
+.picture-card :deep(.ant-card-actions) {
+  background: rgba(255, 255, 255, 0.8);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .image-wrapper {
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px;
   background: #f5f5f5;
 }
 
-.aspect-ratio-box {
-  position: relative;
-  width: 100%;
-  height: 0;
-  background: #f5f5f5;
-}
-
-.masonry-image {
+.image-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  will-change: opacity;
-}
-
-.interaction-bar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-top: 8px;
-}
-
-.action-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.action-icon {
-  transition: transform 0.2s ease;
-
-  &:active {
-    transform: scale(1.2);
-  }
-}
-
-.action-count {
-  font-size: 13px;
-  color: #94a3b8;
-}
-
-.operation-buttons {
-  display: flex;
-  justify-content: space-around;
-  padding: 0 12px;
-}
-
-.edit-button {
-  color: #ff8e53;
-}
-
-.search-button {
-  color: #45b090;
-}
-
-.delete-button {
-  color: #ff6b6b;
-}
-
-/* 评论抽屉样式 */
-.comments-drawer {
-  :deep(.ant-drawer-content) {
-    border-radius: 0;
-  }
-
-  :deep(.ant-drawer-content-wrapper) {
-    /* PC 端右侧抽屉样式 */
-    @media screen and (min-width: 769px) {
-      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
-    }
-  }
-
-  /* 移动端底部抽屉样式 */
-  @media screen and (max-width: 768px) {
-    :deep(.ant-drawer-content) {
-      border-radius: 16px 16px 0 0;
-    }
-  }
-
-  :deep(.ant-drawer-header) {
-    padding: 16px 24px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  :deep(.ant-drawer-body) {
-    padding: 0;
-  }
-}
-
-.drawer-content {
-  padding: 16px;
-  overflow-y: auto;
-  height: calc(100% - 120px);
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-}
-
-.no-more-data {
-  text-align: center;
-  color: #94a3b8;
-  padding: 16px;
-  margin-bottom: 60px;
-}
-
-.comment-input-wrapper {
-  position: absolute;
-  bottom: 0;
-  left: 0;
   right: 0;
-  padding: 12px 16px;
-  background: white;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  z-index: 1000;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 60%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  opacity: 1;
+}
 
-  &.is-replying {
-    padding-top: 12px;
-    transform: translateY(-8px);
-    background: #f8fafc;
-    animation: slideUp 0.3s ease;
+.overlay-top {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.view-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.overlay-bottom {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.masonry-item:hover .overlay-bottom {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.picture-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  max-width: calc(100% - 16px);
+  background: rgba(87, 84, 84, 0.4);
+  backdrop-filter: blur(4px);
+  padding: 2px 12px;
+  border-radius: 20px;
+}
+
+.user-avatar {
+  width: 24px !important;
+  height: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.picture-info {
+  padding-left: 12px;
+
+  margin-bottom: -8px;
+  background: #fff;
+}
+
+.picture-title {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #333;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .overlay-bottom {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .picture-user {
+    padding: 4px 8px;
+  }
+
+  .user-avatar {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .user-name {
+    font-size: 12px;
+    max-width: 120px;
+  }
+
+  .view-count {
+    font-size: 11px;
+    padding: 3px 6px;
   }
 }
 
-.reply-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: #fff6f3;
-  border-radius: 8px 8px 0 0;
-  border-bottom: 1px solid #ffe4d9;
-}
-
-.reply-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.reply-label {
-  font-size: 13px;
-  color: #ff8e53;
-  font-weight: 500;
-}
-
-.reply-arrow {
-  font-size: 12px;
-  color: #ff8e53;
-}
-
-.cancel-reply {
-  cursor: pointer;
-  padding: 4px;
-  color: #ff8e53;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.cancel-reply:hover {
-  transform: rotate(90deg);
-}
-
-.input-area {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  background: white;
-  transition: all 0.3s ease;
-}
-
-.input-area.is-replying {
-  background: #fff6f3;
-}
-
-.emoji-trigger {
-  cursor: pointer;
-  font-size: 20px;
-  color: #94a3b8;
-  transition: all 0.3s ease;
-  padding: 8px;
-}
-
-.emoji-trigger:hover,
-.emoji-trigger.active {
-  color: #ff8e53;
-  transform: scale(1.1);
-}
-
-.reply-icon {
-  color: #ff8e53;
-  margin-right: 4px;
-}
-
-.comment-input {
-  border-radius: 18px;
-}
-
-.word-count {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.send-button {
-  min-width: 64px;
-  height: 36px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.reply-button {
-  background: linear-gradient(135deg, #ff9c6e 0%, #ff8e53 100%);
-  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
-}
-
-.emoji-picker-container {
+.close-button span {
   position: absolute;
-  bottom: 100%;
-  left: 0;
-  z-index: 1000;
-  animation: slideUp 0.3s ease;
+  width: 16px;
+  height: 2px;
+  background-color: #666;
+  transition: background-color 0.3s;
 }
 
-@keyframes slideUp {
+.close-button span:first-child {
+  transform: rotate(45deg);
+}
+
+.close-button span:last-child {
+  transform: rotate(-45deg);
+}
+
+.close-button:hover span {
+  background-color: #333;
+}
+
+/* 修改无更多数据提示样式 */
+.no-more-data {
+  margin: auto;
+  text-align: center;
+  padding: 16px;
+  padding-bottom: 88px;
+  color: #c4947e;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .no-more-data {
+    padding-bottom: 24px;
+  }
+}
+
+@keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -1156,117 +756,14 @@ const handleResize = throttle(() => {
   }
 }
 
-.comments-area {
-  min-height: calc(100% - 80px); /* 减去输入框的高度 */
-  padding-bottom: 80px;
-}
-
-.review-status {
-  padding: 8px;
-  text-align: center;
-}
-
-.review-message {
-  margin-left: 8px;
-  color: #ff4d4f;
-  font-size: 12px;
-}
-
-/* 响应式调整 */
-@media screen and (max-width: 768px) {
-  .review-status {
-    padding: 4px;
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-
-  .review-message {
-    display: block;
-    margin-top: 4px;
-    margin-left: 0;
-  }
-}
-
-.review-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  transition: all 0.3s ease;
-}
-
-.status-icon {
-  font-size: 16px;
-
-  &.pending {
-    color: #1890ff;
-  }
-
-  &.approved {
-    color: #52c41a;
-  }
-
-  &.rejected {
-    color: #ff4d4f;
-  }
-}
-
-.status-text {
-  font-size: 14px;
-}
-
-/* 审核弹窗样式 */
-.review-detail {
-  text-align: center;
-  padding: 24px;
-}
-
-.status-icon-large {
-  font-size: 48px;
-  margin-bottom: 16px;
-
-  .pending {
-    color: #1890ff;
-  }
-
-  .approved {
-    color: #52c41a;
-  }
-
-  .rejected {
-    color: #ff4d4f;
-  }
-}
-
-.review-message {
-  font-size: 16px;
-  color: #1f2937;
-  line-height: 1.5;
-}
-
-/* 响应式调整 */
-@media screen and (max-width: 768px) {
-  .review-button {
-    padding: 4px 8px;
-  }
-
-  .status-icon {
-    font-size: 14px;
-  }
-
-  .status-text {
-    font-size: 13px;
-  }
-
-  .review-detail {
-    padding: 16px;
-  }
-
-  .status-icon-large {
-    font-size: 40px;
-  }
-
-  .review-message {
-    font-size: 14px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -1279,51 +776,38 @@ const handleResize = throttle(() => {
 
 .masonry-grid {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   width: 100%;
-  padding: 0;
-  margin: 0;
+  padding: 16px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .masonry-column {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: 0;
+  gap: 20px;
+  min-width: 280px; /* 减小最小列宽，使布局更灵活 */
+  box-sizing: border-box;
 }
 
 .masonry-item {
   width: 100%;
-  margin: 0;
-  break-inside: avoid;
-  background: #fff;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  }
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.image-wrapper {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 12px 12px 0 0;
-  background: #f5f5f5;
-}
-
-.aspect-ratio-box {
-  position: relative;
-  width: 100%;
-  height: 0;
-  background: #f5f5f5;
+.masonry-item:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
 }
 
 .masonry-image {
@@ -1338,39 +822,52 @@ const handleResize = throttle(() => {
   will-change: opacity;
 }
 
-.picture-info {
-  padding: 12px;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.03) 0%,
-    rgba(0, 0, 0, 0) 100%
-  );
+.masonry-item:hover .masonry-image {
+  transform: scale(1);
 }
 
-.picture-header {
+.picture-info {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  flex-direction: column;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
 }
+
 
 .picture-user {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #666;
-  cursor: pointer;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
 
-  &:hover {
-    color: #ff8e53;
-  }
+.user-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.picture-user:hover .user-avatar {
+  border-color: #2997ff;
+  transform: scale(1.05);
+}
+
+.picture-user span {
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .picture-title {
-  font-size: 14px;
-  color: #333;
-  margin: 8px 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1d1d1f;
+  margin: 0 0 20px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -1378,99 +875,157 @@ const handleResize = throttle(() => {
   -webkit-box-orient: vertical;
 }
 
-.picture-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 12px;
+.action-item .anticon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
 }
 
-.action-item {
+.action-item:hover .anticon {
+  transform: scale(1.1);
+}
+
+.feature-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: linear-gradient(135deg, #007AFF 0%, #2997ff 100%);
+  padding: 8px 14px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.2s;
+  gap: 8px;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 
-  &:hover {
-    color: #ff8e53;
+.feature-badge .anticon {
+  font-size: 16px;
+  color: #fff;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .masonry-item {
+    border-radius: 16px;
   }
 
-  .anticon {
+  .picture-user {
+    gap: 8px;
+  }
+
+  .user-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .picture-user span {
+    font-size: 14px;
+  }
+
+  .picture-title {
+    font-size: 15px;
+    margin: 0 0 16px;
+  }
+
+
+  .action-item .anticon {
     font-size: 16px;
   }
 
-  span {
-    font-size: 12px;
-  }
-
-  .active {
-    color: #ff8e53;
-  }
-}
-
-.action-item.view-count {
-  cursor: default;
-  &:hover {
-    color: #666;
-    transform: none;
+  .feature-badge {
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 10px;
   }
 }
 
 .loading-wrapper {
+  display: none;
+}
+
+/* 修改加载动画样式 */
+.loading-item {
+  height: 200px;
   display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-  padding: 24px 0;
-  width: 100%;
-  background: transparent;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 142, 83, 0.1);
+  cursor: default;
+  box-shadow: 0 8px 24px rgba(255, 142, 83, 0.08);
 }
 
-.loading-text {
-  margin-top: 8px;
-  color: #666;
-  font-size: 14px;
+.loading-item:hover {
+  transform: none;
+  box-shadow: 0 8px 24px rgba(255, 142, 83, 0.08);
 }
 
-/* 优化加载动画样式 */
-:deep(.ant-spin) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+.loading-camera {
+  width: 60px;
+  height: 60px;
+  animation: float 1.5s ease-in-out infinite;
 }
 
-:deep(.ant-spin-dot) {
-  font-size: 24px;
+.camera-body {
+  fill: none;
+  stroke: #ff8e53;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: draw 3s ease-in-out infinite;
 }
 
-/* 优化宠物动画样式 */
-.pet-animation {
-  position: fixed;
-  right: 20px;
-  bottom: 100px;
-  z-index: 1000;
-  pointer-events: none;
-  opacity: 0.9;
-  transform: scale(0.8);
-  transition: all 0.3s ease;
-  animation: fadeIn 0.5s ease;
+.camera-lens {
+  fill: none;
+  stroke: #ff8e53;
+  stroke-width: 3;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: draw 3s ease-in-out infinite 0.5s;
 }
 
-/* 当评论抽屉打开时的动画效果 */
-.comments-drawer:deep(.ant-drawer-content-wrapper) {
-  .pet-animation {
-    animation: bounce 1s ease infinite;
+.camera-flash {
+  fill: none;
+  stroke: #ff8e53;
+  stroke-width: 3;
+  animation: flash 1.5s ease-in-out infinite;
+}
+
+@keyframes draw {
+  0% {
+    stroke-dashoffset: 200;
+  }
+  45%, 50% {
+    stroke-dashoffset: 0;
+  }
+  95%, 100% {
+    stroke-dashoffset: -200;
   }
 }
 
-@keyframes bounce {
+@keyframes flash {
   0%, 100% {
-    transform: scale(0.8) translateY(0);
+    opacity: 0.3;
   }
   50% {
-    transform: scale(0.8) translateY(-10px);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
   }
 }
 
@@ -1486,13 +1041,68 @@ const handleResize = throttle(() => {
   }
 }
 
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-  .pet-animation {
-    right: 10px;
-    bottom: 80px;
-    transform: scale(0.6);
+
+/* 精选标志样式 */
+.feature-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.feature-badge .anticon {
+  font-size: 14px;
+}
+
+
+/* 添加空状态样式 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  min-height: 400px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 16px;
+
+  @media screen and (max-width: 480px) {
+    margin: 8px;
+    min-height: 300px;
+    border-radius: 16px;
+  }
+
+  .empty-text {
+    margin-top: 24px;
+
+    h3 {
+      font-size: 20px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      margin: 0;
+    }
   }
 }
 </style>
+
 

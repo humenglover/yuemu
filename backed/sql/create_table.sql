@@ -1,3 +1,109 @@
+CREATE TABLE activity
+(
+    id            bigint AUTO_INCREMENT COMMENT '活动ID'
+        PRIMARY KEY,
+    userId        bigint                             NOT NULL COMMENT '发布用户ID',
+    title         varchar(100)                       NOT NULL COMMENT '标题',
+    content       text                               NOT NULL COMMENT '内容',
+    coverUrl      varchar(255)                       NOT NULL COMMENT '封面图片URL',
+    viewCount     bigint   DEFAULT 0                 NULL COMMENT '浏览量',
+    likeCount     bigint   DEFAULT 0                 NULL COMMENT '点赞数',
+    commentCount  bigint   DEFAULT 0                 NULL COMMENT '评论数',
+    status        tinyint  DEFAULT 0                 NULL COMMENT '状态 0-待审核 1-已发布 2-已拒绝',
+    reviewMessage varchar(255)                       NULL COMMENT '审核信息',
+    createTime    datetime DEFAULT CURRENT_TIMESTAMP NULL COMMENT '创建时间',
+    updateTime    datetime DEFAULT CURRENT_TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete      tinyint  DEFAULT 0                 NULL COMMENT '是否删除',
+    shareCount    bigint   DEFAULT 0                 NULL COMMENT '分享数',
+    expireTime    datetime                           NOT NULL COMMENT '活动过期时间',
+    isExpired     tinyint  DEFAULT 0                 NOT NULL COMMENT '是否过期 0-未过期 1-已过期'
+)
+    COMMENT '活动表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_expireTime
+    ON activity (expireTime);
+
+CREATE INDEX idx_isExpired
+    ON activity (isExpired);
+
+CREATE INDEX idx_status
+    ON activity (status);
+
+CREATE INDEX idx_userId
+    ON activity (userId);
+
+CREATE TABLE aichat
+(
+    id         bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    userId     bigint                                NOT NULL COMMENT '用户ID',
+    content    text                                  NOT NULL COMMENT '消息内容',
+    role       varchar(10) DEFAULT 'user'            NOT NULL COMMENT '角色类型（user-用户, assistant-AI助手）',
+    createTime datetime    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    isDeleted  tinyint     DEFAULT 0                 NOT NULL COMMENT '是否删除（0-未删除，1-已删除）',
+    sessionId  bigint                                NOT NULL COMMENT '会话ID'
+)
+    COMMENT '聊天消息表';
+
+CREATE TABLE app_version
+(
+    id          bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    version     varchar(32)                        NOT NULL COMMENT '版本号',
+    versionCode int                                NOT NULL COMMENT '版本码',
+    apkPath     varchar(256)                       NOT NULL COMMENT 'APK文件路径',
+    apkSize     bigint                             NOT NULL COMMENT 'APK文件大小',
+    description text                               NULL COMMENT '版本描述',
+    isForce     tinyint  DEFAULT 0                 NOT NULL COMMENT '是否强制更新 0-否 1-是',
+    status      tinyint  DEFAULT 1                 NOT NULL COMMENT '状态 0-禁用 1-启用',
+    createTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT 'APP版本管理表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_version_code
+    ON app_version (versionCode DESC);
+
+CREATE TABLE audio_file
+(
+    id          bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    userId      bigint                             NOT NULL COMMENT '上传用户id',
+    fileName    varchar(255)                       NOT NULL COMMENT '文件名',
+    fileUrl     varchar(1024)                      NOT NULL COMMENT '文件访问地址',
+    filePath    varchar(1024)                      NOT NULL COMMENT '文件存储路径',
+    fileSize    bigint                             NOT NULL COMMENT '文件大小(字节)',
+    duration    int                                NULL COMMENT '音频时长(秒)',
+    mimeType    varchar(128)                       NOT NULL COMMENT '文件MIME类型',
+    md5         varchar(32)                        NOT NULL COMMENT '文件MD5值',
+    coverUrl    varchar(1024)                      NULL COMMENT '封面图片URL',
+    title       varchar(255)                       NULL COMMENT '音频标题',
+    description text                               NULL COMMENT '音频描述',
+    artist      varchar(255)                       NULL COMMENT '艺术家/作者',
+    album       varchar(255)                       NULL COMMENT '专辑名称',
+    genre       varchar(64)                        NULL COMMENT '音乐类型/风格',
+    spaceId     bigint                             NULL COMMENT '所属空间ID',
+    viewCount   bigint   DEFAULT 0                 NOT NULL COMMENT '播放次数',
+    likeCount   bigint   DEFAULT 0                 NOT NULL COMMENT '点赞数',
+    createTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '音频文件表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_createTime
+    ON audio_file (createTime);
+
+CREATE INDEX idx_spaceId
+    ON audio_file (spaceId);
+
+CREATE INDEX idx_userId
+    ON audio_file (userId);
+
+CREATE INDEX idx_viewCount
+    ON audio_file (viewCount);
+
 CREATE TABLE category
 (
     id           bigint AUTO_INCREMENT COMMENT '分类id'
@@ -72,6 +178,27 @@ CREATE INDEX idx_target
 CREATE INDEX idx_targetUserId_isRead
     ON comments (targetUserId, isRead);
 
+CREATE TABLE game_2048_record
+(
+    id         bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    userId     bigint                             NOT NULL COMMENT '用户ID',
+    score      int      DEFAULT 0                 NOT NULL COMMENT '得分',
+    maxTile    int      DEFAULT 2                 NOT NULL COMMENT '最大数字',
+    gameTime   int      DEFAULT 0                 NOT NULL COMMENT '游戏时长(秒)',
+    moveCount  int      DEFAULT 0                 NOT NULL COMMENT '移动次数',
+    createTime datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete   tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '2048游戏记录表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_score
+    ON game_2048_record (score DESC);
+
+CREATE INDEX idx_userId_score
+    ON game_2048_record (userId ASC, score DESC);
+
 CREATE TABLE hot_search
 (
     id             bigint AUTO_INCREMENT COMMENT '主键'
@@ -123,6 +250,63 @@ CREATE INDEX idx_userId_isRead
 CREATE INDEX idx_userId_targetType
     ON like_record (userId, targetType);
 
+CREATE TABLE love_board
+(
+    id             bigint AUTO_INCREMENT COMMENT 'id'
+        PRIMARY KEY,
+    userId         bigint                             NOT NULL COMMENT '用户ID',
+    bgCover        varchar(256)                       NOT NULL COMMENT '背景封面',
+    manCover       varchar(256)                       NOT NULL COMMENT '男生头像',
+    womanCover     varchar(256)                       NOT NULL COMMENT '女生头像',
+    manName        varchar(32)                        NOT NULL COMMENT '男生昵称',
+    womanName      varchar(32)                        NOT NULL COMMENT '女生昵称',
+    timing         varchar(32)                        NOT NULL COMMENT '计时',
+    countdownTitle varchar(32)                        NULL COMMENT '倒计时标题',
+    countdownTime  varchar(32)                        NULL COMMENT '倒计时时间',
+    status         tinyint  DEFAULT 1                 NOT NULL COMMENT '是否启用[0:否，1:是]',
+    familyInfo     varchar(1024)                      NULL COMMENT '额外信息',
+    likeCount      bigint   DEFAULT 0                 NOT NULL COMMENT '点赞数',
+    createTime     datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime     datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete       tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '恋爱画板' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_status
+    ON love_board (status);
+
+CREATE INDEX idx_userId
+    ON love_board (userId);
+
+CREATE TABLE love_board_music_album
+(
+    id          bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    userId      bigint                             NOT NULL COMMENT '用户ID',
+    loveBoardId bigint                             NOT NULL COMMENT '恋爱板ID',
+    albumName   varchar(128)                       NOT NULL COMMENT '专栏名称',
+    coverUrl    varchar(512)                       NULL COMMENT '专栏封面URL',
+    description varchar(512)                       NULL COMMENT '专栏描述',
+    isPublic    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否公开[0-私密，1-公开]',
+    password    varchar(32)                        NULL COMMENT '专栏访问密码',
+    createTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '恋爱板音乐专栏表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_albumName
+    ON love_board_music_album (albumName);
+
+CREATE INDEX idx_isPublic
+    ON love_board_music_album (isPublic);
+
+CREATE INDEX idx_loveBoardId
+    ON love_board_music_album (loveBoardId);
+
+CREATE INDEX idx_userId
+    ON love_board_music_album (userId);
+
 CREATE TABLE message
 (
     id         bigint AUTO_INCREMENT COMMENT '主键ID'
@@ -138,36 +322,69 @@ CREATE TABLE message
 CREATE INDEX idx_createTime
     ON message (createTime);
 
+CREATE TABLE message_board
+(
+    id         bigint AUTO_INCREMENT COMMENT '主键ID'
+        PRIMARY KEY,
+    ownerId    bigint                             NOT NULL COMMENT '祝福板主人ID',
+    userId     bigint                             NULL COMMENT '留言用户ID',
+    nickname   varchar(50)                        NULL COMMENT '昵称',
+    content    text                               NOT NULL COMMENT '留言内容',
+    qq         varchar(20)                        NULL COMMENT 'QQ号',
+    location   varchar(100)                       NULL COMMENT '地理位置',
+    browser    varchar(255)                       NULL,
+    os         varchar(50)                        NULL COMMENT '操作系统信息',
+    ipAddress  varchar(50)                        NULL COMMENT 'IP地址',
+    likeCount  int      DEFAULT 0                 NULL COMMENT '点赞数',
+    status     tinyint  DEFAULT 1                 NULL COMMENT '状态 0-隐藏 1-显示',
+    createTime datetime DEFAULT CURRENT_TIMESTAMP NULL COMMENT '创建时间',
+    updateTime datetime DEFAULT CURRENT_TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete   tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '祝福板表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_createTime
+    ON message_board (createTime);
+
+CREATE INDEX idx_ownerId
+    ON message_board (ownerId);
+
+CREATE INDEX idx_userId
+    ON message_board (userId);
+
 CREATE TABLE picture
 (
-    id            bigint AUTO_INCREMENT COMMENT 'id'
+    id             bigint AUTO_INCREMENT COMMENT 'id'
         PRIMARY KEY,
-    url           varchar(512)                       NOT NULL COMMENT '图片 url',
-    name          varchar(128)                       NOT NULL COMMENT '图片名称',
-    introduction  varchar(512)                       NULL COMMENT '简介',
-    category      varchar(64)                        NULL COMMENT '分类',
-    tags          varchar(512)                       NULL COMMENT '标签（JSON 数组）',
-    picSize       bigint                             NULL COMMENT '图片体积',
-    picWidth      int                                NULL COMMENT '图片宽度',
-    picHeight     int                                NULL COMMENT '图片高度',
-    picScale      double                             NULL COMMENT '图片宽高比例',
-    picFormat     varchar(32)                        NULL COMMENT '图片格式',
-    userId        bigint                             NOT NULL COMMENT '创建用户 id',
-    createTime    datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
-    editTime      datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '编辑时间',
-    updateTime    datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    isDelete      tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除',
-    reviewStatus  int      DEFAULT 0                 NOT NULL COMMENT '审核状态：0-待审核; 1-通过; 2-拒绝',
-    reviewMessage varchar(512)                       NULL COMMENT '审核信息',
-    reviewerId    bigint                             NULL COMMENT '审核人 ID',
-    reviewTime    datetime                           NULL COMMENT '审核时间',
-    thumbnailUrl  varchar(512)                       NULL COMMENT '缩略图 url',
-    spaceId       bigint                             NULL COMMENT '空间 id（为空表示公共空间）',
-    picColor      varchar(16)                        NULL COMMENT '图片主色调',
-    commentCount  bigint   DEFAULT 0                 NOT NULL COMMENT '评论数',
-    likeCount     bigint   DEFAULT 0                 NOT NULL COMMENT '点赞数',
-    shareCount    bigint   DEFAULT 0                 NOT NULL COMMENT '分享数',
-    viewCount     bigint   DEFAULT 0                 NOT NULL COMMENT '浏览量'
+    url            varchar(512)                       NOT NULL COMMENT '图片 url',
+    name           varchar(128)                       NOT NULL COMMENT '图片名称',
+    introduction   varchar(512)                       NULL COMMENT '简介',
+    category       varchar(64)                        NULL COMMENT '分类',
+    tags           varchar(512)                       NULL COMMENT '标签（JSON 数组）',
+    picSize        bigint                             NULL COMMENT '图片体积',
+    picWidth       int                                NULL COMMENT '图片宽度',
+    picHeight      int                                NULL COMMENT '图片高度',
+    picScale       double                             NULL COMMENT '图片宽高比例',
+    picFormat      varchar(32)                        NULL COMMENT '图片格式',
+    userId         bigint                             NOT NULL COMMENT '创建用户 id',
+    createTime     datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    editTime       datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '编辑时间',
+    updateTime     datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete       tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除',
+    reviewStatus   int      DEFAULT 0                 NOT NULL COMMENT '审核状态：0-待审核; 1-通过; 2-拒绝',
+    reviewMessage  varchar(512)                       NULL COMMENT '审核信息',
+    reviewerId     bigint                             NULL COMMENT '审核人 ID',
+    reviewTime     datetime                           NULL COMMENT '审核时间',
+    thumbnailUrl   varchar(512)                       NULL COMMENT '缩略图 url',
+    spaceId        bigint                             NULL COMMENT '空间 id（为空表示公共空间）',
+    picColor       varchar(16)                        NULL COMMENT '图片主色调',
+    commentCount   bigint   DEFAULT 0                 NOT NULL COMMENT '评论数',
+    likeCount      bigint   DEFAULT 0                 NOT NULL COMMENT '点赞数',
+    shareCount     bigint   DEFAULT 0                 NOT NULL COMMENT '分享数',
+    viewCount      bigint   DEFAULT 0                 NOT NULL COMMENT '浏览量',
+    isFeature      tinyint  DEFAULT 0                 NOT NULL COMMENT '是否精选 0-非精选 1-精选',
+    IsDownload     tinyint  DEFAULT 1                 NOT NULL COMMENT '是否允许下载：0-禁止下载 1-允许下载',
+    recommendScore double   DEFAULT 0                 NOT NULL COMMENT '推荐分数'
 )
     COMMENT '图片' COLLATE = utf8mb4_unicode_ci;
 
@@ -179,6 +396,9 @@ CREATE INDEX idx_introduction
 
 CREATE INDEX idx_name
     ON picture (name);
+
+CREATE INDEX idx_picture_recommend_score
+    ON picture (recommendScore);
 
 CREATE INDEX idx_reviewStatus
     ON picture (reviewStatus);
@@ -280,6 +500,25 @@ CREATE INDEX idx_chat_type
 CREATE INDEX idx_user_target
     ON private_chat (userId, targetUserId);
 
+CREATE TABLE reminder
+(
+    id          bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    userId      bigint                             NOT NULL COMMENT '用户id',
+    content     varchar(2048)                      NOT NULL COMMENT '提醒内容',
+    remindTime  time                               NOT NULL COMMENT '提醒时间',
+    completed   tinyint  DEFAULT 0                 NULL COMMENT '是否完成 0-未完成 1-已完成',
+    createTime  datetime DEFAULT CURRENT_TIMESTAMP NULL COMMENT '创建时间',
+    updateTime  datetime DEFAULT CURRENT_TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    tinyint  DEFAULT 0                 NULL COMMENT '是否删除',
+    isStarred   tinyint  DEFAULT 0                 NULL COMMENT '是否收藏 0-未收藏 1-已收藏',
+    isImportant tinyint  DEFAULT 0                 NULL COMMENT '是否重要 0-普通 1-重要'
+)
+    COMMENT '提醒事项表';
+
+CREATE INDEX idx_userId
+    ON reminder (userId);
+
 CREATE TABLE share_record
 (
     id           bigint AUTO_INCREMENT COMMENT '分享ID'
@@ -305,6 +544,28 @@ CREATE INDEX idx_userId_isRead
 
 CREATE INDEX idx_userId_targetType
     ON share_record (userId, targetType);
+
+CREATE TABLE snake_game_record
+(
+    id          bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    userId      bigint                             NOT NULL COMMENT '用户ID',
+    score       int      DEFAULT 0                 NOT NULL COMMENT '得分',
+    foodCount   int      DEFAULT 0                 NOT NULL COMMENT '吃到的食物数量',
+    gameTime    int      DEFAULT 0                 NOT NULL COMMENT '游戏时长(秒)',
+    snakeLength int      DEFAULT 3                 NOT NULL COMMENT '蛇的长度',
+    gameMode    tinyint  DEFAULT 1                 NOT NULL COMMENT '游戏模式：1-经典 2-无墙 3-竞速',
+    createTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '贪吃蛇游戏记录表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_gameMode_score
+    ON snake_game_record (gameMode ASC, score DESC);
+
+CREATE INDEX idx_userId_score
+    ON snake_game_record (userId ASC, score DESC);
 
 CREATE TABLE space
 (
@@ -372,6 +633,35 @@ CREATE TABLE tag
     isDelete   tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
 )
     COMMENT '标签' COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE time_album
+(
+    id          bigint AUTO_INCREMENT COMMENT '主键'
+        PRIMARY KEY,
+    userId      bigint                             NOT NULL COMMENT '用户ID',
+    loveBoardId bigint                             NOT NULL COMMENT '恋爱板ID',
+    albumName   varchar(128)                       NOT NULL COMMENT '相册名称',
+    coverUrl    varchar(512)                       NULL COMMENT '相册封面URL',
+    description varchar(512)                       NULL COMMENT '相册描述',
+    isPublic    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否公开[0-私密，1-公开]',
+    password    varchar(32)                        NULL COMMENT '相册访问密码',
+    createTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '时光相册表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_albumName
+    ON time_album (albumName);
+
+CREATE INDEX idx_isPublic
+    ON time_album (isPublic);
+
+CREATE INDEX idx_loveBoardId
+    ON time_album (loveBoardId);
+
+CREATE INDEX idx_userId
+    ON time_album (userId);
 
 CREATE TABLE user
 (
@@ -442,4 +732,33 @@ CREATE INDEX idx_followingId
 
 CREATE INDEX idx_isDelete
     ON userfollows (isDelete);
+
+CREATE TABLE wei_yan
+(
+    id          bigint AUTO_INCREMENT COMMENT 'id'
+        PRIMARY KEY,
+    loveBoardId bigint                             NOT NULL COMMENT '恋爱板ID',
+    userId      bigint                             NOT NULL COMMENT '发布用户ID',
+    likeCount   bigint   DEFAULT 0                 NOT NULL COMMENT '点赞数',
+    content     varchar(1024)                      NOT NULL COMMENT '内容',
+    type        varchar(32)                        NOT NULL COMMENT '类型',
+    source      bigint                             NULL COMMENT '来源标识',
+    isPublic    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否公开[0:仅自己可见，1:所有人可见]',
+    createTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime  datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete    tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '微言表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_isPublic
+    ON wei_yan (isPublic);
+
+CREATE INDEX idx_loveBoardId
+    ON wei_yan (loveBoardId);
+
+CREATE INDEX idx_type
+    ON wei_yan (type);
+
+CREATE INDEX idx_userId
+    ON wei_yan (userId);
 

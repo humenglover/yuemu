@@ -3,7 +3,7 @@ import {message} from "ant-design-vue";
 
 // 创建 Axios 实例
 const myAxios = axios.create({
-  baseURL: '',
+  baseURL: "",
   timeout: 60000,
   withCredentials: true,
 });

@@ -1,0 +1,35 @@
+/* 系统默认字体 */
+:root {
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-custom: var(--font-family-base);
+}
+
+/* 基础字体设置 - 默认使用系统字体 */
+* {
+  font-family: var(--font-family-base);
+}
+
+/* 自定义字体声明 - 使用 font-display: optional 确保不阻塞渲染 */
+@font-face {
+  font-family: 'TsangerYuYangT';
+  src: local('TsangerYuYangT'),
+  url('@/assets/fonts/freeFonts.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: optional;
+  size-adjust: 100%;
+  unicode-range: U+4E00-9FFF, U+3400-4DBF; /* 仅加载常用汉字范围 */
+}
+
+
+
+/* 字体加载完成后的样式 */
+body.fonts-loaded * {
+  --font-family-custom: "TsangerYuYangT", var(--font-family-base);
+  font-family: var(--font-family-custom);
+}
+
+/* 代码字体 */
+code, pre, .code-font {
+  font-family: Consolas, Monaco, "Courier New", monospace !important;
+}

@@ -10,7 +10,9 @@
         <div class="meteor meteor-5"></div>
       </div>
       <div class="main-content">
+        <SeasonalBanner />
         <div class="content-layout">
+
           <!-- 左侧区域：用户信息和成长足迹 -->
           <div class="left-section">
             <!-- 用户信息区域 -->
@@ -58,45 +60,61 @@
           <div class="right-section">
             <!-- 操作按钮区域 -->
             <div class="button-container">
-              <a-button class="custom-button" @click="openModal">
-                <span class="button-content">
-                  <EditOutlined class="button-icon edit-icon" />
-                  <span class="button-text">编辑资料</span>
-                </span>
-                <RightOutlined class="arrow-icon" />
-              </a-button>
+              <div class="grid-layout">
+                <a-button class="grid-button" @click="openModal">
+                  <div class="button-inner">
+                    <div class="icon-wrapper edit-bg">
+                      <EditOutlined class="button-icon" />
+                    </div>
+                    <span class="button-text">编辑资料</span>
+                  </div>
+                </a-button>
 
-              <a-button class="custom-button" @click="modifyPasswordopenModal">
-                <span class="button-content">
-                  <LockOutlined class="button-icon password-icon" />
-                  <span class="button-text">修改密码</span>
-                </span>
-                <RightOutlined class="arrow-icon" />
-              </a-button>
+                <a-button class="grid-button" @click="modifyPasswordopenModal">
+                  <div class="button-inner">
+                    <div class="icon-wrapper password-bg">
+                      <LockOutlined class="button-icon" />
+                    </div>
+                    <span class="button-text">修改密码</span>
+                  </div>
+                </a-button>
 
-              <a-button class="custom-button" @click="changeEmailOpenModal">
-                <span class="button-content">
-                  <MailOutlined class="button-icon email-icon" />
-                  <span class="button-text">修改邮箱</span>
-                </span>
-                <RightOutlined class="arrow-icon" />
-              </a-button>
+                <a-button class="grid-button" @click="changeEmailOpenModal">
+                  <div class="button-inner">
+                    <div class="icon-wrapper email-bg">
+                      <MailOutlined class="button-icon" />
+                    </div>
+                    <span class="button-text">修改邮箱</span>
+                  </div>
+                </a-button>
 
-              <a-button class="custom-button" @click="aboutUsopenModal">
-                <span class="button-content">
-                  <InfoCircleOutlined class="button-icon about-icon" />
-                  <span class="button-text">关于悦木</span>
-                </span>
-                <RightOutlined class="arrow-icon" />
-              </a-button>
+                <a-button class="grid-button" @click="aboutUsopenModal">
+                  <div class="button-inner">
+                    <div class="icon-wrapper about-bg">
+                      <InfoCircleOutlined class="button-icon" />
+                    </div>
+                    <span class="button-text">关于悦木</span>
+                  </div>
+                </a-button>
 
-              <a-button class="custom-button" @click="showLogoutConfirm">
-                <span class="button-content">
-                  <LogoutOutlined class="button-icon destroy-icon" />
-                  <span class="button-text">注销账号</span>
-                </span>
-                <RightOutlined class="arrow-icon" />
-              </a-button>
+                <a-button class="grid-button" @click="handleLoveBoard">
+                  <div class="button-inner">
+                    <div class="icon-wrapper love-bg">
+                      <HeartOutlined class="button-icon" />
+                    </div>
+                    <span class="button-text">恋爱画板</span>
+                  </div>
+                </a-button>
+
+                <a-button class="grid-button" @click="showLogoutConfirm">
+                  <div class="button-inner">
+                    <div class="icon-wrapper destroy-bg">
+                      <LogoutOutlined class="button-icon" />
+                    </div>
+                    <span class="button-text">注销账号</span>
+                  </div>
+                </a-button>
+              </div>
             </div>
             <!-- PC端卡通插画区域 -->
             <div class="illustration-container">
@@ -109,62 +127,77 @@
         </div>
 
         <!-- 编辑资料模态框 -->
-        <a-modal v-model:open="open" title="编辑资料">
-          <div class="avatar-upload-container">
-            <div class="avatar-wrapper">
-              <a-avatar
-                :src="myMessage.userAvatar || getDefaultAvatar(myMessage.userName)"
-                :size="80"
+        <div v-if="open" class="custom-modal edit-profile-modal">
+          <div class="modal-overlay" @click="open = false"></div>
+          <div class="modal-container">
+            <div class="modal-header">
+              <h3>编辑资料</h3>
+              <div class="close-btn" @click="open = false">×</div>
+            </div>
+
+            <div class="modal-body">
+              <!-- 头像上传区域 -->
+              <div class="avatar-upload-container">
+                <div class="avatar-wrapper" @click="showFileUploadDialog">
+                  <img
+                    :src="myMessage.userAvatar || getDefaultAvatar(myMessage.userName)"
+                    class="profile-avatar"
+                    alt="用户头像"
+                  />
+                  <div class="upload-icon">
+                    <PlusOutlined />
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  ref="fileInput"
+                  style="display: none"
+                  accept="image/*"
+                  @change="handleAvatarUpload"
+                />
+              </div>
+
+              <!-- 头像裁剪组件 -->
+              <AvatarCropper
+                ref="avatarCropperRef"
+                :imageUrl="tempImageUrl"
+                @success="handleCroppedAvatar"
               />
-              <div class="upload-icon" @click="showFileUploadDialog">
-                <PlusOutlined />
+
+              <!-- 表单区域 -->
+              <div class="form-container">
+                <div class="form-group">
+                  <label>昵称</label>
+                  <input type="text" :value="myMessage.userName" @input="e => myMessage.userName = e.target.value" class="custom-input" />
+                </div>
+                <div class="form-group">
+                  <label>简介</label>
+                  <input type="text" :value="myMessage.userProfile" @input="e => myMessage.userProfile = e.target.value" class="custom-input" />
+                </div>
+                <div class="form-group">
+                  <label>编号</label>
+                  <input type="text" :value="myMessage.id" class="custom-input" disabled />
+                </div>
+                <div class="form-group">
+                  <label>邮箱</label>
+                  <input type="text" :value="myMessage.email" class="custom-input" disabled />
+                </div>
+                <div class="form-group">
+                  <label>账号</label>
+                  <input type="text" :value="myMessage.userAccount" class="custom-input" disabled />
+                </div>
+                <div class="form-group">
+                  <label>角色</label>
+                  <input type="text" :value="roleText" class="custom-input" disabled />
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="submit-button" @click="editProfile">完成</button>
               </div>
             </div>
-            <input
-              type="file"
-              ref="fileInput"
-              style="display: none"
-              accept="image/*"
-              @change="handleAvatarUpload"
-            />
           </div>
-
-          <!-- 头像裁剪组件 -->
-          <AvatarCropper
-            ref="avatarCropperRef"
-            :imageUrl="tempImageUrl"
-            @success="handleCroppedAvatar"
-          />
-
-          <div class="form-container">
-            <a-form layout="vertical">
-              <a-form-item label="昵称">
-                <a-input v-model:value="myMessage.userName" />
-              </a-form-item>
-              <a-form-item label="简介">
-                <a-input v-model:value="myMessage.userProfile" />
-              </a-form-item>
-              <a-form-item label="编号">
-                <a-input v-model:value="myMessage.id" disabled />
-              </a-form-item>
-              <a-form-item label="邮箱">
-                <a-input v-model:value="myMessage.email" disabled />
-              </a-form-item>
-              <a-form-item label="账号">
-                <a-input v-model:value="myMessage.userAccount" disabled />
-              </a-form-item>
-              <a-form-item label="角色">
-                <a-input v-model:value="roleText" disabled />
-              </a-form-item>
-            </a-form>
-          </div>
-
-          <template #footer>
-            <div style="text-align: center">
-              <a-button @click="editProfile" class="submit-button">完成</a-button>
-            </div>
-          </template>
-        </a-modal>
+        </div>
 
         <!-- 修改密码模态框 -->
         <a-modal v-model:open="modifyPasswordOpen" title="修改密码" class="password-modal">
@@ -237,17 +270,47 @@
         </a-modal>
 
         <!-- 关于悦木模态框 -->
-        <a-modal v-model:open="aboutUsOpen" title="关于悦木" :footer="null" class="about-modal">
-          <div class="about-content">
-            <h3 class="app-name">悦木图片分享</h3>
-            <p class="version">Version 1.0.0</p>
-            <div class="divider"></div>
-            <p class="copyright">© {{ currentYear }} 鹿梦. All rights reserved.</p>
-            <a href="https://beian.miit.gov.cn/" target="_blank" class="icp-link">
-              陇ICP备2024012699号
-            </a>
+        <div v-if="aboutUsOpen" class="custom-modal about-modal">
+          <div class="modal-overlay" @click="aboutUsOpen = false"></div>
+          <div class="modal-container">
+            <div class="modal-header">
+              <h3>关于悦木</h3>
+              <div class="close-btn" @click="aboutUsOpen = false">×</div>
+            </div>
+
+            <div class="modal-body">
+              <div class="about-content">
+                <div class="brand-section">
+                  <h2 class="app-name">悦木图片分享</h2>
+                  <p class="version">Version 1.0.0</p>
+                  <div class="brand-divider"></div>
+                </div>
+
+                <div class="info-section">
+                  <p class="info-text">本网站部分内容源自网络，仅供学习与参考之用。</p>
+                  <p class="info-text">本网站所呈现的全部内容，并不代表本站立场，亦不意味着本站赞同相关观点或对其真实性负责。</p>
+                  <p class="info-text">若无意中侵犯了任何企业或个人的知识产权，请通过电子邮箱 <a href="mailto:109484028@qq.com" class="email-link">109484028@qq.com</a> 及时告知我们，一经核实，本网站将立即删除相关内容。</p>
+                </div>
+
+                <div class="footer-section">
+                  <p class="copyright">© {{ currentYear }} 鹿梦. All rights reserved.</p>
+                  <a href="https://beian.miit.gov.cn/" target="_blank" class="icp-link">
+                    陇ICP备2024012699号
+                  </a>
+                </div>
+
+                <div class="contact-button-wrapper">
+                  <button class="contact-button" @click="handleClick">
+                    <div class="contact-button-content">
+                      <LinkOutlined class="contact-icon" />
+                      <span>联系我们</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        </a-modal>
+        </div>
 
         <!-- 注销确认模态框 -->
         <a-modal
@@ -286,7 +349,10 @@ import {
   PlusOutlined,
   ExclamationCircleFilled,
   MailOutlined,
+  HeartOutlined,
+  LinkOutlined,
 } from '@ant-design/icons-vue'
+
 import { addUserSignInUsingPost } from '@/api/userController'
 import { Form, message } from 'ant-design-vue'
 import {
@@ -308,6 +374,8 @@ import { getDeviceType } from '@/utils/device.ts'
 import { getFollowAndFansCountUsingPost } from '@/api/userFollowsController.ts'
 import AvatarCropper from '@/components/AvatarCropper.vue'
 import { getCurrentYear } from '@/utils/date'
+import BilibiliSpringBanner from '@/banner/inst/bilibili-spring-1-banner.component.vue'
+import SeasonalBanner from '@/banner/SeasonalBanner.vue'
 
 const loginUserStore = useLoginUserStore()
 const open = ref<boolean>(false)
@@ -715,26 +783,53 @@ onBeforeUnmount(() => {
 
 const currentYear = computed(() => getCurrentYear())
 
+const handleLoveBoard = () => {
+  router.push('/loveboard')
+}
+
+const handleClick = () => {
+  window.location.href = 'http://my.lumenglover.com/contact'
+}
+
 </script>
 
 <style scoped>
 #SettingView {
   min-height: calc(100vh - 120px);
+  margin-left: -20px !important;
+  margin-right: -20px !important;
+  margin-top: -20px;
   background: #f8fafc;
   position: relative;
   overflow: hidden;
-  width: 100%;
   display: flex;
   justify-content: center;
 }
 
 /* 设置界面容器 */
 .setting-container {
-  max-width: 1400px;
+  max-width: 80%;
+  width: 80%;
   margin: 0 auto;
   padding: 24px 20px;
   height: 100%;
   position: relative;
+}
+
+/* 响应式调整 */
+@media screen and (max-width: 1200px) {
+  .setting-container {
+    max-width: 100%;
+    width: 100%;
+    padding: 12px 4px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .setting-container {
+    padding: 12px 4px;
+    width: 100%;
+  }
 }
 
 /* 流星背景样式 */
@@ -821,7 +916,7 @@ const currentYear = computed(() => getCurrentYear())
 
 .main-content {
   position: relative;
-  z-index: 1;
+  margin-bottom: 48px;
   width: 100%;
 }
 
@@ -837,8 +932,6 @@ const currentYear = computed(() => getCurrentYear())
 /* 左侧区域 */
 .left-section {
   flex: 1;
-  min-width: 800px;
-  width: calc(100% - 360px);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -851,6 +944,96 @@ const currentYear = computed(() => getCurrentYear())
   flex-direction: column;
   gap: 16px;
   flex-shrink: 0;
+}
+
+/* 响应式调整 */
+@media screen and (max-width: 1200px) {
+  .content-layout {
+    flex-direction: column;
+    padding-top: 12px;
+    gap: 12px;
+  }
+
+  .left-section,
+  .right-section {
+    width: 100%;
+    max-width: none;
+    gap: 12px;
+  }
+
+  .right-section {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .button-container {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .illustration-container {
+    flex: 1;
+    min-width: 300px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .content-layout {
+    flex-direction: column;
+    padding-top: 12px;
+    gap: 12px;
+  }
+
+  .left-section,
+  .right-section {
+    width: 100%;
+    max-width: none;
+    gap: 12px;
+  }
+
+  .right-section {
+    flex-direction: column;
+  }
+
+  #SettingView {
+    min-height: 97vh;
+    margin: -20px -20px -60px -20px !important;
+    padding-bottom: 60px;
+  }
+
+  .setting-container {
+    padding: 12px 4px;
+    width: 100%;
+  }
+
+  .main-content {
+    padding: 0;
+  }
+
+  .content-layout {
+    padding-top: 12px;
+  }
+
+  .user-info-container,
+  .button-container {
+    border-radius: 16px;
+    margin: 4px;
+    box-shadow: none;
+  }
+
+  .user-info-container {
+    margin: 4px;
+    border-radius: 16px;
+  }
+
+  .button-container {
+    padding: 12px;
+  }
+
+  /* 在移动端隐藏流星效果 */
+  .meteor-background {
+    display: none;
+  }
 }
 
 /* 用户信息区域 */
@@ -901,99 +1084,120 @@ const currentYear = computed(() => getCurrentYear())
   color: #94a3b8;
 }
 
-/* 按钮容器 */
+/* 按钮容器新样式 */
 .button-container {
   background: white;
   border-radius: 16px;
-  padding: 12px;
+  padding: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  height: 240px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  height: auto;
+  min-height: 240px;
   background: linear-gradient(135deg, rgba(255, 142, 83, 0.05) 0%, rgba(255, 107, 107, 0.05) 100%);
 }
 
-.custom-button{
-  margin-bottom: 8px;
+/* 宫格布局 */
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 4px;
 }
 
-/* 按钮样式 */
-:deep(.custom-button) {
-  width: 100%;
-  height: 52px;
-  padding: 0 16px;
+/* 宫格按钮样式 */
+:deep(.grid-button) {
+  height: auto;
+  padding: 12px;
   border: none;
+  border-radius: 12px;
+  background: white;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-radius: 12px;
-  margin-bottom: 8px !important;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
 }
 
-/* 按钮背景色 */
-:deep(.custom-button:has(.edit-icon)) {
-  background: rgba(14, 165, 233, 0.05);
-}
-
-:deep(.custom-button:has(.password-icon)) {
-  background: rgba(139, 92, 246, 0.05);
-}
-
-:deep(.custom-button:has(.about-icon)) {
-  background: rgba(245, 158, 11, 0.05);
-}
-
-:deep(.custom-button:has(.destroy-icon)) {
-  background: rgba(239, 68, 68, 0.05);
-}
-
-/* 按钮悬停效果 */
-:deep(.custom-button:has(.edit-icon):hover) {
-  background: rgba(14, 165, 233, 0.1);
-}
-
-:deep(.custom-button:has(.password-icon):hover) {
-  background: rgba(139, 92, 246, 0.1);
-}
-
-:deep(.custom-button:has(.about-icon):hover) {
-  background: rgba(245, 158, 11, 0.1);
-}
-
-:deep(.custom-button:has(.destroy-icon):hover) {
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.button-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* 图标颜色 */
-:deep(.edit-icon) {
-  color: #0ea5e9;
-}
-:deep(.password-icon) {
-  color: #8b5cf6;
-}
-:deep(.about-icon) {
-  color: #f59e0b;
-}
-:deep(.destroy-icon) {
-  color: #ef4444;
+:deep(.button-icon) {
+  font-size: 20px;
+  color: white;
 }
 
 :deep(.button-text) {
-  font-size: 15px;
+  font-size: 13px;
   color: #1a1a1a;
+  margin: 0;
 }
 
-:deep(.arrow-icon) {
-  color: #94a3b8;
-  font-size: 14px;
+.button-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 图标背景色 */
+.edit-bg {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+}
+
+.password-bg {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+}
+
+.about-bg {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+
+.destroy-bg {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+}
+
+.email-bg {
+  background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+}
+
+.love-bg {
+  background: linear-gradient(135deg, #ec4899, #f472b6);
+}
+
+/* 响应式调整 */
+@media screen and (max-width: 768px) {
+  .grid-layout {
+    gap: 8px;
+  }
+
+  :deep(.grid-button) {
+    padding: 8px;
+  }
+
+  .icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  :deep(.button-icon) {
+    font-size: 18px;
+  }
+
+  :deep(.button-text) {
+    font-size: 12px;
+  }
+}
+
+/* 移除之前的按钮样式 */
+:deep(.custom-button) {
+  display: none;
 }
 
 /* 模态框样式优化 */
@@ -1087,7 +1291,7 @@ const currentYear = computed(() => getCurrentYear())
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-  z-index: 2;
+
   border: 2px solid white;
 }
 
@@ -1285,48 +1489,34 @@ const currentYear = computed(() => getCurrentYear())
   }
 
   #SettingView {
-    padding: 12px 0;
-    display: block;
-    min-height: calc(100vh - 160px);
+    min-height: 97vh;
+    margin: -20px -20px -60px -20px !important;
+    padding-bottom: 60px;
   }
 
   .setting-container {
-    padding: 0;
+    padding: 12px 4px;
+    width: 100%;
   }
 
   .main-content {
-    padding: 0 4px;
+    padding: 0;
+  }
+
+  .content-layout {
+    padding-top: 12px;
   }
 
   .user-info-container,
   .button-container {
-    border-radius: 12px;
-    margin: 0;
+    border-radius: 16px;
+    margin: 4px;
     box-shadow: none;
   }
 
   .user-info-container {
-    margin-bottom: 12px;
-  }
-
-  .sign-in-calendar {
-    padding: 16px 12px;
-    margin: 12px 0;
-    border-radius: 12px;
-    min-height: 280px;
-    width: calc(100% - 8px);
-    margin: 4px auto;
-  }
-
-  .calendar-chart {
-    height: auto;
-    margin-top: 4px;
-    min-height: 200px;
-    width: 100% !important;
-  }
-
-  .user-info-container {
-    padding: 16px;
+    margin: 4px;
+    border-radius: 16px;
   }
 
   .button-container {
@@ -1610,7 +1800,6 @@ const currentYear = computed(() => getCurrentYear())
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   height: calc(100% - 128px);
-  display: flex;
   flex-direction: column;
   margin-top: 16px;
   width: 100%;
@@ -1707,10 +1896,7 @@ const currentYear = computed(() => getCurrentYear())
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  height: calc(100% - 256px);
   text-align: center;
-  display: none;
-  display: flex;
   flex-direction: column;
   justify-content: center;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(14, 165, 233, 0.05) 100%);
@@ -1860,6 +2046,522 @@ const currentYear = computed(() => getCurrentYear())
 
   &:active {
     transform: translateY(1px);
+  }
+}
+
+:deep(.love-icon) {
+  color: #ff69b4;
+}
+
+:deep(.custom-button:has(.love-icon)) {
+  background: rgba(255, 105, 180, 0.05);
+}
+
+:deep(.custom-button:has(.love-icon):hover) {
+  background: rgba(255, 105, 180, 0.1);
+}
+
+.contact-button-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.contact-button {
+  background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+  border: none;
+  color: white;
+  height: 40px;
+  border-radius: 20px;
+  padding: 0 28px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.25);
+  transition: all 0.3s ease;
+}
+
+.contact-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 142, 83, 0.35);
+  background: linear-gradient(135deg, #ff9b69, #ff8282);
+}
+
+.contact-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
+}
+
+.contact-button-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-icon {
+  font-size: 16px;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .contact-button {
+    height: 36px;
+    padding: 0 24px;
+    font-size: 13px;
+  }
+
+  .contact-icon {
+    font-size: 14px;
+  }
+}
+
+/* 自定义模态框基础样式 */
+.custom-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.modal-container {
+  position: relative;
+  width: 90%;
+  max-width: 560px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  overflow: hidden;
+  animation: modalPop 0.3s ease-out;
+}
+
+.modal-header {
+  padding: 24px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  color: #666;
+  transition: all 0.3s ease;
+  background: transparent;
+}
+
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #ff6b6b;
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: calc(90vh - 180px);
+  overflow-y: auto;
+}
+
+/* 编辑资料模态框样式 */
+.edit-profile-modal .modal-container {
+  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1),
+  0 0 0 1px rgba(255, 255, 255, 0.8),
+  0 8px 16px -4px rgba(255, 142, 83, 0.1);
+}
+
+.edit-profile-modal .modal-header {
+  background: linear-gradient(135deg, rgba(255, 142, 83, 0.05), rgba(255, 107, 107, 0.05));
+  border-bottom: 1px solid rgba(255, 142, 83, 0.1);
+  padding: 24px 32px;
+}
+
+.edit-profile-modal .modal-header h3 {
+  font-size: 22px;
+  background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+}
+
+.edit-profile-modal .modal-body {
+  padding: 32px;
+}
+
+.edit-profile-modal .avatar-upload-container {
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.edit-profile-modal .avatar-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 142, 83, 0.1), rgba(255, 107, 107, 0.1));
+  padding: 4px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.edit-profile-modal .profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.edit-profile-modal .upload-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-profile-modal .form-group {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.edit-profile-modal .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.edit-profile-modal .custom-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #1a1a1a;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.edit-profile-modal .custom-input:hover:not(:disabled) {
+  border-color: #ff8e53;
+}
+
+.edit-profile-modal .custom-input:focus {
+  outline: none;
+  border-color: #ff8e53;
+  box-shadow: 0 0 0 3px rgba(255, 142, 83, 0.1);
+}
+
+.edit-profile-modal .custom-input:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+.edit-profile-modal .modal-footer {
+  padding: 24px 32px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 142, 83, 0.1);
+  background: linear-gradient(135deg, rgba(255, 142, 83, 0.02), rgba(255, 107, 107, 0.02));
+}
+
+.edit-profile-modal .submit-button {
+  min-width: 160px;
+  height: 44px;
+  background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+  border: none;
+  border-radius: 22px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.25);
+}
+
+.edit-profile-modal .submit-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 142, 83, 0.35);
+}
+
+.edit-profile-modal .submit-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .edit-profile-modal .modal-container {
+    width: 92%;
+    margin: 16px;
+  }
+
+  .edit-profile-modal .modal-header {
+    padding: 20px 24px;
+  }
+
+  .edit-profile-modal .modal-header h3 {
+    font-size: 20px;
+  }
+
+  .edit-profile-modal .modal-body {
+    padding: 24px;
+  }
+
+  .edit-profile-modal .avatar-wrapper {
+    width: 100px;
+    height: 100px;
+  }
+
+  .edit-profile-modal .upload-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .edit-profile-modal .form-group {
+    margin-bottom: 20px;
+  }
+
+  .edit-profile-modal .custom-input {
+    height: 40px;
+  }
+
+  .edit-profile-modal .modal-footer {
+    padding: 20px 24px;
+  }
+
+  .edit-profile-modal .submit-button {
+    width: 100%;
+    max-width: 280px;
+  }
+}
+
+/* 关于悦木模态框特定样式 */
+.about-modal .modal-container {
+  max-width: 640px;
+}
+
+.about-content {
+  padding: 24px;
+}
+
+.brand-section {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.app-name {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+}
+
+.version {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.brand-divider {
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #ff8e53, #ff6b6b);
+  margin: 24px auto;
+  border-radius: 1.5px;
+}
+
+.info-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(255, 142, 83, 0.05), rgba(255, 107, 107, 0.05));
+  border-radius: 16px;
+}
+
+.info-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #334155;
+  margin: 0 0 16px;
+  text-align: justify;
+}
+
+.info-text:last-child {
+  margin-bottom: 0;
+}
+
+.email-link {
+  color: #ff8e53;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.email-link:hover {
+  color: #ff6b6b;
+}
+
+.footer-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.copyright {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 8px;
+}
+
+.icp-link {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.icp-link:hover {
+  color: #ff8e53;
+  background: rgba(255, 142, 83, 0.05);
+}
+
+.contact-button-wrapper {
+  text-align: center;
+}
+
+.contact-button {
+  background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+  border: none;
+  color: white;
+  height: 44px;
+  border-radius: 22px;
+  padding: 0 32px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.25);
+  transition: all 0.3s ease;
+}
+
+.contact-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 142, 83, 0.35);
+}
+
+.contact-button:active {
+  transform: translateY(0);
+}
+
+.contact-button-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-icon {
+  font-size: 18px;
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .about-modal .modal-container {
+    width: 92%;
+    margin: 16px;
+  }
+
+  .about-modal .modal-header {
+    padding: 20px 24px;
+  }
+
+  .about-modal .modal-body {
+    padding: 20px;
+  }
+
+  .about-content {
+    padding: 0;
+  }
+
+  .brand-section {
+    margin-bottom: 24px;
+  }
+
+  .app-name {
+    font-size: 24px;
+  }
+
+  .brand-divider {
+    width: 48px;
+    margin: 20px auto;
+  }
+
+  .info-section {
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .info-text {
+    font-size: 13px;
+  }
+
+  .contact-button {
+    width: 100%;
+    max-width: 280px;
   }
 }
 </style>

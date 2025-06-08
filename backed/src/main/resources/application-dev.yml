@@ -13,6 +13,13 @@ server:
     accept-count: 100
     connection-timeout: 20000
 spring:
+  ai:
+    deepseek:
+      apiKey:  # 你的api key  
+      apiUrl: https://api.deepseek.com/chat/completions
+      model: deepseek-chat # 选择模型（V3：deepseek-chat  R1：deepseek-reasoner）
+      temperature: 0.7
+      maxTokens: 1000
   servlet:
     multipart:
       max-file-size: 10MB

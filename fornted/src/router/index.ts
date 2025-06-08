@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import SpaceUserManagePage from '@/pages/admin/SpaceUserManagePage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,6 +9,7 @@ const router = createRouter({
       component: () => import('@/pages/HomePage.vue'),
       meta: {
         keepAlive: true,
+        name: 'HomePage'
       },
     },
     {
@@ -98,7 +98,7 @@ const router = createRouter({
       component: () => import('@/pages/SpaceDetailPage.vue'),
       props: true,
       meta: {
-        keepAlive: false,
+        keepAlive: true,
       },
     },
     {
@@ -227,16 +227,15 @@ const router = createRouter({
       name: '论坛',
       component: () => import('@/pages/ForumPage.vue'),
       meta: {
-        keepAlive: false,
-        needLogin: true
-      }
+        keepAlive: true,
+        name: 'ForumPage'
+      },
     },
     {
       path: '/chat-list',
       name: '聊天列表',
       component: () => import('@/pages/ChatListPage.vue'),
       meta: {
-        keepAlive: false,
         needLogin: true
       }
     },
@@ -268,6 +267,33 @@ const router = createRouter({
       }
     },
     {
+      path: '/admin/activityManage',
+      name: '活动管理',
+      component: () => import('@/pages/admin/ActivityManagePage.vue'),
+      meta: {
+        requireAuth: true,
+        requireAdmin: true,
+      }
+    },
+    {
+      path: '/activity/edit/:id?',
+      name: '编辑活动',
+      component: () => import('@/pages/ActivityEditPage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        requireAdmin: true
+      }
+    },
+    {
+      path: '/activity/detail/:id',
+      name: '活动详情',
+      component: () => import('@/pages/ActivityDetailPage.vue'),
+      meta: {
+        keepAlive: false
+      }
+    },
+    {
       path: '/message-center',
       name: 'messageCenter',
       component: () => import('@/pages/MessageCenterPage.vue'),
@@ -292,6 +318,313 @@ const router = createRouter({
       meta: {
         keepAlive: false,
       },
+    },
+    {
+      path: '/chat/ai',
+      name: 'AIChat',
+      component: () => import('@/pages/AIChatPage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true
+      }
+    },
+    {
+      path: '/admin/manage',
+      name: '管理模块',
+      component: () => import('@/pages/AdminManagePage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        requireAdmin: true
+      }
+    },
+    {
+      path: '/reminder',
+      name: '记事本',
+      component: () => import('@/pages/ReminderPage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        requireAdmin: true
+      }
+    },
+    {
+      path: '/admin/appManage',
+      name: 'APP管理',
+      component: () => import('@/pages/admin/AppManagePage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        requireAdmin: true
+      }
+    },
+    {
+      path: '/games',
+      children: [
+        {
+          path: 'snake',
+          component: () => import('@/pages/games/SnakeGamePage.vue'),
+          meta: {
+            keepAlive: false,
+            needLogin: true
+          }
+        },
+        {
+          path: '2048',
+          component: () => import('@/pages/games/Game2048Page.vue'),
+          meta: {
+            keepAlive: false,
+            needLogin: true
+          }
+        },
+        {
+          path: 'queens',
+          component: () => import('@/pages/games/QueensGamePage.vue'),
+          meta: {
+            keepAlive: false,
+            needLogin: true
+          }
+        },
+        {
+          path: 'tetris',
+          component: () => import('@/pages/games/TetrisPage.vue'),
+          meta: {
+            keepAlive: false,
+            needLogin: true
+          }
+        },
+        {
+          path: 'sliding-puzzle',
+          component: () => import('@/pages/games/SlidingPuzzlePage.vue'),
+          meta: {
+            title: '滑动拼图',
+            keepAlive: false,
+            needLogin: true
+          }
+        },
+        {
+          path: 'link-link',
+          component: () => import('@/pages/games/LinkLinkPage.vue'),
+          meta: {
+            title: '连连看',
+            keepAlive: false,
+            needLogin: true
+          }
+        }
+      ]
+    },
+    {
+      path: '/games',
+      name: '小游戏',
+      component: () => import('@/pages/GamesPage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true
+      }
+    },
+    {
+      path: '/games/2048',
+      name: '2048',
+      component: () => import('@/pages/games/Game2048Page.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true
+      }
+    },
+    {
+      path: '/games/queens',
+      name: 'Queens',
+      component: () => import('@/pages/games/QueensGamePage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true
+      }
+    },
+    {
+      path: '/games/tetris',
+      name: '俄罗斯方块',
+      component: () => import('@/pages/games/TetrisPage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true
+      }
+    },
+    {
+      path: '/tools',
+      name: 'tools',
+      component: () => import('@/pages/ToolsPage.vue'),
+      meta: {
+        title: '实用工具',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/calculator',
+      name: 'calculator',
+      component: () => import('@/pages/tools/CalculatorPage.vue'),
+      meta: {
+        title: '计算器',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/timer',
+      name: 'timer',
+      component: () => import('@/pages/tools/TimerPage.vue'),
+      meta: {
+        title: '计时器',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/food-wheel',
+      name: 'foodWheel',
+      component: () => import('@/pages/tools/FoodWheelPage.vue'),
+      meta: {
+        title: '今天吃什么',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/sticky-wall',
+      name: 'stickyWall',
+      component: () => import('@/pages/tools/StickyWallPage.vue'),
+      meta: {
+        title: '便签墙',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/pomodoro',
+      name: 'pomodoro',
+      component: () => import('@/pages/tools/PomodoroPage.vue'),
+      meta: {
+        title: '番茄钟',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/random',
+      name: 'random',
+      component: () => import('@/pages/tools/RandomPage.vue'),
+      meta: {
+        title: '随机数生成器',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/base-converter',
+      name: 'baseConverter',
+      component: () => import('@/pages/tools/BaseConverterPage.vue'),
+      meta: {
+        title: '进制转换器',
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/tools/color-picker',
+      name: 'colorPicker',
+      component: () => import('@/pages/tools/ColorPickerPage.vue'),
+      meta: {
+        title: '颜色选择器',
+        requiresAuth: true
+      }
+    },
+    // {
+    //   path: '/tools/video-compressor',
+    //   name: 'videoCompressor',
+    //   component: () => import('@/pages/tools/VideoCompressorPage.vue'),
+    //   meta: {
+    //     title: '视频压缩',
+    //     requiresAuth: true
+    //   }
+    // },
+    {
+      path: '/games/brick',
+      name: 'brick',
+      component: () => import('@/pages/games/BrickGamePage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        title: '打砖块'
+      }
+    },
+    {
+      path: '/games/dino',
+      name: 'dinoGame',
+      component: () => import('@/pages/games/DinoGamePage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        title: '恐龙快跑'
+      }
+    },
+    {
+      path: '/games/memory-card',
+      name: 'memoryCard',
+      component: () => import('@/pages/games/MemoryCardPage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        title: '记忆翻牌'
+      }
+    },
+    {
+      path: '/games/minesweeper',
+      name: 'minesweeper',
+      component: () => import('@/pages/games/MinesweeperPage.vue'),
+      meta: {
+        keepAlive: false,
+        needLogin: true,
+        title: '扫雷'
+      }
+    },
+    {
+      path: '/barrage',
+      name: 'barrage',
+      component: () => import('@/pages/BarragePage.vue'),
+      meta: {
+        title: '弹幕墙',
+        requireAuth: false
+      }
+    },
+    {
+      path: '/loveboard',
+      name: 'LoveBoard',
+      component: () => import('@/views/LoveBoardView.vue'),
+      meta: {
+        title: '恋爱画板',
+        requireAuth: false,
+        keepAlive: false,
+      },
+    },
+    {
+      path: '/loveboard/:id',
+      name: 'LoveBoardShare',
+      component: () => import('@/views/LoveBoardView.vue'),
+      meta: {
+        title: '恋爱画板',
+        requireAuth: false,
+        keepAlive: false,
+      },
+    },
+    {
+      path: '/time-album/:id',
+      name: 'TimeAlbumDetail',
+      component: () => import('@/views/TimeAlbumDetailView.vue'),
+      meta: {
+        title: '相册详情',
+        requireAuth: false,
+        keepAlive: false,
+      },
+    },
+    {
+      path: '/music-album/:id',
+      name: 'MusicAlbumDetail',
+      component: () => import('@/views/MusicAlbumDetailView.vue'),
+      meta: {
+        title: '音乐专辑详情'
+      }
     },
   ],
 })

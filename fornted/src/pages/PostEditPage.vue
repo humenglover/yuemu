@@ -4,6 +4,15 @@
       <template #title>
         <div class="page-header">
           <h1>{{ isEdit ? '编辑帖子' : '发布帖子' }}</h1>
+          <a-tooltip placement="right">
+            <template #title>
+              <div class="tip-content">
+                <div class="tip-title">发帖小贴士</div>
+                <div class="tip-text">添加图片可以提高帖子通过率哦 ~</div>
+              </div>
+            </template>
+            <ExclamationCircleOutlined class="tip-icon" />
+          </a-tooltip>
         </div>
       </template>
 
@@ -48,16 +57,6 @@
           </div>
         </a-form-item>
 
-        <!-- 图片预览区 -->
-        <div class="image-preview" v-if="postForm.attachments?.length">
-          <div v-for="(img, index) in postForm.attachments" :key="index" class="image-item">
-            <img :src="img.url" :alt="img.name" />
-            <div class="image-actions">
-              <DeleteOutlined @click="removeImage(index)" />
-            </div>
-          </div>
-        </div>
-
         <!-- 上传进度提示 -->
         <div v-if="uploading" class="upload-progress">
           <a-progress
@@ -93,7 +92,7 @@
 import { ref, computed, shallowRef, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { DeleteOutlined } from '@ant-design/icons-vue'
+import { DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import '@wangeditor/editor/dist/css/style.css'
 import { addPostUsingPost, updatePostUsingPost, getPostByIdUsingGet } from '@/api/postController'
@@ -108,51 +107,222 @@ const mode = 'default'
 const uploading = ref(false)
 const uploadProgress = ref(0)
 
+// 图片压缩函数
+const compressImage = (file: File): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    // 如果文件小于1MB，直接返回但转换为webp
+    if (file.size / 1024 / 1024 < 1) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0);
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('图片转换失败'));
+                return;
+              }
+              const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+                type: 'image/webp',
+                lastModified: Date.now(),
+              });
+              resolve(webpFile);
+            },
+            'image/webp',
+            1.0
+          );
+        };
+      };
+      return;
+    }
+
+    const maxWidth = 1280;
+    const maxHeight = 720;
+    const quality = 0.75; // webp可以用稍高的质量因为其压缩效率更好
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width *= ratio;
+          height *= ratio;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // 转换为WebP
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('图片压缩失败'));
+              return;
+            }
+            const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+              type: 'image/webp',
+              lastModified: Date.now(),
+            });
+            resolve(webpFile);
+          },
+          'image/webp',
+          quality
+        );
+      };
+    };
+  });
+};
+
 // 编辑器配置
 const editorConfig = {
   placeholder: '请输入内容...',
   html: true,
+  autoFocus: true, // 禁用自动获取焦点
   MENU_CONF: {
     uploadImage: {
       // 自定义图片上传
       async customUpload(file: File, insertFn: any) {
         try {
-          uploading.value = true
-          uploadProgress.value = 0
+          uploading.value = true;
+          uploadProgress.value = 0;
+
+          // 压缩图片
+          const compressedFile = await compressImage(file);
+          uploadProgress.value = 30;
 
           const res = await uploadPostImageUsingPost(
             {},
             {},
-            file
-          )
+            compressedFile
+          );
+
+          uploadProgress.value = 90;
 
           if (res.data.code === 0 && res.data.data) {
-            const imageCount = postForm.value.attachments.length
-            const marker = `{img-${imageCount + 1}}`
+            const imageCount = postForm.value.attachments.length;
+            const marker = `{img-${imageCount + 1}}`;
+
             // 添加到附件列表
             postForm.value.attachments.push({
               type: 1,
               url: res.data.data.thumbnailUrl,
               name: file.name,
-              size: file.size,
-              sort: postForm.value.attachments.length + 1
-            })
+              size: compressedFile.size,
+              sort: imageCount + 1
+            });
 
             // 插入图片但保存标记信息
             if (editorRef.value) {
-              insertFn(res.data.data.url, marker, res.data.data.url)
-              message.success('图片上传成功')
+              insertFn(res.data.data.url, marker, res.data.data.url);
+              // 减少延时时间
+              setTimeout(() => {
+                const editor = editorRef.value;
+                if (editor) {
+                  editor.blur();
+                  editor.focus();
+                }
+              }, 50);
             }
           } else {
-            message.error('图片上传失败')
+            message.error('图片上传失败');
           }
         } catch (error: any) {
-          console.error('图片上传失败:', error)
-          message.error('图片上传失败: ' + error.message)
+          console.error('图片上传失败:', error);
+          message.error('图片上传失败: ' + error.message);
         } finally {
-          uploading.value = false
-          uploadProgress.value = 0
+          uploading.value = false;
+          uploadProgress.value = 0;
         }
+      },
+      // 配置表情菜单
+      emoticon: {
+        // 选择表情后的回调
+        onSelect: () => {
+          // 确保光标在表情后面
+          setTimeout(() => {
+            const editor = editorRef.value;
+            if (editor) {
+              editor.blur();
+              editor.focus();
+            }
+          }, 100);
+        }
+      },
+      // 监听图片删除事件
+      onDeleted: (node: any) => {
+        if (node.type === 'image') {
+          const marker = node.alt;
+          const index = parseInt(marker.replace('{img-', '').replace('}', '')) - 1;
+
+          // 从附件列表中移除
+          if (index >= 0 && index < postForm.value.attachments.length) {
+            // 获取当前HTML内容
+            let htmlContent = editorRef.value?.getHtml() || '';
+
+            // 删除对应的附件
+            postForm.value.attachments.splice(index, 1);
+
+            // 重新扫描编辑器中的图片和标记
+            const imgRegex = /<img[^>]*alt="({img-\d+})"[^>]*>/g;
+            const markers = [];
+            let match;
+
+            // 收集所有现存的图片标记
+            while ((match = imgRegex.exec(htmlContent)) !== null) {
+              markers.push(match[1]);
+            }
+
+            // 按顺序更新附件列表的排序
+            markers.forEach((marker, i) => {
+              const oldIndex = parseInt(marker.replace('{img-', '').replace('}', '')) - 1;
+              if (oldIndex >= 0 && oldIndex < postForm.value.attachments.length) {
+                postForm.value.attachments[oldIndex].sort = i + 1;
+              }
+            });
+
+            // 更新编辑器中的标记
+            markers.forEach((oldMarker, i) => {
+              const newMarker = `{img-${i + 1}}`;
+              if (oldMarker !== newMarker) {
+                const oldImgRegex = new RegExp(`<img[^>]*alt="${oldMarker}"[^>]*>`, 'g');
+                htmlContent = htmlContent.replace(oldImgRegex, (match) => {
+                  return match.replace(oldMarker, newMarker);
+                });
+              }
+            });
+
+            // 设置更新后的HTML内容
+            if (editorRef.value) {
+              editorRef.value.setHtml(htmlContent);
+            }
+          }
+        }
+      }
+    }
+  },
+  // 禁用图片拖拽和大小调整
+  EXTEND_CONF: {
+    image: {
+      draggable: false,
+      resizable: false,
+      customConfig: {
+        allowDrag: false
       }
     }
   },
@@ -161,18 +331,16 @@ const editorConfig = {
       menuKeys: ['deleteImage']
     }
   },
-  parseHtml: (html: string) => {
-    return html.replace(/<img[^>]*>/g, (match) => {
-      return match.replace(/\s+/g, ' ').replace(/\s*\/?>$/, ' />')
-    })
-  }
 }
 
 // 工具栏配置
 const toolbarConfig = {
   excludeKeys: [
     'group-video',  // 禁用视频
-    'insertTable'   // 禁用表格
+    'insertTable',  // 禁用表格
+    'imageWidth',   // 禁用图片宽度设置
+    'imageHeight',  // 禁用图片高度设置
+    'imageSize'     // 禁用图片大小设置
   ]
 }
 
@@ -201,6 +369,24 @@ const initPostData = () => {
 // 编辑器创建完成时的回调
 const handleCreated = (editor: any) => {
   editorRef.value = editor
+
+  // 移动端优化
+  if (/mobile|android|iphone|ipad|phone/i.test(navigator.userAgent)) {
+    const editorDom = editor.getEditableContainer();
+    if (editorDom) {
+      // 只设置必要的样式
+      editorDom.style.setProperty('-webkit-user-select', 'text');
+      editorDom.style.setProperty('user-select', 'text');
+
+      // 监听编辑器区域的触摸事件
+      editorDom.addEventListener('touchstart', () => {
+        setTimeout(() => {
+          editor.focus();
+        }, 0);
+      });
+    }
+  }
+
   // 如果是编辑模式，加载帖子数据
   if (isEdit.value) {
     initPostData()
@@ -278,43 +464,67 @@ const removeImage = (index: number) => {
 
 // 提交表单
 const handleSubmit = async () => {
-  console.log('当前内容:', editorRef.value?.getText())
-  console.log('当前附件:', postForm.value.attachments)
   if (!postForm.value.title?.trim()) {
     message.warning('请输入标题')
     return
   }
+  if (!postForm.value.category) {
+    message.warning('请选择分类')
+    return
+  }
+
   // 获取HTML内容
-  let htmlContent = editorRef.value?.getHtml() || ''
+  let htmlContent = editorRef.value?.getHtml() || '';
+  let editorContent = htmlContent;
 
-  // 将HTML中的图片转换为标记
-  let editorContent = htmlContent
-  postForm.value.attachments.forEach((attach, index) => {
-    const marker = `{img-${index + 1}}`
-    const imgRegex = new RegExp(`<img[^>]*alt="${marker}"[^>]*>`, 'g')
-    editorContent = editorContent
-      .replace(imgRegex, `\n${marker}\n`)
-      .replace(/<p>/g, '')
-      .replace(/<\/p>/g, '\n')
-      .replace(/\n\n+/g, '\n\n')
-      .trim()
-  })
+  // 清理并重新排序附件列表
+  const tempAttachments = [...postForm.value.attachments];
+  postForm.value.attachments = [];
 
-  // 检查每个图片标记是否在内容中
-  for (let i = 0; i < postForm.value.attachments.length; i++) {
-    const marker = `{img-${i + 1}}`
-    if (!editorContent.includes(marker)) {
-      message.error(`内容中缺少图片标记 ${marker}`)
-      return
+  // 扫描编辑器中的图片标记
+  const imgRegex = /<img[^>]*alt="({img-\d+})"[^>]*>/g;
+  const foundMarkers = new Set();
+  let match;
+  let newIndex = 1;
+
+  // 第一遍扫描：收集所有存在的图片标记
+  while ((match = imgRegex.exec(htmlContent)) !== null) {
+    const marker = match[1];
+    const oldIndex = parseInt(marker.replace('{img-', '').replace('}', '')) - 1;
+    if (oldIndex >= 0 && oldIndex < tempAttachments.length) {
+      foundMarkers.add(oldIndex);
     }
   }
 
+  // 重新构建附件列表和更新标记
+  Array.from(foundMarkers).sort((a, b) => a - b).forEach((oldIndex) => {
+    const attachment = tempAttachments[oldIndex];
+    const oldMarker = `{img-${oldIndex + 1}}`;
+    const newMarker = `{img-${newIndex}}`;
+
+    // 更新HTML中的标记
+    const markerRegex = new RegExp(oldMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    editorContent = editorContent.replace(markerRegex, newMarker);
+
+    // 更新附件列表
+    postForm.value.attachments.push({
+      ...attachment,
+      sort: newIndex
+    });
+
+    newIndex++;
+  });
+
+  // 将HTML中的图片标记转换为纯文本标记
+  editorContent = editorContent
+    .replace(/<img[^>]*alt="({img-\d+})"[^>]*>/g, '\n$1\n')
+    .replace(/<p>/g, '')
+    .replace(/<\/p>/g, '\n')
+    .replace(/\n\n+/g, '\n\n')
+    .trim();
+
   if (!editorContent?.trim()) {
     message.warning('请输入内容')
-    return
-  }
-  if (!postForm.value.category) {
-    message.warning('请选择分类')
     return
   }
 
@@ -378,7 +588,7 @@ const handleSubmit = async () => {
 
 .image-preview {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin: 16px 0;
 }
@@ -473,7 +683,7 @@ const handleSubmit = async () => {
   }
 
   .image-preview {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
 
@@ -509,14 +719,91 @@ const handleSubmit = async () => {
 }
 
 .editor-content {
-  height: 400px;
-  overflow-y: auto;
+  min-height: 300px;
 }
 
 :deep(.w-e-text-container) {
   background-color: #fff !important;
   height: auto !important;
   min-height: 300px !important;
+
+  [data-slate-editor] {
+    padding: 12px;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1) !important;
+    cursor: text !important;
+  }
+
+  /* 图片容器基础样式 */
+  .w-e-image-container {
+    position: relative !important;
+    display: inline-block !important;
+    width: 33.33% !important;
+    padding: 0 !important;
+    margin: 4px auto !important;
+    aspect-ratio: 1 !important;
+    overflow: hidden !important;
+  }
+
+  /* 图片基础样式 */
+  .w-e-image-container img {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+  }
+
+  /* 三张图片布局 */
+  p:has(.w-e-image-container + .w-e-image-container + .w-e-image-container) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    margin: 4px 0 !important;
+    width: 100% !important;
+
+    .w-e-image-container {
+      flex: 0 0 calc((100% - 8px) / 3) !important;
+      width: calc((100% - 8px) / 3) !important;
+      margin: 0 !important;
+    }
+  }
+
+  /* 两张图片布局 */
+  p:has(.w-e-image-container + .w-e-image-container):not(:has(.w-e-image-container + .w-e-image-container + .w-e-image-container)) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    padding: 0 !important;
+    margin: 4px 0 !important;
+    width: 100% !important;
+
+    .w-e-image-container {
+      flex: 0 0 calc((100% - 4px) / 3) !important;
+      width: calc((100% - 4px) / 3) !important;
+      margin: 0 !important;
+    }
+  }
+
+  /* 单张图片布局 */
+  p:has(.w-e-image-container:only-child) {
+    text-align: left !important;
+    margin: 4px 0 !important;
+
+    .w-e-image-container {
+      width: calc((100% - 8px) / 3) !important;
+      margin: 0 !important;
+    }
+  }
 }
 
 :deep(.w-e-toolbar) {
@@ -542,33 +829,55 @@ const handleSubmit = async () => {
   margin: 8px 0 !important;
 }
 
-:deep(.w-e-text-container [data-slate-editor] img) {
-  max-width: 100% !important;
-  height: auto !important;
-  margin: 8px 0 !important;
-}
-
 /* 上传进度样式 */
 .upload-progress {
   margin: 16px 0;
-  padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  .progress-text {
+    margin-top: 8px;
+    text-align: center;
+    color: #666;
+  }
 }
 
-.progress-text {
-  margin-top: 8px;
-  text-align: center;
-  color: #64748b;
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tip-icon {
+  font-size: 18px;
+  color: #ff8e53;
+  cursor: help;
+  transition: all 0.3s ease;
+}
+
+.tip-icon:hover {
+  transform: scale(1.1);
+}
+
+.tip-content {
+  padding: 4px;
+}
+
+.tip-title {
   font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 4px;
 }
 
-:deep(.ant-progress-bg) {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.tip-text {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
 }
 
-:deep(.ant-progress-text) {
-  color: #64748b;
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .tip-icon {
+    font-size: 16px;
+  }
 }
 </style>

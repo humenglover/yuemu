@@ -177,6 +177,16 @@
                     编辑
                   </a-button>
                   <a-button
+                    type="primary"
+                    class="table-button feature-button"
+                    @click="handleFeature(record)"
+                    :ghost="!record.isFeature"
+                  >
+                    <StarOutlined v-if="!record.isFeature" />
+                    <StarFilled v-if="record.isFeature" />
+                    {{ record.isFeature ? '精选' : '精选' }}
+                  </a-button>
+                  <a-button
                     danger
                     class="table-button delete-button"
                     @click="showDeleteConfirm(record)"
@@ -318,7 +328,7 @@
                           type="primary"
                           plain
                           @click="handleReview(picture, PIC_REVIEW_STATUS_ENUM.PASS)"
-                          >通过</van-button
+                        >通过</van-button
                         >
                         <van-button
                           v-if="picture.reviewStatus !== PIC_REVIEW_STATUS_ENUM.REJECT"
@@ -326,20 +336,31 @@
                           type="danger"
                           plain
                           @click="showRejectModal(picture)"
-                          >拒绝</van-button
+                        >拒绝</van-button
                         >
                         <van-button
                           size="mini"
                           type="primary"
                           @click="() => router.push(`/add_picture?id=${picture.id}`)"
-                          >编辑</van-button
+                        >编辑</van-button
                         >
                         <van-button
                           type="danger"
                           size="mini"
                           @click="showDeleteConfirm(picture)"
-                          >删除</van-button
+                        >删除</van-button
                         >
+                        <a-button
+                          type="primary"
+                          size="small"
+                          class="table-button feature-button"
+                          @click="handleFeature(picture)"
+                          :ghost="!picture.isFeature"
+                        >
+                          <StarOutlined v-if="!picture.isFeature" />
+                          <StarFilled v-if="picture.isFeature" />
+                          {{ picture.isFeature ? '精选' : '精选' }}
+                        </a-button>
                       </div>
                     </div>
                   </template>
@@ -493,6 +514,7 @@ import {
   deletePictureUsingPost,
   doPictureReviewUsingPost,
   listPictureByPageUsingPost,
+  setPictureFeatureUsingPost,
 } from '@/api/pictureController.ts'
 import { message } from 'ant-design-vue'
 import {
@@ -505,6 +527,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   ExclamationCircleFilled,
+  StarOutlined,
+  StarFilled,
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
 import {
@@ -905,6 +929,20 @@ const confirmDelete = async () => {
     }
   } catch (error) {
     message.error('删除失败，请稍后重试')
+  }
+}
+
+// 添加精选处理函数
+const handleFeature = async (record: API.PictureVO) => {
+  try {
+    await setPictureFeatureUsingPost({
+      id: record.id,
+      isFeature: record.isFeature ? 0 : 1
+    })
+    // message.success(record.isFeature ? '已取消精选' : '已设为精选')
+    await fetchData()
+  } catch (error) {
+    message.error('操作失败')
   }
 }
 </script>
@@ -1639,6 +1677,30 @@ const confirmDelete = async () => {
     min-width: 90px;
     height: 36px;
     font-size: 13px;
+  }
+}
+
+.feature-button {
+  &.ant-btn-primary:not(.ant-btn-dangerous) {
+    &:not(:disabled) {
+      color: #ff8e53;
+      border-color: #ff8e53;
+
+      &:not(.ant-btn-ghost) {
+        background: #ff8e53;
+        color: white;
+      }
+
+      &:hover {
+        color: #ff7a3c;
+        border-color: #ff7a3c;
+
+        &:not(.ant-btn-ghost) {
+          background: #ff7a3c;
+          color: white;
+        }
+      }
+    }
   }
 }
 </style>

@@ -316,6 +316,16 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
     }
 
     /**
+     * 在保存或更新消息后清除对应图片的聊天数缓存
+     */
+    private void clearPictureChatCountCache(ChatMessage message) {
+        if (message != null && message.getPictureId() != null) {
+            String chatCountKey = String.format("picture:chatCount:%d", message.getPictureId());
+            stringRedisTemplate.delete(chatCountKey);
+        }
+    }
+
+    /**
      * 重写保存方法，在保存消息后清除相关缓存
      */
     @Override
@@ -323,6 +333,7 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
         boolean result = super.save(message);
         if (result) {
             clearChatHistoryCache(message);
+            clearPictureChatCountCache(message);
         }
         return result;
     }
@@ -335,6 +346,7 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
         boolean result = super.updateById(message);
         if (result) {
             clearChatHistoryCache(message);
+            clearPictureChatCountCache(message);
         }
         return result;
     }

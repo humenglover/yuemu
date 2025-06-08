@@ -47,7 +47,7 @@
             rowKey="id"
             :columns="columns"
             :data-source="dataList"
-            :pagination="pagination"
+            :pagination="false"
             @change="doTableChange"
             class="custom-table"
             :scroll="{ x: 1200 }"
@@ -61,7 +61,7 @@
               </template>
               <template v-if="column.dataIndex === 'content'">
                 <div class="post-content-cell">
-                  <a-button type="link" @click="showContentModal(record)">
+                  <a-button type="link" @click="handleView(record)">
                     查看内容
                   </a-button>
                 </div>
@@ -120,14 +120,6 @@
                     拒绝
                   </a-button>
                   <a-button
-                    type="primary"
-                    class="table-button view-button"
-                    @click="handleView(record)"
-                  >
-                    <EyeOutlined />
-                    查看
-                  </a-button>
-                  <a-button
                     danger
                     class="table-button delete-button"
                     @click="showDeleteConfirm(record)"
@@ -139,6 +131,21 @@
               </template>
             </template>
           </a-table>
+
+          <!-- PC端分页器 -->
+          <div class="pagination-wrapper">
+            <a-pagination
+              v-model:current="searchParams.current"
+              :total="total"
+              :pageSize="searchParams.pageSize"
+              :pageSizeOptions="['10', '20', '30', '40']"
+              show-size-changer
+              show-quick-jumper
+              :showTotal="total => `共 ${total} 条`"
+              @change="handlePageChange"
+              @showSizeChange="handleSizeChange"
+            />
+          </div>
         </div>
       </div>
     </template>
@@ -169,7 +176,6 @@
             :loading="loading"
             :data-source="dataList"
             class="mobile-post-list"
-            :pagination="mobilePagination"
           >
             <template #renderItem="{ item: post }">
               <a-list-item class="mobile-post-item">
@@ -192,9 +198,6 @@
                   </div>
 
                   <div class="mobile-post-actions">
-                    <a-button type="link" @click="showContentModal(post)">
-                      查看内容
-                    </a-button>
                     <a-space>
                       <a-button
                         v-if="post.status !== POST_STATUS_ENUM.PASS"
@@ -234,6 +237,41 @@
               </a-list-item>
             </template>
           </a-list>
+        </div>
+
+        <!-- 移动端分页 -->
+        <div class="mobile-pagination" v-if="device !== DEVICE_TYPE_ENUM.PC">
+          <div class="page-info">
+            <span>第 {{ searchParams.current }} 页</span>
+            <span class="separator">/</span>
+            <span>共 {{ Math.ceil(total / searchParams.pageSize) }} 页</span>
+          </div>
+          <div class="page-actions">
+            <a-button
+              :disabled="searchParams.current === 1"
+              @click="handlePrevPage"
+              class="page-button"
+            >
+              上一页
+            </a-button>
+            <a-select
+              v-model:value="searchParams.pageSize"
+              style="width: 110px"
+              @change="handlePageSizeChange"
+            >
+              <a-select-option :value="10">10 条/页</a-select-option>
+              <a-select-option :value="20">20 条/页</a-select-option>
+              <a-select-option :value="30">30 条/页</a-select-option>
+              <a-select-option :value="40">40 条/页</a-select-option>
+            </a-select>
+            <a-button
+              :disabled="searchParams.current >= Math.ceil(total / searchParams.pageSize)"
+              @click="handleNextPage"
+              class="page-button"
+            >
+              下一页
+            </a-button>
+          </div>
         </div>
       </div>
     </template>
@@ -318,6 +356,7 @@ import {
   DeleteOutlined,
   EyeOutlined,
   ExclamationCircleOutlined,
+  DownOutlined,
 } from '@ant-design/icons-vue'
 import { DEVICE_TYPE_ENUM } from '@/constants/device'
 import { getDeviceType } from '@/utils/device'
@@ -366,12 +405,11 @@ const searchParams = ref({
   searchText: '',
   category: '',
   status: undefined,
-})
-const pagination = ref({
+  isPublic :false,
   current: 1,
   pageSize: 10,
-  total: 0,
 })
+const total = ref(0)
 
 // 获取状态颜色
 const getStatusColor = (status: number) => {
@@ -393,12 +431,12 @@ const loadData = async () => {
   try {
     const res = await listPostByPageUsingPost({
       ...searchParams.value,
-      current: pagination.value.current,
-      pageSize: pagination.value.pageSize,
+      current: searchParams.value.current,
+      pageSize: searchParams.value.pageSize,
     })
     if (res.data?.data) {
       dataList.value = res.data.data.records
-      pagination.value.total = res.data.data.total
+      total.value = res.data.data.total
     }
   } catch (error: any) {
     message.error('获取数据失败：' + error.message)
@@ -409,14 +447,14 @@ const loadData = async () => {
 
 // 搜索
 const doSearch = () => {
-  pagination.value.current = 1
+  searchParams.value.current = 1
   loadData()
 }
 
 // 表格变化
 const doTableChange = (pag: any) => {
-  pagination.value.current = pag.current
-  pagination.value.pageSize = pag.pageSize
+  searchParams.value.current = pag.current
+  searchParams.value.pageSize = pag.pageSize
   loadData()
 }
 
@@ -530,11 +568,47 @@ const showContentModal = async (post: API.Post) => {
 
 // 移动端分页配置
 const mobilePagination = computed(() => ({
-  ...pagination.value,
+  ...searchParams.value,
   size: 'small',
   showSizeChanger: false,
   showQuickJumper: false,
 }))
+
+// 分页相关数据
+const pageSizeOptions = ['10', '20', '30', '40']
+
+// 分页处理方法
+const handlePageChange = (page: number, pageSize: number) => {
+  searchParams.value.current = page
+  searchParams.value.pageSize = pageSize
+  loadData()
+}
+
+const handleSizeChange = (current: number, size: number) => {
+  searchParams.value.current = 1
+  searchParams.value.pageSize = size
+  loadData()
+}
+
+const handlePrevPage = () => {
+  if (searchParams.value.current > 1) {
+    searchParams.value.current--
+    loadData()
+  }
+}
+
+const handleNextPage = () => {
+  if (searchParams.value.current < Math.ceil(total.value / searchParams.value.pageSize)) {
+    searchParams.value.current++
+    loadData()
+  }
+}
+
+const handlePageSizeChange = (value: number) => {
+  searchParams.value.current = 1
+  searchParams.value.pageSize = value
+  loadData()
+}
 
 onMounted(() => {
   loadData()
@@ -967,6 +1041,7 @@ onMounted(() => {
       font-size: 18px;
       margin-bottom: 8px;
     }
+
   }
 
   .delete-confirm-content {
@@ -1185,5 +1260,47 @@ onMounted(() => {
       font-size: 13px;
     }
   }
+}
+
+/* 分页器样式 */
+.pagination-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px;
+}
+
+/* 移动端分页样式 */
+.mobile-pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  margin-top: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.page-info {
+  font-size: 14px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.separator {
+  color: #ddd;
+}
+
+.page-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.page-button {
+  min-width: 80px;
 }
 </style>

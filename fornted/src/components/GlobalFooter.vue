@@ -1,33 +1,51 @@
 ﻿<template>
   <div id="globalFooter">
-    <div v-if="device === DEVICE_TYPE_ENUM.PC" class="pc-footer">
+    <div v-if="device === DEVICE_TYPE_ENUM.PC"
+         class="pc-footer"
+         :class="{ 'pc-footer-expanded': isFooterExpanded }"
+         @click="toggleFooter">
       <div class="wave-container">
         <div class="wave wave1"></div>
         <div class="wave wave2"></div>
         <div class="wave wave3"></div>
       </div>
       <div class="footer-content">
-        <p>
+        <p class="copyright">
           © {{ currentYear }} 鹿梦. All rights reserved. <span style="width: 10px"></span>
           <a href="https://beian.miit.gov.cn/" target="_blank">陇ICP备2024012699号</a>
         </p>
+        <div class="disclaimer" :class="{ 'disclaimer-expanded': isFooterExpanded }">
+          <p>本网站部分内容源自网络，仅供学习与参考之用。</p>
+          <p>本网站所呈现的全部内容，并不代表本站立场，亦不意味着本站赞同相关观点或对其真实性负责。</p>
+          <p>若无意中侵犯了任何企业或个人的知识产权，请通过电子邮箱 <a href="mailto:109484028@qq.com">109484028@qq.com</a> 及时告知我们，一经核实，本网站将立即删除相关内容。</p>
+        </div>
+      </div>
+      <div class="expand-indicator" :class="{ 'expanded': isFooterExpanded }">
+        <i class="expand-icon"></i>
       </div>
     </div>
 
-    <van-tabbar v-else v-model="active" class="mobile-tabbar" :safe-area-inset-bottom="true">
-      <van-tabbar-item to="/">
-        <template #icon="props">
+    <van-tabbar
+      v-else
+      v-model="active"
+      :class="['mobile-tabbar', { 'mobile-tabbar-hidden': isHidden }]"
+      :safe-area-inset-bottom="true"
+      route
+      :before-change="handleBeforeChange"
+    >
+      <van-tabbar-item to="/" name="home">
+        <template #icon>
           <div id="footerHomeIcon" class="custom-icon">
-            <van-icon name="wap-home" :class="{ 'icon-active': props.active }" />
+            <i class="nav-icon" :class="{ 'icon-active': active === 0 }">🏠</i>
           </div>
         </template>
         <span :class="['tab-text', { 'text-active-home': active === 0 }]">首页</span>
       </van-tabbar-item>
 
-      <van-tabbar-item to="/forum">
-        <template #icon="props">
+      <van-tabbar-item to="/forum" name="forum">
+        <template #icon>
           <div id="footerForumIcon" class="custom-icon">
-            <van-icon name="friends" :class="{ 'icon-active-forum': props.active }" />
+            <i class="nav-icon" :class="{ 'icon-active-forum': active === 1 }">📝</i>
           </div>
         </template>
         <span :class="['tab-text', { 'text-active-forum': active === 1 }]">论坛</span>
@@ -36,24 +54,24 @@
       <van-tabbar-item @click="handleAddClick">
         <template #icon>
           <div id="footerAddButton" class="add-button">
-            <van-icon name="plus" />
+            <div class="add-icon">+</div>
           </div>
         </template>
       </van-tabbar-item>
 
-      <van-tabbar-item to="/chat-list">
-        <template #icon="props">
+      <van-tabbar-item to="/chat-list" name="chat">
+        <template #icon>
           <div id="footerChatIcon" class="custom-icon">
-            <van-icon name="chat" :class="{ 'icon-active-chat': props.active }" />
+            <i class="nav-icon" :class="{ 'icon-active-chat': active === 3 }">💬</i>
           </div>
         </template>
         <span :class="['tab-text', { 'text-active-chat': active === 3 }]">聊天</span>
       </van-tabbar-item>
 
-      <van-tabbar-item to="/my">
-        <template #icon="props">
+      <van-tabbar-item to="/my" name="my">
+        <template #icon>
           <div id="footerMyIcon" class="custom-icon">
-            <van-icon name="manager" :class="{ 'icon-active-my': props.active }" />
+            <i class="nav-icon" :class="{ 'icon-active-my': active === 4 }">👤</i>
           </div>
         </template>
         <span :class="['tab-text', { 'text-active-my': active === 4 }]">我的</span>
@@ -65,7 +83,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue'
 import { DEVICE_TYPE_ENUM } from '@/constants/device.ts'
 import { getDeviceType } from '@/utils/device.ts'
 import router from '@/router'
@@ -73,6 +91,7 @@ import { useLoginUserStore } from '@/stores/useLoginUserStore'
 import '@lottiefiles/lottie-player'
 import UploadActionSheet from './UploadActionSheet.vue'
 import { getCurrentYear } from '@/utils/date'
+import { useRoute } from 'vue-router'
 
 // 定义用于存储设备类型的响应式变量
 const device = ref<string>('')
@@ -83,6 +102,11 @@ const active = ref(0)
 // 上传选项相关
 const showActionSheet = ref(false)
 const loginUserStore = useLoginUserStore()
+
+// 添加滚动控制相关变量
+const isHidden = ref(false)
+let lastScrollTop = 0
+const scrollThreshold = 50
 
 // 动作面板选项
 const actions = [
@@ -119,44 +143,81 @@ const handleAddClick = () => {
   showActionSheet.value = true
 }
 
+const route = useRoute()
+
+// 根据当前路由设置激活的标签
+watch(() => route.path, (newPath) => {
+  switch (newPath) {
+    case '/':
+      active.value = 0
+      break
+    case '/forum':
+      active.value = 1
+      break
+    case '/chat-list':
+      active.value = 3
+      break
+    case '/my':
+      active.value = 4
+      break
+  }
+}, { immediate: true })
+
+// 处理标签切换前的逻辑
+const handleBeforeChange = (name: string) => {
+  // 保存当前页面的滚动位置
+  const currentScrollPosition = window.pageYOffset || document.documentElement.scrollTop
+  sessionStorage.setItem(`${route.path}_scrollPosition`, currentScrollPosition.toString())
+  return true
+}
+
+// 监听路由变化以恢复滚动位置
+watch(() => route.path, (newPath) => {
+  nextTick(() => {
+    const savedPosition = sessionStorage.getItem(`${newPath}_scrollPosition`)
+    if (savedPosition) {
+      window.scrollTo({
+        top: parseInt(savedPosition),
+        behavior: 'instant'
+      })
+    }
+  })
+})
+
+// 处理滚动事件
+const handleScroll = () => {
+  if (device.value === DEVICE_TYPE_ENUM.PC) return
+
+  const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop
+
+  // 判断滚动方向和距离
+  if (Math.abs(currentScrollTop - lastScrollTop) > scrollThreshold) {
+    isHidden.value = currentScrollTop > lastScrollTop
+    lastScrollTop = currentScrollTop
+  }
+}
+
 // 页面加载时获取设备类型并获取数据，同时设置初始高亮项
 onMounted(async () => {
   device.value = await getDeviceType()
-  const currentRoute = router.currentRoute.value
-  const currentPath = currentRoute.path
-  if (currentPath === '/') {
-    active.value = 0
-  } else if (currentPath === '/add_picture') {
-    active.value = 1
-  } else if (currentPath === '/my') {
-    active.value = 4
-  }
+  window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
-// 组件卸载前关闭 action sheet
+// 组件卸载前关闭 action sheet 和移除滚动监听
 onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
   showActionSheet.value = false
 })
 
-// 监听路由变化，更新高亮菜单项对应的active值
-router.afterEach((to) => {
-  const currentPath = to.path
-  if (currentPath === '/') {
-    active.value = 0
-    showActionSheet.value = false
-  } else if (currentPath === '/forum') {
-    active.value = 1
-    showActionSheet.value = false
-  } else if (currentPath === '/chat-list') {
-    active.value = 3
-    showActionSheet.value = false
-  } else if (currentPath === '/my') {
-    active.value = 4
-    showActionSheet.value = false
-  }
-})
-
 const currentYear = computed(() => getCurrentYear())
+
+// 添加展开/收起状态控制
+const isFooterExpanded = ref(false)
+
+// 切换展开/收起状态
+const toggleFooter = () => {
+  isFooterExpanded.value = !isFooterExpanded.value
+}
 </script>
 
 <style scoped>
@@ -166,21 +227,59 @@ const currentYear = computed(() => getCurrentYear())
 
 .pc-footer {
   position: relative;
-  height: 24px;
+  height: 60px;
   text-align: center;
-  padding: 4px 0;
-  background: linear-gradient(to bottom, transparent, rgba(255, 142, 83, 0.03));
+  background: url('https://yuemu-picture-1328106169.cos.ap-chongqing.myqcloud.com/static/Snipaste_2025-05-03_13-44-18.png') no-repeat center center;
+  background-size: 120% auto;
+  margin: -16px -16px -18px;
+  padding: 12px 36px;
   overflow: hidden;
   z-index: 2;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px 12px 0 0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.1);
+  user-select: none;
+}
+
+.pc-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.5s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.pc-footer-expanded {
+  height: auto;
+  padding: 14px 36px 26px;
+  margin-bottom: -14px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.pc-footer-expanded::before {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.4));
 }
 
 .wave-container {
   position: absolute;
-  top: -8px;
+  top: 0;
   left: 0;
   width: 100%;
-  height: 20px;
+  height: 16px;
   overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  z-index: 2;
 }
 
 .wave {
@@ -228,51 +327,82 @@ const currentYear = computed(() => getCurrentYear())
 
 .footer-content {
   position: relative;
-  z-index: 4;
-  padding: 2px 0;
+  z-index: 3;
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  pointer-events: none;
 }
 
-.footer-content p {
-  color: #8d8a8a;
-  margin-bottom: 1px;
-  font-size: 12px;
+.footer-content .copyright {
+  color: #000000;
+  margin: 4px 0;
+  font-size: 11px;
   line-height: 1.2;
+  transition: all 0.3s ease;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.footer-content .disclaimer {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0;
+  padding: 0;
+}
+
+.footer-content .disclaimer-expanded {
+  opacity: 1;
+  max-height: 200px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-content .disclaimer p {
+  color: #000000;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 4px 0;
+  text-align: center;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .footer-content a {
-  color: #666;
+  color: #000000;
   text-decoration: none;
   position: relative;
   transition: color 0.3s ease;
   font-size: 11px;
   line-height: 1.2;
-}
-
-.footer-content a::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, #ff8e53, #ff6b6b);
-  transform: scaleX(0);
-  transform-origin: right;
-  transition: transform 0.3s ease;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
 }
 
 .footer-content a:hover {
   color: #ff8e53;
+  text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
 }
 
-.footer-content a:hover::after {
-  transform: scaleX(1);
-  transform-origin: left;
+.footer-content .disclaimer a {
+  color: #ff8e53;
+  opacity: 0.8;
+  pointer-events: auto;
+}
+
+.footer-content .disclaimer a:hover {
+  opacity: 1;
 }
 
 /* 移动端底部导航栏样式 */
 .mobile-tabbar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 2;
+  transition: transform 0.3s ease;
+  will-change: transform;
 
   :deep(.van-tabbar) {
     height: 50px;
@@ -299,33 +429,69 @@ const currentYear = computed(() => getCurrentYear())
     margin: -40px auto 0;
     box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
     border: 4px solid #fff;
+    transition: all 0.3s ease;
 
-    .van-icon {
-      font-size: 24px;
+    .add-icon {
       color: white;
+      font-size: 24px;
+      font-weight: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+      margin-top: -6px;
     }
   }
 
   .custom-icon {
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    .van-icon {
+    .nav-icon {
       font-size: 20px;
+      font-style: normal;
+      transition: all 0.3s ease;
+      transform-origin: center;
+
+      &.icon-active {
+        color: #ff8e53;
+        transform: scale(1.2);
+      }
+
+      &.icon-active-forum {
+        color: #1890ff;
+        transform: scale(1.2);
+      }
+
+      &.icon-active-chat {
+        color: #52c41a;
+        transform: scale(1.2);
+      }
+
+      &.icon-active-my {
+        color: #ec6a9e;
+        transform: scale(1.2);
+      }
     }
   }
 
   .icon-active {
-    color: #ff8e53;
+    transform: scale(1.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
+}
 
-  .text-active {
-    color: #ff8e53;
-  }
+.mobile-tabbar-hidden {
+  transform: translateY(100%);
 }
 
 :deep(.van-tabbar-item) {
   padding: 6px 0 !important;
   height: 52px !important;
+  transition: all 0.3s ease;
 }
 
 :deep(.van-tabbar-item__icon) {
@@ -740,5 +906,40 @@ const currentYear = computed(() => getCurrentYear())
 :deep(.van-tabbar-item:nth-child(5).van-tabbar-item--active)::after {
   background: linear-gradient(90deg, #d76d97, #d5697f);
   opacity: 1;
+}
+
+/* 防止切换时的闪烁 */
+:deep(.van-tabbar__placeholder) {
+  height: constant(safe-area-inset-bottom);
+  height: env(safe-area-inset-bottom);
+}
+
+.expand-indicator {
+  position: relative;
+  z-index: 3;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expand-indicator:hover {
+  opacity: 1;
+}
+
+.expand-icon {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border: solid #999;
+  border-width: 0 1.5px 1.5px 0;
+  transform: translateY(-2px) rotate(45deg);
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.expand-indicator.expanded .expand-icon {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.pc-footer:hover .expand-icon {
+  border-color: #ff8e53;
 }
 </style>

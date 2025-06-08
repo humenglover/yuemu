@@ -29,5 +29,10 @@ public class PostQueryRequest extends PageRequest implements Serializable {
      */
     private Integer status;
 
+    /**
+     * 是否只查询公共数据（默认true）
+     */
+    private Boolean isPublic = true;
+
     private static final long serialVersionUID = 1L;
 }

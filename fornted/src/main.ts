@@ -12,6 +12,10 @@ import 'vue-cropper/dist/index.css'
 import "vue3-emoji-picker/css";
 import { addUserSignInUsingPost } from '@/api/userController'
 import { useLoginUserStore } from '@/stores/useLoginUserStore'
+import 'font-awesome/css/font-awesome.min.css'
+import { createSecurityShield } from '@/utils/security'
+// 导入全局样式
+// import '@/styles/theme.css'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -19,6 +23,9 @@ app.use(pinia)
 app.use(router)
 app.use(Antd)
 app.use(VueCropper)
+
+// 初始化安全防护
+createSecurityShield()
 
 window.addEventListener('unhandledrejection', event => {
   console.error('Unhandled Promise Rejection:', event.reason)

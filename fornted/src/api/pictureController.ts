@@ -62,6 +62,36 @@ export async function editPictureByBatchUsingPost(
   })
 }
 
+/** setPictureFeature POST /api/picture/feature */
+export async function setPictureFeatureUsingPost(
+  body: API.PictureFeatureRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean_>('/api/picture/feature', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** getFeaturePicture POST /api/picture/feature/list */
+export async function getFeaturePictureUsingPost(
+  body: API.PictureQueryRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponsePagePictureVO_>('/api/picture/feature/list', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** getFollowPicture POST /api/picture/follow */
 export async function getFollowPictureUsingPost(
   body: API.PictureQueryRequest,

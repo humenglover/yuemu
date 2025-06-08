@@ -9,6 +9,7 @@
           <a-radio-group v-model:value="searchParams.type" @change="handleTypeChange">
             <a-radio-button :value="0">图片分类</a-radio-button>
             <a-radio-button :value="1">帖子分类</a-radio-button>
+            <a-radio-button :value="2">音频分类</a-radio-button>
           </a-radio-group>
         </div>
         <a-form layout="inline" :model="searchParams" @finish="doSearch">
@@ -41,8 +42,8 @@
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'type'">
-            <a-tag :color="record.type === 0 ? 'blue' : 'green'">
-              {{ record.type === 0 ? '图片分类' : '帖子分类' }}
+            <a-tag :color="getTypeColor(record.type)">
+              {{ getTypeText(record.type) }}
             </a-tag>
           </template>
           <template v-if="column.dataIndex === 'createTime'">
@@ -96,6 +97,7 @@
             <van-tabs v-model:active="searchParams.type" @change="handleTypeChange">
               <van-tab :name="0" title="图片分类" />
               <van-tab :name="1" title="帖子分类" />
+              <van-tab :name="2" title="音频分类" />
             </van-tabs>
           </div>
 
@@ -220,6 +222,7 @@
           <a-radio-group v-model:value="addForm.type">
             <a-radio :value="0">图片分类</a-radio>
             <a-radio :value="1">帖子分类</a-radio>
+            <a-radio :value="2">音频分类</a-radio>
           </a-radio-group>
         </a-form-item>
         <a-form-item label="分类名称" name="categoryName">
@@ -501,6 +504,32 @@ const handleJumpPage = () => {
 const handleTypeChange = () => {
   searchParams.current = 1
   getCategoryList()
+}
+
+const getTypeColor = (type: number) => {
+  switch (type) {
+    case 0:
+      return 'blue'
+    case 1:
+      return 'green'
+    case 2:
+      return 'purple'
+    default:
+      return 'default'
+  }
+}
+
+const getTypeText = (type: number) => {
+  switch (type) {
+    case 0:
+      return '图片分类'
+    case 1:
+      return '帖子分类'
+    case 2:
+      return '音频分类'
+    default:
+      return '未知类型'
+  }
 }
 </script>
 

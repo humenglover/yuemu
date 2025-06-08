@@ -22,22 +22,61 @@ export const REJECT_REASON_MAP = {
 
 // 帖子拒绝原因选项
 export const POST_REJECT_REASON_OPTIONS = [
-  { label: '内容涉及敏感话题', value: 'sensitive_topic' },
-  { label: '内容存在不当言论', value: 'inappropriate_content' },
-  { label: '内容质量不符合要求', value: 'low_quality' },
-  { label: '内容涉嫌抄袭/侵权', value: 'plagiarism' },
-  { label: '内容包含垃圾广告', value: 'spam_ad' },
-  { label: '内容不符合社区规范', value: 'violate_rules' },
-  { label: '其他原因', value: 'other' },
+  {
+    label: '内容不当',
+    value: 'INAPPROPRIATE_CONTENT',
+  },
+  {
+    label: '违反规范',
+    value: 'VIOLATE_RULES',
+  },
+  {
+    label: '重复内容',
+    value: 'DUPLICATE',
+  },
+  {
+    label: '其他原因',
+    value: 'OTHER',
+  },
 ]
 
-// 帖子拒绝原因对应的默认文案
+// 帖子拒绝原因映射
 export const POST_REJECT_REASON_MAP = {
-  sensitive_topic: '您的帖子涉及敏感话题，不适合在平台发布，请遵守相关法律法规。',
-  inappropriate_content: '您的帖子包含不当言论，请文明发言，营造良好的社区氛围。',
-  low_quality: '您的帖子内容质量不符合要求，建议补充更多有价值的信息后再发布。',
-  plagiarism: '您的帖子内容涉嫌抄袭或侵犯他人权益，请确保发布原创内容。',
-  spam_ad: '您的帖子包含垃圾广告信息，请勿发布与主题无关的广告内容。',
-  violate_rules: '您的帖子不符合社区规范，请仔细阅读社区规则并遵守。',
-  other: '',
+  INAPPROPRIATE_CONTENT: '帖子内容包含不当信息，请修改后重新提交',
+  VIOLATE_RULES: '帖子内容违反社区规范，请遵守社区规范后重新提交',
+  DUPLICATE: '该内容已存在，请勿重复发布',
+  OTHER: '',
+}
+
+// 活动拒绝原因选项
+export const ACTIVITY_REJECT_REASON_OPTIONS = [
+  {
+    label: '内容不当',
+    value: 'INAPPROPRIATE_CONTENT',
+  },
+  {
+    label: '信息不完整',
+    value: 'INCOMPLETE_INFO',
+  },
+  {
+    label: '活动已过期',
+    value: 'EXPIRED',
+  },
+  {
+    label: '违反社区规范',
+    value: 'VIOLATE_RULES',
+  },
+  {
+    label: '其他原因',
+    value: 'OTHER',
+  },
+]
+
+// 活动拒绝原因映射
+export const ACTIVITY_REJECT_REASON_MAP = {
+  INAPPROPRIATE_CONTENT: '活动内容包含不当信息，请修改后重新提交',
+  INCOMPLETE_INFO: '活动信息不完整，请补充必要信息后重新提交',
+  EXPIRED: '活动已过期，请更新活动时间后重新提交',
+  VIOLATE_RULES: '活动内容违反社区规范，请遵守社区规范后重新提交',
+  OTHER: '',
 }

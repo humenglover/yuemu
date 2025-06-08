@@ -104,7 +104,7 @@ public class HotSearchSyncJob implements HotSearchSync, CommandLineRunner {
      * 每17分钟同步一次热门搜索数据到MySQL和Redis
      */
     @Override
-    @Scheduled(fixedRate = 17 * 60 * 1000)
+    @Scheduled(fixedRate = 1 * 60 * 1000)
     public void syncHotSearch() {
         try {
             log.info("开始同步热门搜索数据");

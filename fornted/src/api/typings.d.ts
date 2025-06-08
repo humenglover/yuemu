@@ -1,4 +1,46 @@
 declare namespace API {
+  type Activity = {
+    attachments?: PostAttachment[]
+    commentCount?: number
+    content?: string
+    coverUrl?: string
+    createTime?: string
+    expireTime?: string
+    id?: number
+    isDelete?: number
+    isExpired?: number
+    isLiked?: number
+    isShared?: number
+    likeCount?: number
+    reviewMessage?: string
+    shareCount?: number
+    status?: number
+    title?: string
+    updateTime?: string
+    user?: UserVO
+    userId?: number
+    viewCount?: number
+  }
+
+  type ActivityAddRequest = {
+    attachments?: PostAttachmentRequest[]
+    content?: string
+    coverUrl?: string
+    expireTime?: string
+    title?: string
+  }
+
+  type ActivityQueryRequest = {
+    current?: number
+    isPublic?: boolean
+    notExpired?: boolean
+    pageSize?: number
+    searchText?: string
+    sortField?: string
+    sortOrder?: string
+    status?: number
+  }
+
   type addCategoryUsingPOSTParams = {
     /** categoryName */
     categoryName: string
@@ -14,6 +56,65 @@ declare namespace API {
   type addTagUsingPOSTParams = {
     /** tagName */
     tagName?: string
+  }
+
+  type addTimeAlbumUsingPOSTParams = {
+    /** loveBoardId */
+    loveBoardId: number
+  }
+
+  type AiChatVO = {
+    content?: string
+    createTime?: string
+    role?: string
+  }
+
+  type AppVersion = {
+    apkPath?: string
+    apkSize?: number
+    createTime?: string
+    description?: string
+    id?: number
+    isDelete?: number
+    isForce?: number
+    status?: number
+    updateTime?: string
+    version?: string
+    versionCode?: number
+  }
+
+  type AudioFileVO = {
+    album?: string
+    artist?: string
+    coverUrl?: string
+    createTime?: string
+    description?: string
+    duration?: number
+    fileName?: string
+    fileSize?: number
+    fileUrl?: string
+    genre?: string
+    id?: number
+    isLiked?: number
+    likeCount?: number
+    mimeType?: string
+    title?: string
+    updateTime?: string
+    user?: UserVO
+    userId?: number
+    viewCount?: number
+  }
+
+  type BaseResponseActivity_ = {
+    code?: number
+    data?: Activity
+    message?: string
+  }
+
+  type BaseResponseAudioFileVO_ = {
+    code?: number
+    data?: AudioFileVO
+    message?: string
   }
 
   type BaseResponseBoolean_ = {
@@ -34,6 +135,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseGame2048Record_ = {
+    code?: number
+    data?: Game2048Record
+    message?: string
+  }
+
   type BaseResponseGetOutPaintingTaskResponse_ = {
     code?: number
     data?: GetOutPaintingTaskResponse
@@ -46,6 +153,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListAudioFileVO_ = {
+    code?: number
+    data?: AudioFileVO[]
+    message?: string
+  }
+
   type BaseResponseListCategoryVO_ = {
     code?: number
     data?: CategoryVO[]
@@ -55,6 +168,12 @@ declare namespace API {
   type BaseResponseListCommentsVO_ = {
     code?: number
     data?: CommentsVO[]
+    message?: string
+  }
+
+  type BaseResponseListGame2048RecordVO_ = {
+    code?: number
+    data?: Game2048RecordVO[]
     message?: string
   }
 
@@ -82,6 +201,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListPicture_ = {
+    code?: number
+    data?: Picture[]
+    message?: string
+  }
+
   type BaseResponseListPictureVO_ = {
     code?: number
     data?: PictureVO[]
@@ -97,6 +222,12 @@ declare namespace API {
   type BaseResponseListShareRecordVO_ = {
     code?: number
     data?: ShareRecordVO[]
+    message?: string
+  }
+
+  type BaseResponseListSnakeGameRecord_ = {
+    code?: number
+    data?: SnakeGameRecord[]
     message?: string
   }
 
@@ -166,6 +297,24 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseLoveBoard_ = {
+    code?: number
+    data?: LoveBoard
+    message?: string
+  }
+
+  type BaseResponseLoveBoardMusicAlbum_ = {
+    code?: number
+    data?: LoveBoardMusicAlbum
+    message?: string
+  }
+
+  type BaseResponseMapStringObject_ = {
+    code?: number
+    data?: Record<string, any>
+    message?: string
+  }
+
   type BaseResponseMapStringString_ = {
     code?: number
     data?: Record<string, any>
@@ -175,6 +324,24 @@ declare namespace API {
   type BaseResponseMessageCenterVO_ = {
     code?: number
     data?: MessageCenterVO
+    message?: string
+  }
+
+  type BaseResponsePageActivity_ = {
+    code?: number
+    data?: PageActivity_
+    message?: string
+  }
+
+  type BaseResponsePageAppVersion_ = {
+    code?: number
+    data?: PageAppVersion_
+    message?: string
+  }
+
+  type BaseResponsePageAudioFileVO_ = {
+    code?: number
+    data?: PageAudioFileVO_
     message?: string
   }
 
@@ -193,6 +360,24 @@ declare namespace API {
   type BaseResponsePageLikeRecordVO_ = {
     code?: number
     data?: PageLikeRecordVO_
+    message?: string
+  }
+
+  type BaseResponsePageLoveBoardMusicAlbum_ = {
+    code?: number
+    data?: PageLoveBoardMusicAlbum_
+    message?: string
+  }
+
+  type BaseResponsePageMessage_ = {
+    code?: number
+    data?: PageMessage_
+    message?: string
+  }
+
+  type BaseResponsePageMessageBoard_ = {
+    code?: number
+    data?: PageMessageBoard_
     message?: string
   }
 
@@ -226,6 +411,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponsePageReminderVO_ = {
+    code?: number
+    data?: PageReminderVO_
+    message?: string
+  }
+
   type BaseResponsePageShareRecordVO_ = {
     code?: number
     data?: PageShareRecordVO_
@@ -250,9 +441,21 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponsePageTimeAlbum_ = {
+    code?: number
+    data?: PageTimeAlbum_
+    message?: string
+  }
+
   type BaseResponsePageUserVO_ = {
     code?: number
     data?: PageUserVO_
+    message?: string
+  }
+
+  type BaseResponsePageWeiYan_ = {
+    code?: number
+    data?: PageWeiYan_
     message?: string
   }
 
@@ -286,6 +489,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseSnakeGameRecord_ = {
+    code?: number
+    data?: SnakeGameRecord
+    message?: string
+  }
+
   type BaseResponseSpace_ = {
     code?: number
     data?: Space
@@ -316,9 +525,21 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseTimeAlbum_ = {
+    code?: number
+    data?: TimeAlbum
+    message?: string
+  }
+
   type BaseResponseUser_ = {
     code?: number
     data?: User
+    message?: string
+  }
+
+  type BaseResponseUserHighestScoreVO_ = {
+    code?: number
+    data?: UserHighestScoreVO
     message?: string
   }
 
@@ -400,6 +621,31 @@ declare namespace API {
     userName?: string
   }
 
+  type commonUploadAudioUsingPOSTParams = {
+    /** 艺术家 */
+    artist?: string
+    /** 音频描述 */
+    description?: string
+    /** 标签 */
+    tags?: string
+    /** 音频标题 */
+    title?: string
+  }
+
+  type commonUploadPictureUsingPOSTParams = {
+    /** 图片描述 */
+    description?: string
+    /** 图片名称 */
+    name?: string
+    /** 标签 */
+    tags?: string
+  }
+
+  type createMusicAlbumUsingPOSTParams = {
+    /** loveBoardId */
+    loveBoardId: number
+  }
+
   type createOrUpdatePrivateChatUsingPOSTParams = {
     /** lastMessage */
     lastMessage?: string
@@ -419,9 +665,50 @@ declare namespace API {
     pictureId?: number
   }
 
+  type deleteActivityUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
+  type deleteAudioFromAlbumUsingPOSTParams = {
+    /** albumId */
+    albumId: number
+    /** audioId */
+    audioId: number
+  }
+
+  type deleteAudioUsingDELETEParams = {
+    /** 音频文件ID */
+    id: number
+  }
+
   type deleteCategoryUsingPOSTParams = {
     /** categoryId */
     categoryId: number
+  }
+
+  type deleteHeartWallPictureUsingPOSTParams = {
+    /** albumId */
+    albumId: number
+    /** pictureId */
+    pictureId: number
+  }
+
+  type deleteLoveBoardUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
+  type deleteMessageUsingDELETEParams = {
+    /** id */
+    id: number
+    /** ownerId */
+    ownerId: number
+  }
+
+  type deleteMessageUsingPOSTParams = {
+    /** id */
+    id: number
   }
 
   type deletePostUsingPOSTParams = {
@@ -434,6 +721,11 @@ declare namespace API {
     privateChatId: number
   }
 
+  type deleteReminderUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
   type DeleteRequest = {
     id?: number
   }
@@ -443,9 +735,46 @@ declare namespace API {
     id?: number
   }
 
+  type deleteTimeAlbumUsingPOSTParams = {
+    /** id */
+    id: number
+    /** loveBoardId */
+    loveBoardId: number
+  }
+
+  type deleteWeiYanUsingPOSTParams = {
+    /** id */
+    id: number
+    /** loveBoardId */
+    loveBoardId: number
+  }
+
   type EmailCodeRequest = {
     email?: string
     type?: string
+  }
+
+  type fetchAlbumAudiosUsingGETParams = {
+    /** albumId */
+    albumId: number
+    /** password */
+    password?: string
+  }
+
+  type fetchMusicAlbumByIdUsingGETParams = {
+    /** id */
+    id: number
+    /** password */
+    password?: string
+  }
+
+  type fetchMusicAlbumsUsingGETParams = {
+    /** current */
+    current: number
+    /** loveBoardId */
+    loveBoardId: number
+    /** pageSize */
+    pageSize: number
   }
 
   type findCategoryUsingPOSTParams = {
@@ -460,9 +789,63 @@ declare namespace API {
     followCount?: number
   }
 
+  type Game2048Record = {
+    createTime?: string
+    gameTime?: number
+    id?: number
+    isDelete?: number
+    maxTile?: number
+    moveCount?: number
+    score?: number
+    updateTime?: string
+    userId?: number
+  }
+
+  type Game2048RecordVO = {
+    createTime?: string
+    gameTime?: number
+    maxTile?: number
+    moveCount?: number
+    score?: number
+    userAvatar?: string
+    userId?: number
+    userName?: string
+  }
+
+  type GameRankingRequest = {
+    gameMode?: number
+    limit?: number
+  }
+
+  type getActivityByIdUsingGETParams = {
+    /** id */
+    id?: number
+  }
+
+  type getAudioByIdUsingGETParams = {
+    /** id */
+    id: number
+  }
+
+  type getChatHistoryUsingPOSTParams = {
+    /** current */
+    current?: number
+    /** pageSize */
+    pageSize?: number
+  }
+
   type getFollowAndFansCountUsingPOSTParams = {
     /** id */
     id: number
+  }
+
+  type getHeartWallPicturesUsingGETParams = {
+    /** albumId */
+    albumId: number
+    /** password */
+    password?: string
+    /** userId */
+    userId?: number
   }
 
   type getHotSearchKeywordsUsingGETParams = {
@@ -477,6 +860,11 @@ declare namespace API {
     targetId: number
     /** targetType */
     targetType: number
+  }
+
+  type getLoveBoardByIdUsingGETParams = {
+    /** id */
+    id: number
   }
 
   type GetOutPaintingTaskResponse = {
@@ -504,6 +892,11 @@ declare namespace API {
     id: number
   }
 
+  type getRankingListUsingGETParams = {
+    /** limit */
+    limit?: number
+  }
+
   type getShareStatusUsingGETParams = {
     /** targetId */
     targetId: number
@@ -521,6 +914,15 @@ declare namespace API {
     id?: number
   }
 
+  type getTimeAlbumByIdUsingGETParams = {
+    /** id */
+    id: number
+    /** password */
+    password?: string
+    /** userId */
+    userId?: number
+  }
+
   type getTop100PictureUsingGETParams = {
     /** id */
     id: number
@@ -536,6 +938,13 @@ declare namespace API {
     id?: number
   }
 
+  type getUserGameHistoryUsingGETParams = {
+    /** current */
+    current?: number
+    /** pageSize */
+    pageSize?: number
+  }
+
   type getUserSignInRecordUsingGETParams = {
     /** year */
     year?: number
@@ -546,9 +955,21 @@ declare namespace API {
     id?: number
   }
 
+  type getVersionHistoryUsingGETParams = {
+    /** current */
+    current?: number
+    /** pageSize */
+    pageSize?: number
+  }
+
   type ImageSearchResult = {
     fromUrl?: string
     thumbUrl?: string
+  }
+
+  type likeMessageUsingPOSTParams = {
+    /** id */
+    id: number
   }
 
   type likePostUsingPOSTParams = {
@@ -579,6 +1000,24 @@ declare namespace API {
     targetType?: number
   }
 
+  type likeWeiYanUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
+  type listAudioByPageUsingGETParams = {
+    album?: string
+    artist?: string
+    current?: number
+    genre?: string
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    spaceId?: number
+    title?: string
+    userId?: number
+  }
+
   type listCategoryByTypeUsingGETParams = {
     /** type */
     type: number
@@ -591,6 +1030,35 @@ declare namespace API {
     sortOrder?: string
     /** type */
     type?: number
+  }
+
+  type listMessagesByPageUsingGETParams = {
+    /** current */
+    current?: number
+    /** ownerId */
+    ownerId: number
+    /** size */
+    size?: number
+  }
+
+  type listTimeAlbumUsingGETParams = {
+    /** current */
+    current: number
+    /** loveBoardId */
+    loveBoardId: number
+    /** pageSize */
+    pageSize: number
+  }
+
+  type listWeiYanUsingGETParams = {
+    /** current */
+    current?: number
+    /** loveBoardId */
+    loveBoardId: number
+    /** pageSize */
+    pageSize?: number
+    /** userId */
+    userId?: number
   }
 
   type LoginUserVO = {
@@ -606,7 +1074,67 @@ declare namespace API {
     userRole?: string
   }
 
+  type LoveBoard = {
+    bgCover?: string
+    countdownTime?: string
+    countdownTitle?: string
+    createTime?: string
+    familyInfo?: string
+    id?: number
+    isDelete?: number
+    likeCount?: number
+    manCover?: string
+    manName?: string
+    status?: number
+    timing?: string
+    updateTime?: string
+    userId?: number
+    womanCover?: string
+    womanName?: string
+  }
+
+  type LoveBoardMusicAlbum = {
+    albumName?: string
+    coverUrl?: string
+    createTime?: string
+    description?: string
+    id?: number
+    isDelete?: number
+    isPublic?: number
+    loveBoardId?: number
+    password?: string
+    updateTime?: string
+    userId?: number
+  }
+
   type MapStringString_ = true
+
+  type Message = {
+    content?: string
+    createTime?: string
+    id?: number
+    ip?: string
+    isDelete?: number
+    updateTime?: string
+  }
+
+  type MessageBoard = {
+    browser?: string
+    content?: string
+    createTime?: string
+    id?: number
+    ipAddress?: string
+    isDelete?: number
+    likeCount?: number
+    location?: string
+    nickname?: string
+    os?: string
+    ownerId?: number
+    qq?: string
+    status?: number
+    updateTime?: string
+    userId?: number
+  }
 
   type MessageCenterVO = {
     totalUnread?: number
@@ -615,10 +1143,30 @@ declare namespace API {
     unreadShares?: number
   }
 
+  type MessageQueryRequest = {
+    content?: string
+    current?: number
+    ip?: string
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+  }
+
   type MessageVO = {
     content?: string
     createTime?: string
     id?: number
+  }
+
+  type modifyMusicAlbumUsingPOSTParams = {
+    /** loveBoardId */
+    loveBoardId: number
+  }
+
+  type MusicAlbumPasswordRequest = {
+    albumId?: number
+    newPassword?: string
+    oldPassword?: string
   }
 
   type Output = {
@@ -647,6 +1195,38 @@ declare namespace API {
     unpaged?: boolean
   }
 
+  type PageActivity_ = {
+    current?: number
+    pages?: number
+    records?: Activity[]
+    size?: number
+    total?: number
+  }
+
+  type PageAiChatVO_ = {
+    current?: number
+    pages?: number
+    records?: AiChatVO[]
+    size?: number
+    total?: number
+  }
+
+  type PageAppVersion_ = {
+    current?: number
+    pages?: number
+    records?: AppVersion[]
+    size?: number
+    total?: number
+  }
+
+  type PageAudioFileVO_ = {
+    current?: number
+    pages?: number
+    records?: AudioFileVO[]
+    size?: number
+    total?: number
+  }
+
   type PageCategoryVO_ = {
     current?: number
     pages?: number
@@ -667,6 +1247,30 @@ declare namespace API {
     current?: number
     pages?: number
     records?: LikeRecordVO[]
+    size?: number
+    total?: number
+  }
+
+  type PageLoveBoardMusicAlbum_ = {
+    current?: number
+    pages?: number
+    records?: LoveBoardMusicAlbum[]
+    size?: number
+    total?: number
+  }
+
+  type PageMessage_ = {
+    current?: number
+    pages?: number
+    records?: Message[]
+    size?: number
+    total?: number
+  }
+
+  type PageMessageBoard_ = {
+    current?: number
+    pages?: number
+    records?: MessageBoard[]
     size?: number
     total?: number
   }
@@ -717,6 +1321,14 @@ declare namespace API {
     total?: number
   }
 
+  type PageReminderVO_ = {
+    current?: number
+    pages?: number
+    records?: ReminderVO[]
+    size?: number
+    total?: number
+  }
+
   type PageRequest = {
     current?: number
     pageSize?: number
@@ -756,10 +1368,26 @@ declare namespace API {
     total?: number
   }
 
+  type PageTimeAlbum_ = {
+    current?: number
+    pages?: number
+    records?: TimeAlbum[]
+    size?: number
+    total?: number
+  }
+
   type PageUserVO_ = {
     current?: number
     pages?: number
     records?: UserVO[]
+    size?: number
+    total?: number
+  }
+
+  type PageWeiYan_ = {
+    current?: number
+    pages?: number
+    records?: WeiYan[]
     size?: number
     total?: number
   }
@@ -786,6 +1414,8 @@ declare namespace API {
     id?: number
     introduction?: string
     isDelete?: number
+    isDownload?: number
+    isFeature?: number
     likeCount?: number
     name?: string
     picColor?: string
@@ -820,8 +1450,14 @@ declare namespace API {
     category?: string
     id?: number
     introduction?: string
+    isDownload?: number
     name?: string
     tags?: string[]
+  }
+
+  type PictureFeatureRequest = {
+    id?: number
+    isFeature?: number
   }
 
   type PictureOperation = {
@@ -886,12 +1522,16 @@ declare namespace API {
   }
 
   type PictureVO = {
+    avatarLoaded: boolean
     category?: string
+    chatCount?: number
     commentCount?: number
     createTime?: string
     editTime?: string
     id?: number
     introduction?: string
+    isDownload?: number
+    isFeature?: number
     isLiked?: number
     isShared?: number
     likeCount?: number
@@ -972,6 +1612,7 @@ declare namespace API {
   type PostQueryRequest = {
     category?: string
     current?: number
+    isPublic?: boolean
     pageSize?: number
     searchText?: string
     sortField?: string
@@ -1008,6 +1649,46 @@ declare namespace API {
     targetUserId?: number
   }
 
+  type ReminderAddRequest = {
+    content?: string
+  }
+
+  type ReminderQueryRequest = {
+    completed?: boolean
+    current?: number
+    date?: string
+    important?: boolean
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    starred?: boolean
+  }
+
+  type ReminderVO = {
+    completed?: boolean
+    content?: string
+    id?: number
+    important?: boolean
+    starred?: boolean
+    time?: string
+  }
+
+  type removeMusicAlbumUsingPOSTParams = {
+    /** id */
+    id: number
+    /** loveBoardId */
+    loveBoardId: number
+  }
+
+  type reviewActivityUsingPOSTParams = {
+    /** activityId */
+    activityId: number
+    /** message */
+    message?: string
+    /** status */
+    status: number
+  }
+
   type reviewPostUsingPOSTParams = {
     /** id */
     id: number
@@ -1015,6 +1696,21 @@ declare namespace API {
     message?: string
     /** status */
     status: number
+  }
+
+  type SaveGameRecordRequest = {
+    gameTime?: number
+    maxTile?: number
+    moveCount?: number
+    score?: number
+  }
+
+  type SaveGameRecordRequest1 = {
+    foodCount?: number
+    gameMode?: number
+    gameTime?: number
+    score?: number
+    snakeLength?: number
   }
 
   type SearchPictureByColorRequest = {
@@ -1038,6 +1734,11 @@ declare namespace API {
     tagName?: string
   }
 
+  type sendUsingPOSTParams = {
+    /** query */
+    query?: string
+  }
+
   type ShareQueryRequest = {
     current?: number
     pageSize?: number
@@ -1058,6 +1759,19 @@ declare namespace API {
     isShared?: boolean
     targetId?: number
     targetType?: number
+  }
+
+  type SnakeGameRecord = {
+    createTime?: string
+    foodCount?: number
+    gameMode?: number
+    gameTime?: number
+    id?: number
+    isDelete?: number
+    score?: number
+    snakeLength?: number
+    updateTime?: string
+    userId?: number
   }
 
   type Sort = {
@@ -1278,6 +1992,41 @@ declare namespace API {
     filepath?: string
   }
 
+  type TimeAlbum = {
+    albumName?: string
+    coverUrl?: string
+    createTime?: string
+    description?: string
+    id?: number
+    isDelete?: number
+    isPublic?: number
+    loveBoardId?: number
+    password?: string
+    updateTime?: string
+    userId?: number
+  }
+
+  type TimeAlbumPasswordRequest = {
+    albumId?: number
+    newPassword?: string
+    oldPassword?: string
+  }
+
+  type toggleImportantUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
+  type toggleReminderUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
+  type toggleStarredUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
   type updateChatNameUsingPOSTParams = {
     /** chatName */
     chatName: string
@@ -1292,9 +2041,58 @@ declare namespace API {
     targetUserId: number
   }
 
+  type updateMessageStatusUsingPOSTParams = {
+    /** id */
+    id: number
+    /** status */
+    status: number
+  }
+
+  type updateTimeAlbumUsingPOSTParams = {
+    /** loveBoardId */
+    loveBoardId: number
+  }
+
   type updateUserAvatarUsingPOSTParams = {
     /** id */
     id?: number
+  }
+
+  type uploadAudioUsingPOSTParams = {
+    album?: string
+    artist?: string
+    description?: string
+    genre?: string
+    spaceId?: number
+    title?: string
+  }
+
+  type uploadHeartWallPicturesUsingPOSTParams = {
+    albumId?: number
+    files?: string[]
+    override?: boolean
+  }
+
+  type uploadMusicToAlbumUsingPOSTParams = {
+    /** album */
+    album?: string
+    /** albumId */
+    albumId: number
+    /** artist */
+    artist?: string
+    /** coverUrl */
+    coverUrl?: string
+    /** description */
+    description?: string
+    /** genre */
+    genre?: string
+    /** title */
+    title?: string
+  }
+
+  type uploadNewVersionUsingPOSTParams = {
+    /** appVersion */
+    appVersion: string
   }
 
   type uploadPictureUsingPOSTParams = {
@@ -1343,6 +2141,12 @@ declare namespace API {
     newEmail?: string
   }
 
+  type UserExportRequest = {
+    endTime?: string
+    startTime?: string
+    type?: number
+  }
+
   type UserFollowsAddRequest = {
     followStatus?: number
     followerId?: number
@@ -1362,6 +2166,12 @@ declare namespace API {
     searchType?: number
     sortField?: string
     sortOrder?: string
+  }
+
+  type UserHighestScoreVO = {
+    classicModeScore?: number
+    noWallModeScore?: number
+    speedModeScore?: number
   }
 
   type UserLoginRequest = {
@@ -1426,5 +2236,19 @@ declare namespace API {
     userName?: string
     userProfile?: string
     userRole?: string
+  }
+
+  type WeiYan = {
+    content?: string
+    createTime?: string
+    id?: number
+    isDelete?: number
+    isPublic?: number
+    likeCount?: number
+    loveBoardId?: number
+    source?: number
+    type?: string
+    updateTime?: string
+    userId?: number
   }
 }

@@ -1,7 +1,22 @@
 <template>
   <div class="post-list">
     <div class="masonry-wrapper">
-      <div class="masonry-grid">
+      <!-- 添加空状态组件 -->
+      <div v-if="!loading && (!props.dataList || props.dataList.length === 0)" class="empty-state">
+        <lottie-player
+          src="https://assets10.lottiefiles.com/packages/lf20_AMBEWz.json"
+          background="transparent"
+          speed="1"
+          style="width: 200px; height: 200px;"
+          loop
+          autoplay
+        ></lottie-player>
+        <div class="empty-text">
+          <h3>暂无帖子</h3>
+          <p>快来发布一些有趣的内容吧 (｡•́︿•̀｡)</p>
+        </div>
+      </div>
+      <div v-else class="masonry-grid">
         <!-- 使用计算后的列数据进行渲染 -->
         <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="masonry-column">
           <div
@@ -33,13 +48,13 @@
             <div class="post-info">
               <div class="post-header">
                 <div class="post-title">{{ post.title }}</div>
-                <div class="category-tags">
-                  <span v-if="post.category" class="category-tag">{{ post.category }}</span>
-                </div>
+                <div class="category-tag" v-if="post.category">{{ post.category }}</div>
               </div>
               <div class="post-meta">
                 <div class="author-info">
-                  <a-avatar :size="24" :src="post.user?.userAvatar || getDefaultAvatar(post.user?.userName)" />
+                  <div class="author-avatar">
+                    <img :src="post.user?.userAvatar || getDefaultAvatar(post.user?.userName)" :alt="post.user?.userName">
+                  </div>
                   <span class="author-name">{{ post.user?.userName }}</span>
                 </div>
                 <div class="post-time">{{ formatTime(post.createTime) }}</div>
@@ -210,63 +225,56 @@ const handleStatusClick = (post: API.Post) => {
 <style scoped>
 .post-list {
   width: 100%;
-  padding: 4px;
-  margin: 0 auto;
+  padding: 16px;
+  background: #f8f9fa;
 }
 
 .masonry-wrapper {
   width: 100%;
-  min-height: 100vh;
-  padding: 0;
+  max-width: 1800px;
+  margin: 0 auto;
 }
 
 .masonry-grid {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   width: 100%;
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 0 16px;
 }
 
 .masonry-column {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
   min-width: 0;
 }
 
 .masonry-item {
-  width: 100%;
-  margin: 0;
-  break-inside: avoid;
-  background: #fff;
-  border-radius: 12px;
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
 
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  }
+.masonry-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .image-wrapper {
   position: relative;
   width: 100%;
   overflow: hidden;
-  background: #f5f5f5;
 }
 
 .aspect-ratio-box {
   position: relative;
   width: 100%;
-  padding-top: 66.67%; /* 3:2 比例 */
-  background: #f5f5f5;
+  padding-top: 75%;
+  background: #f3f4f6;
 }
 
 .masonry-image {
@@ -276,28 +284,28 @@ const handleStatusClick = (post: API.Post) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
+  transition: transform 0.3s ease;
+}
+
+.masonry-item:hover .masonry-image {
+  transform: scale(1.05);
 }
 
 .post-info {
-  padding: 12px;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.03) 0%,
-    rgba(0, 0, 0, 0) 100%
-  );
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
 }
 
 .post-header {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .post-title {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 8px;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -305,61 +313,139 @@ const handleStatusClick = (post: API.Post) => {
   -webkit-box-orient: vertical;
 }
 
-.category-tags {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 4px;
+.category-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 12px;
+  border-radius: 20px;
+  font-weight: 500;
 }
 
-.category-tag {
-  font-size: 12px;
-  color: #666;
-  background: #f5f5f5;
-  padding: 2px 8px;
-  border-radius: 4px;
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .author-info {
   display: flex;
   align-items: center;
   gap: 8px;
+}
 
-  .author-name {
-    font-size: 14px;
-    color: #1f2937;
-  }
+.author-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.author-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
 }
 
 .post-time {
   font-size: 12px;
-  color: #94a3b8;
+  color: #9ca3af;
 }
 
-/* 响应式调整 */
+.post-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f9fafb;
+}
+
+.action-button:hover {
+  background: #f3f4f6;
+  color: #4b5563;
+  transform: translateY(-1px);
+}
+
+.action-button.active {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.action-button.active:hover {
+  background: #fee2e2;
+}
+
+.action-button i {
+  font-size: 14px;
+}
+
+/* 响应式设计 */
 @media screen and (max-width: 768px) {
+
   .masonry-grid {
-    padding: 0 8px;
-    gap: 8px;
+    gap: 12px;
   }
 
   .masonry-column {
-    gap: 8px;
+    gap: 12px;
   }
 
   .post-info {
-    padding: 8px;
+    padding: 12px;
   }
 
   .post-title {
     font-size: 14px;
   }
+
+  .post-actions {
+    gap: 4px;
+  }
+
+  .action-button {
+    padding: 6px;
+    font-size: 12px;
+  }
 }
 
-@media screen and (min-width: 1600px) {
-  .masonry-grid {
-    max-width: 2000px;
+/* 加载动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.masonry-item {
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
 /* 添加状态标签样式 */
@@ -434,6 +520,45 @@ const handleStatusClick = (post: API.Post) => {
     background: #f5222d;
     border-color: #f5222d;
     transform: translateY(0);
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  min-height: 400px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 16px;
+
+  @media screen and (max-width: 480px) {
+    margin: 8px;
+    min-height: 300px;
+    border-radius: 16px;
+  }
+
+  .empty-text {
+    margin-top: 24px;
+
+    h3 {
+      font-size: 20px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      margin: 0;
+    }
   }
 }
 </style>

@@ -83,14 +83,14 @@
         >
           <span v-if="device === DEVICE_TYPE_ENUM.PC"> 成员管理 </span>
         </a-button>
-        <a-button
-          v-if="space.spaceType === SPACE_TYPE_ENUM.TEAM"
-          style="margin-right: 10px; background-color: #4096ff"
-          :icon="h(MessageOutlined)"
-          :href="`/space_chat/${id}`"
-        >
-          <span v-if="device === DEVICE_TYPE_ENUM.PC"> 团队聊天 </span>
-        </a-button>
+<!--        <a-button-->
+<!--          v-if="space.spaceType === SPACE_TYPE_ENUM.TEAM"-->
+<!--          style="margin-right: 10px; background-color: #4096ff"-->
+<!--          :icon="h(MessageOutlined)"-->
+<!--          :href="`/space_chat/${id}`"-->
+<!--        >-->
+<!--          <span v-if="device === DEVICE_TYPE_ENUM.PC"> 团队聊天 </span>-->
+<!--        </a-button>-->
         <a-button
           v-if="canManageSpaceUser"
           style="margin-right: 10px; background-color: #e787cf"
@@ -126,104 +126,20 @@
     <div class="content-spacing"></div>
 
     <!-- 图片列表 -->
-    <div v-if="device === DEVICE_TYPE_ENUM.PC">
-      <PictureList
-        :dataList="dataList"
-        :loading="loading"
-        :showOp="true"
-        :canEdit="canEditPicture"
-        :canDelete="canDeletePicture"
-        :onReload="fetchData"
-      />
-    </div>
-    <div v-else>
+    <div>
       <van-pull-refresh v-model="loading" @refresh="onRefresh" :distance="80" :head-height="60">
         <!-- 内部组件 -->
-        <MobilePictureList
+        <GridPictureList
           :dataList="dataList"
           :loading="loading"
           :canEdit="canEditPicture"
           :canDelete="canDeletePicture"
           :showOp="true"
           :onReload="fetchData"
+          :hasMore="hasMore"
+          :onLoadMore="loadMore"
         />
       </van-pull-refresh>
-    </div>
-    <!-- 分页 -->
-    <a-pagination v-if="device === DEVICE_TYPE_ENUM.PC"
-                  class="pc-pagination"
-                  v-model:current="searchParams.current"
-                  v-model:pageSize="searchParams.pageSize"
-                  :page-size-options="['6', '12', '18', '24', '30']"
-                  :total="total"
-                  :show-total="(total) => `共 ${total} 条`"
-                  @change="onPageChange"
-                  show-size-changer
-                  show-quick-jumper
-    />
-    <!-- 移动端分页器 -->
-    <div v-else class="mobile-pagination-wrapper">
-      <div class="pagination-info">
-        <span>第 {{ searchParams.current }} 页</span>
-        <span class="separator">/</span>
-        <span>共 {{ Math.ceil(total / searchParams.pageSize) }} 页</span>
-        <span class="total-count">· 共 {{ total }} 条</span>
-      </div>
-      <div class="page-actions">
-        <a-button
-          class="page-button prev"
-          :disabled="searchParams.current === 1"
-          @click="() => onPageChange(searchParams.current - 1, searchParams.pageSize)"
-        >
-          <LeftOutlined />
-        </a-button>
-        <div class="page-jump">
-          <van-field
-            v-model="jumpPage"
-            type="number"
-            :placeholder="searchParams.current"
-            @keyup.enter="handleJumpPage"
-          >
-            <template #button>
-              <van-button size="small" class="jump-btn" @click="handleJumpPage">跳转</van-button>
-            </template>
-          </van-field>
-        </div>
-        <a-button
-          class="page-button next"
-          :disabled="searchParams.current >= Math.ceil(total / searchParams.pageSize)"
-          @click="() => onPageChange(searchParams.current + 1, searchParams.pageSize)"
-        >
-          <RightOutlined />
-        </a-button>
-      </div>
-      <van-popup
-        v-model:show="showPageSizePopup"
-        position="bottom"
-        round
-        :style="{ maxHeight: '40vh' }"
-      >
-        <div class="page-size-popup">
-          <div class="popup-title">每页显示条数</div>
-          <div class="page-size-list">
-            <div
-              v-for="option in pageSizeOptions"
-              :key="option.value"
-              class="page-size-item"
-              :class="{ active: searchParams.pageSize === option.value }"
-              @click="() => {
-                onPageSizeChange(option.value)
-                showPageSizePopup = false
-              }"
-            >
-              {{ option.text }}
-            </div>
-          </div>
-        </div>
-      </van-popup>
-      <div class="page-size-trigger" @click="showPageSizePopup = true">
-        每页 {{ searchParams.pageSize }} 条
-      </div>
     </div>
     <BatchEditPictureModal
       ref="batchEditPictureModalRef"
@@ -240,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, reactive, computed, watch, ref } from 'vue'
+import { h, onMounted, onUnmounted, reactive, computed, watch, ref } from 'vue'
 import { getSpaceVoByIdUsingGet } from '@/api/spaceController.ts'
 import { message } from 'ant-design-vue'
 import {
@@ -267,14 +183,18 @@ import {
   Field as VanField,
   Button as VanButton,
   DropdownMenu as VanDropdownMenu,
-  DropdownItem as VanDropdownItem
+  DropdownItem as VanDropdownItem,
+  Loading as VanLoading
 } from 'vant'
 import 'vant/es/pagination/style'
 import 'vant/es/field/style'
 import 'vant/es/button/style'
 import 'vant/es/dropdown-menu/style'
 import 'vant/es/dropdown-item/style'
+import 'vant/es/loading/style'
 import SpaceDetailModal from '@/components/SpaceDetailModal.vue'
+import MobileGridPictureList from '@/components/GridPictureList.vue'
+import GridPictureList from '@/components/GridPictureList.vue'
 
 interface Props {
   id: string | number,
@@ -372,9 +292,59 @@ const searchParams = reactive<API.PictureQueryRequest>({
   pageSize: 12,
   sortField: 'createTime',
   sortOrder: 'descend',
+  orderBy: ['createTime DESC', 'id DESC'],
 })
 
-// 获取数据
+// 移动端加载更多相关变量
+const loadingMore = ref(false)
+const hasMore = ref(true)
+
+// 检查是否触底
+const checkScrollBottom = () => {
+  if (device.value === DEVICE_TYPE_ENUM.PC) return
+
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const clientHeight = document.documentElement.clientHeight
+
+  // 距离底部100px时开始加载
+  if (scrollHeight - scrollTop - clientHeight < 100 && !loadingMore.value && hasMore.value && !loading.value) {
+    loadMore()
+  }
+}
+
+// 加载更多数据
+const loadMore = async () => {
+  if (loadingMore.value || !hasMore.value || loading.value) return
+
+  loadingMore.value = true
+  try {
+    const nextPage = Math.floor(dataList.value.length / searchParams.pageSize) + 1
+    const requestParams = {
+      ...searchParams,
+      current: nextPage,
+      spaceId: props.id,
+      orderBy: ['createTime DESC', 'id DESC'],
+    }
+
+    const res = await listPictureVoByPageUsingPost(requestParams)
+
+    if (res.data.code === 0) {
+      const newRecords = res.data.data?.records ?? []
+      if (newRecords.length > 0) {
+        // 保持现有数据，将新数据追加到末尾
+        dataList.value = [...dataList.value, ...newRecords]
+      }
+      hasMore.value = newRecords.length === searchParams.pageSize
+    }
+  } catch (error) {
+    console.error('加载更多失败:', error)
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+// 重写获取数据方法
 const fetchData = async () => {
   loading.value = true
   try {
@@ -382,23 +352,27 @@ const fetchData = async () => {
       await router.push('/')
       return
     }
-    const res = await listPictureVoByPageUsingPost({
+
+    // 重置状态
+    hasMore.value = true
+    searchParams.current = 1
+
+    // 确保每次请求都带上完整的排序参数
+    const requestParams = {
       ...searchParams,
       spaceId: props.id,
-    })
+      orderBy: ['createTime DESC', 'id DESC'],
+    }
+
+    const res = await listPictureVoByPageUsingPost(requestParams)
+
     if (res.data.code === 0) {
+      // 首次加载或刷新时，替换整个列表
       dataList.value = res.data.data?.records ?? []
-      total.value = res.data.data?.total ?? 0
-      // 重置跳转页码输入框
-      if (jumpPage.value) {
-        jumpPage.value = ''
-      }
-    } else {
-      // message.error('获取图片列表失败，' + res.data.message)
+      hasMore.value = (res.data.data?.records?.length ?? 0) === searchParams.pageSize
     }
   } catch (error) {
     console.error('获取图片列表失败:', error)
-    // message.error('获取图片列表失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -418,13 +392,6 @@ const onColorChange = async (color: string) => {
     // message.error('获取数据失败，' + res.data.message)
   }
   loading.value = false
-}
-
-// 分页参数
-const onPageChange = (page: number, pageSize: number) => {
-  searchParams.current = page
-  searchParams.pageSize = pageSize
-  fetchData()
 }
 
 // 搜索
@@ -462,31 +429,23 @@ const doBatchEdit = () => {
 // 新增用于判断是否正在刷新的变量，避免重复触发刷新操作
 const isRefreshing = ref(false)
 
-// 下拉刷新处理函数
+// 重写刷新方法
 const onRefresh = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
 
   try {
+    // 清空搜索组件的状态
+    searchFormRef.value?.handleRefresh()
+
     // 重置搜索参数
     searchParams.current = 1
-    searchParams.pageSize = 12
-    searchParams.searchText = undefined
-    searchParams.category = undefined
-    searchParams.tags = undefined
-    searchParams.format = undefined
-    searchParams.startEditTime = undefined
-    searchParams.endEditTime = undefined
-    searchParams.reviewStatus = undefined
-    searchParams.sortField = 'createTime'
-    searchParams.sortOrder = 'descend'
-
-    // 重新获取数据
+    // 清空现有数据
+    dataList.value = []
+    hasMore.value = true
     await fetchData()
-    // message.success('刷新成功')
   } catch (error) {
     console.error('刷新失败:', error)
-    // message.error('刷新失败，请稍后重试')
   } finally {
     loading.value = false
     isRefreshing.value = false
@@ -560,13 +519,66 @@ const showSpaceDetail = async () => {
     // message.error('获取空间详情失败')
   }
 }
+
+// 计算要显示的页码
+const displayedPages = computed(() => {
+  const totalPages = Math.ceil(total.value / searchParams.pageSize);
+  const current = searchParams.current;
+  const pages = [];
+
+  if (totalPages <= 7) {
+    // 如果总页数小于等于7，显示所有页码
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+  } else {
+    // 总是显示第一页
+    pages.push(1);
+
+    if (current <= 4) {
+      // 当前页靠近开始
+      for (let i = 2; i <= 5; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    } else if (current >= totalPages - 3) {
+      // 当前页靠近结束
+      pages.push('...');
+      for (let i = totalPages - 4; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // 当前页在中间
+      pages.push('...');
+      for (let i = current - 1; i <= current + 1; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    }
+  }
+
+  return pages;
+});
+
+// 添加和移除滚动监听
+onMounted(() => {
+  if (device.value !== DEVICE_TYPE_ENUM.PC) {
+    window.addEventListener('scroll', checkScrollBottom)
+  }
+})
+
+onUnmounted(() => {
+  if (device.value !== DEVICE_TYPE_ENUM.PC) {
+    window.removeEventListener('scroll', checkScrollBottom)
+  }
+})
 </script>
 
 <style scoped>
 #spaceDetailPage {
-  margin-bottom: 16px;
-  margin-left: -20px;
-  margin-right: -20px;
+  margin: 12px -20px 16px;
 }
 
 .search-spacing {
@@ -632,7 +644,7 @@ const showSpaceDetail = async () => {
   .search-form-container {
     width: 100%;
     margin: 0;
-    padding: 0 0 8px;
+    padding: 0 -18px 8px;
     max-width: none;
     left: 0;
     right: 0;
@@ -699,319 +711,274 @@ const showSpaceDetail = async () => {
   margin-right: 8px;
 }
 
-/* 移动端分页器样式 */
-.mobile-pagination-wrapper {
-  margin: 16px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.pagination-info {
+/* 加载更多样式 */
+.load-more {
   text-align: center;
-  margin-bottom: 12px;
-  color: #666;
-  font-size: 14px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  padding: 16px 0;
 }
 
-.separator {
-  margin: 0 8px;
-  color: #999;
-}
-
-.total-count {
+.no-more {
   color: #94a3b8;
-  margin-left: 8px;
-}
-
-.page-actions {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  align-items: center;
-}
-
-.page-button {
-  width: 40px;
-  height: 36px;
-  border-radius: 8px;
   font-size: 14px;
-  border: none;
-  transition: all 0.3s ease;
 }
 
-.page-button.prev,
-.page-button.next {
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
-  color: white;
-}
-
-.page-button:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-}
-
-.page-button:disabled {
-  background: #f5f5f5;
-  color: #999;
-}
-
-.page-size-trigger {
-  text-align: center;
-  color: #64748b;
-  font-size: 14px;
-  padding: 8px;
-  background: #f8fafc;
-  border-radius: 6px;
-  margin-top: 12px;
-}
-
-.page-size-popup {
-  padding: 16px;
-}
-
-.popup-title {
-  text-align: center;
-  font-size: 16px;
-  font-weight: 500;
-  color: #345750;
-  margin-bottom: 16px;
-}
-
-.page-size-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
+/* 移除移动端分页器相关样式 */
+.mobile-pagination-wrapper,
+.pagination-info,
+.separator,
+.total-count,
+.page-actions,
+.page-button,
+.page-size-trigger,
+.page-size-popup,
+.popup-title,
+.page-size-list,
 .page-size-item {
-  padding: 12px 16px;
-  text-align: center;
-  font-size: 14px;
-  color: #64748b;
-  background: #f8fafc;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.page-size-item.active {
-  color: #ff8e53;
-  background: #fff6f3;
-  font-weight: 500;
-}
-
-.page-size-item:active {
-  opacity: 0.8;
-}
-
-.page-jump {
-  flex: 1;
-  margin: 0 8px;
-
-  :deep(.van-field) {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 0 4px;
-    height: 36px;
-
-    .van-field__control {
-      text-align: center;
-      height: 36px;
-      font-size: 14px;
-      color: #64748b;
-    }
-
-    .van-field__right-icon {
-      height: 100%;
-      padding-right: 4px;
-    }
-  }
-
-  .jump-btn {
-    height: 28px;
-    margin: 4px;
-    background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
-    border: none;
-    border-radius: 6px;
-    padding: 0 12px;
-    color: #fff;
-  }
+  display: none;
 }
 
 /* PC端分页器样式 */
-.pc-pagination {
+.custom-pagination {
   margin-top: 8px;
   padding: 16px 24px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.98));
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-
-  :deep(.ant-pagination) {
-    .ant-pagination-total-text {
-      margin-right: 16px;
-      color: #64748b;
-    }
-
-    .ant-pagination-prev,
-    .ant-pagination-next,
-    .ant-pagination-item {
-      margin-right: 8px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      background: white;
-      transition: all 0.3s ease;
-
-      &:hover {
-        border-color: #ff8e53;
-        background: #fff6f3;
-
-        a, button {
-          color: #ff8e53;
-        }
-      }
-
-      a, button {
-        color: #64748b;
-      }
-    }
-
-    .ant-pagination-item-active {
-      background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%) !important;
-      border: none !important;
-
-      a {
-        color: white !important;
-      }
-
-      &:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
-      }
-    }
-
-    .ant-pagination-jump-prev,
-    .ant-pagination-jump-next {
-      .ant-pagination-item-container {
-        .ant-pagination-item-link-icon {
-          color: #ff8e53;
-        }
-
-        .ant-pagination-item-ellipsis {
-          color: #64748b !important;
-        }
-
-        &:hover {
-          .ant-pagination-item-ellipsis {
-            color: #ff8e53 !important;
-          }
-        }
-      }
-    }
-
-    .ant-pagination-options {
-      .ant-select {
-        .ant-select-selector {
-          height: 32px !important;
-          padding: 0 11px !important;
-          border-radius: 8px !important;
-          border: 1px solid #e2e8f0 !important;
-          background: white !important;
-
-          .ant-select-selection-item {
-            line-height: 30px !important;
-            color: #64748b;
-          }
-
-          &:hover {
-            border-color: #ff8e53 !important;
-            background: #fff6f3;
-          }
-        }
-
-        &.ant-select-focused .ant-select-selector {
-          border-color: #ff8e53 !important;
-          box-shadow: 0 0 0 2px rgba(255, 142, 83, 0.1) !important;
-        }
-      }
-
-      .ant-pagination-options-quick-jumper {
-        color: #64748b;
-        margin-left: 16px;
-
-        input {
-          width: 50px;
-          height: 32px;
-          margin: 0 8px;
-          text-align: center;
-          border-radius: 8px;
-          border: 1px solid #e2e8f0;
-          transition: all 0.3s ease;
-
-          &:hover {
-            border-color: #ff8e53;
-            background: #fff6f3;
-          }
-
-          &:focus {
-            border-color: #ff8e53;
-            box-shadow: 0 0 0 2px rgba(255, 142, 83, 0.1);
-          }
-        }
-      }
-    }
-  }
-
-  :deep(.ant-select-dropdown) {
-    padding: 4px;
-    border-radius: 8px;
-    overflow: hidden;
-
-    .ant-select-item {
-      margin: 2px 0;
-      padding: 8px 12px;
-      border-radius: 6px;
-      transition: all 0.3s ease;
-
-      &:hover {
-        background: #fff6f3;
-        color: #ff8e53;
-      }
-
-      &-option-selected {
-        background: #fff6f3 !important;
-        color: #ff8e53 !important;
-        font-weight: 500;
-      }
-
-      &-option-active {
-        background: #fff6f3 !important;
-        color: #ff8e53 !important;
-      }
-    }
-  }
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-  .pc-pagination {
-    margin: 16px;
-    padding: 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
+.pagination-info {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #64748b, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
-    :deep(.ant-pagination-options-quick-jumper) {
-      display: none;
-    }
-  }
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-btn {
+  padding: 8px 16px;
+  border: none;
+  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
+  color: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 10px rgba(255, 142, 83, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.page-btn:hover::before {
+  left: 100%;
+}
+
+.page-btn:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 142, 83, 0.3);
+}
+
+.page-btn:active:not(.disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
+}
+
+.page-btn.disabled {
+  background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 6px;
+}
+
+.page-number {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: white;
+  color: #64748b;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-number::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 142, 83, 0.1),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.page-number:hover::before {
+  left: 100%;
+}
+
+.page-number:hover:not(.active) {
+  color: #ff8e53;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.15);
+}
+
+.page-number.active {
+  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 142, 83, 0.3);
+  transform: scale(1.05);
+}
+
+.page-size-selector select {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  color: #64748b;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+.page-size-selector select:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.15);
+  color: #ff8e53;
+}
+
+.page-size-selector select:focus {
+  outline: none;
+  border-color: #ff8e53;
+  box-shadow: 0 0 0 3px rgba(255, 142, 83, 0.1);
+}
+
+.page-jump {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-jump input {
+  width: 60px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: white;
+}
+
+.page-jump input:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.15);
+}
+
+.page-jump input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 142, 83, 0.1);
+}
+
+.jump-btn {
+  padding: 8px 16px;
+  border: none;
+  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 10px rgba(255, 142, 83, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.jump-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.jump-btn:hover::before {
+  left: 100%;
+}
+
+.jump-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 142, 83, 0.3);
+}
+
+.jump-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
 }
 
 .space-name-btn {

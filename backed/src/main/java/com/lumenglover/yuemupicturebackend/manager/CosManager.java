@@ -83,6 +83,25 @@ public class CosManager {
     }
 
     /**
+     * 上传音频对象
+     *
+     * @param key  唯一键
+     * @param file 文件
+     */
+    public PutObjectResult putAudioObject(String key, File file) {
+        PutObjectRequest putObjectRequest = new PutObjectRequest(cosClientConfig.getBucket(), key, file);
+        // 设置存储类型为标准存储
+        putObjectRequest.setStorageClass(StorageClass.Standard);
+        // 设置文件的 Content-Type
+        ObjectMetadata metadata = new ObjectMetadata();
+        String contentType = "audio/" + FileUtil.getSuffix(key);
+        metadata.setContentType(contentType);
+        metadata.setContentLength(file.length());
+        putObjectRequest.setMetadata(metadata);
+        return cosClient.putObject(putObjectRequest);
+    }
+
+    /**
      * 删除对象
      *
      * @param key 唯一键

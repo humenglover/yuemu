@@ -206,53 +206,50 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         long current = postQueryRequest.getCurrent();
         long size = postQueryRequest.getPageSize();
 
-        // 限制单页大小，防止爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-
         // 构建查询条件
         QueryWrapper<Post> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("isDelete", false);
 
-        // 如果不是管理员，只能看到审核通过的帖子
-        if (loginUser == null || !UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole())) {
-            queryWrapper.eq("status", 1);  // 1表示审核通过
+        // 搜索词
+        String searchText = postQueryRequest.getSearchText();
+        if (StrUtil.isNotBlank(searchText)) {
+            queryWrapper.like("title", searchText).or().like("content", searchText);
         }
 
-        // 添加其他查询条件
-        if (StrUtil.isNotBlank(postQueryRequest.getCategory())) {
-            queryWrapper.eq("category", postQueryRequest.getCategory());
+        // 分类
+        String category = postQueryRequest.getCategory();
+        if (StrUtil.isNotBlank(category)) {
+            queryWrapper.eq("category", category);
         }
 
-        if (StrUtil.isNotBlank(postQueryRequest.getSearchText())) {
-            queryWrapper.and(wrap -> wrap
-                    .like("title", postQueryRequest.getSearchText())
-                    .or()
-                    .like("content", postQueryRequest.getSearchText())
-            );
+        // 用户ID
+        Long userId = postQueryRequest.getUserId();
+        if (userId != null && userId > 0) {
+            queryWrapper.eq("userId", userId);
         }
 
-        // 按用户ID查询
-        if (postQueryRequest.getUserId() != null && postQueryRequest.getUserId() > 0) {
-            queryWrapper.eq("userId", postQueryRequest.getUserId());
-        }
+        // 处理查询范围
+        boolean isPublic = postQueryRequest.getIsPublic();
+        boolean isAdmin = loginUser != null && UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
 
-        // 排序
-        String sortField = postQueryRequest.getSortField();
-        String sortOrder = postQueryRequest.getSortOrder();
-        if (StrUtil.isNotBlank(sortField)) {
-            queryWrapper.orderBy(true, "ascend".equals(sortOrder), sortField);
+        if (isPublic || !isAdmin) {
+            // 公共查询或非管理员，只显示已发布的帖子
+            queryWrapper.eq("status", 1);
         } else {
-            queryWrapper.orderByDesc("createTime");  // 默认按创建时间倒序
+            // 管理员查询所有状态的帖子
+            Integer status = postQueryRequest.getStatus();
+            if (status != null) {
+                queryWrapper.eq("status", status);
+            }
         }
 
-        // 执行分页查询
-        Page<Post> postPage = this.page(
-                new Page<>(current, size),
-                queryWrapper
-        );
+        queryWrapper.eq("isDelete", 0);
+        queryWrapper.orderByDesc("createTime");
+
+        // 执行查询
+        Page<Post> postPage = this.page(new Page<>(current, size), queryWrapper);
 
         // 填充帖子信息
-        fillPostsInfo(postPage.getRecords(), loginUser);
+        postPage.getRecords().forEach(this::fillPostInfo);
 
         return postPage;
     }

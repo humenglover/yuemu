@@ -1,7 +1,22 @@
 <template>
   <div class="mobile-picture-list">
     <!-- 图片列表 -->
+    <div v-if="!loading && (!dataList || dataList.length === 0)" class="empty-state">
+      <lottie-player
+        src="https://assets10.lottiefiles.com/packages/lf20_AMBEWz.json"
+        background="transparent"
+        speed="1"
+        style="width: 200px; height: 200px;"
+        loop
+        autoplay
+      ></lottie-player>
+      <div class="empty-text">
+        <h3>暂无图片</h3>
+        <p>快去上传一些精彩的照片吧 (｡•́︿•̀｡)</p>
+      </div>
+    </div>
     <a-list
+      v-else
       :grid="{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4, xl: 5, xxl: 6 }"
       :data-source="dataList"
       :loading="loading"
@@ -23,41 +38,6 @@
                 </div>
               </div>
             </template>
-
-            <!-- 图片信息 -->
-            <a-card-meta :title="picture.name">
-              <template #description v-if="!showOp">
-                <div class="interaction-bar">
-                  <!-- 点赞按钮 -->
-                  <div class="action-item" @click="(e) => doLike(picture, e)">
-                    <van-icon
-                      class="action-icon"
-                      size="20"
-                      :name="picture.isLiked === 1 ? 'like' : 'like-o'"
-                      :color="picture.isLiked === 1 ? '#ff6b6b' : '#94a3b8'"
-                    />
-                    <span class="action-count">{{ formatNumber(picture.likeCount) }}</span>
-                  </div>
-
-                  <!-- 评论按钮 -->
-                  <div class="action-item" @click="(e) => doComments(picture, e)">
-                    <van-icon class="action-icon" size="20" name="chat-o" color="#94a3b8" />
-                    <span class="action-count">{{ formatNumber(picture.commentCount) }}</span>
-                  </div>
-
-                  <!-- 分享按钮 -->
-                  <div class="action-item" @click="(e) => doShare(picture, e)">
-                    <van-icon
-                      class="action-icon"
-                      size="20"
-                      name="share"
-                      :color="shareButtonColor[picture.id] || '#94a3b8'"
-                    />
-                    <span class="action-count">{{ formatNumber(picture.shareCount) }}</span>
-                  </div>
-                </div>
-              </template>
-            </a-card-meta>
 
             <!-- 操作按钮 -->
             <template v-if="showOp" #actions>
@@ -109,101 +89,6 @@
         </a-list-item>
       </template>
     </a-list>
-
-    <!-- 分享模态框 -->
-    <ShareModal ref="shareModalRef" :link="shareLink" />
-
-    <!-- 评论抽屉 -->
-    <a-drawer
-      class="comments-drawer"
-      v-model:open="visible"
-      :placement="device === DEVICE_TYPE_ENUM.PC ? 'right' : 'bottom'"
-      title="评论"
-      :footer="false"
-      @cancel="closeModal"
-      :height="'80vh'"
-      :width="400"
-    >
-      <!-- 修改这里，将点击事件限制在非输入区域 -->
-      <div class="drawer-content" ref="scrollContainer" @scroll="handleScroll">
-        <div class="comments-area" @click="cancelReply">
-          <!-- 加载中状态 -->
-          <div v-if="commentloading" class="loading-container">
-            <a-spin tip="加载评论中..." />
-          </div>
-
-          <!-- 评论列表 -->
-          <template v-else>
-            <CommentList
-              v-if="showFirstComment"
-              :comments="firstcomment"
-              @reply-clicked="handleReplyClick"
-              @update-comments="updateComments"
-            />
-            <CommentList
-              :comments="comments"
-              @reply-clicked="handleReplyClick"
-              @update-comments="updateComments"
-            />
-            <div v-if="isEndOfData" class="no-more-data">没有更多评论了~</div>
-          </template>
-        </div>
-      </div>
-
-      <!-- 评论输入区域 -->
-      <div class="comment-input-wrapper">
-        <!-- 回复信息提示 -->
-        <div v-if="replyCommentId" class="reply-info">
-          <div class="reply-text">
-            <span class="reply-label">回复评论</span>
-            <ArrowRightOutlined class="reply-arrow" />
-          </div>
-          <CloseCircleOutlined class="cancel-reply" @click="cancelReply" />
-        </div>
-
-        <div class="input-area" :class="{ 'is-replying': replyCommentId }">
-          <!-- 表情按钮 -->
-          <SmileOutlined
-            class="emoji-trigger"
-            :class="{ active: showEmojiPicker }"
-            @click="toggleEmojiPicker"
-          />
-
-          <a-input
-            v-model:value="newCommentContent"
-            :placeholder="replyCommentId ? '写下你的回复...' : '写下你的评论...'"
-            class="comment-input"
-            :maxLength="200"
-          >
-            <template #prefix v-if="replyCommentId">
-              <MessageOutlined class="reply-icon" />
-            </template>
-            <template #suffix>
-              <span class="word-count">{{ newCommentContent.length }}/200</span>
-            </template>
-          </a-input>
-
-          <a-button
-            type="primary"
-            class="send-button"
-            :class="{ 'reply-button': replyCommentId }"
-            :disabled="!newCommentContent.trim()"
-            @click="addComment"
-          >
-            {{ replyCommentId ? '回复' : '发送' }}
-          </a-button>
-        </div>
-
-        <!-- 表情选择器 -->
-        <div v-if="showEmojiPicker" class="emoji-picker-container">
-          <EmojiPicker
-            @select="onEmojiSelect"
-            :i18n="emojiI18n"
-            class="custom-emoji-picker"
-          />
-        </div>
-      </div>
-    </a-drawer>
 
     <!-- 审核详情弹窗 -->
     <a-modal
@@ -265,15 +150,12 @@ import { doShareUsingPost } from '@/api/shareRecordController.ts'
 
 const loginUserStore = useLoginUserStore()
 const currPicture = ref<API.PictureVO>()
-//回复评论id
-const replyCommentId = ref<string>('')
-
+const isEndOfData = ref(false)
 // 添加设备类型检测
 const device = ref<string>('')
 
 onMounted(async () => {
   device.value = await getDeviceType()
-  replyCommentId.value = ''
   currPicture.value = props.dataList[0]
 })
 
@@ -298,180 +180,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const router = useRouter()
-const handleReplyClick = (commentId: string) => {
-  // console.log('MobilePictureList - 回复被点击，评论 ID:', commentId)
-  replyCommentId.value = commentId
-
-  // 强制更新输入框状态
-  nextTick(() => {
-    const inputEl = document.querySelector('.comment-input .ant-input') as HTMLInputElement
-    if (inputEl) {
-      inputEl.focus()
-      // 滚动到输入框位置
-      inputEl.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }
-  })
-}
-
-// 评论
-// 是否可见
-const visible = ref(false)
-
-// 评论数据
-const comments = ref<API.CommentsQueryRequest[]>([])
-
-// 存储用户输入的评论内容
-const newCommentContent = ref('')
-
-// 存储第一个评论列表数据
-const firstcomment = ref<API.CommentsQueryRequest[]>([])
-
-// 控制第一个评论列表的显示与隐藏
-const showFirstComment = ref(false)
-
-// 控制加载状态
-const commentloading = ref(true)
-
-// 使用 reactive 包裹 queryRequest 使其具有响应式
-const queryRequest = reactive<API.CommentsQueryRequest>({
-  pictureId: 0,
-  current: 1,
-  pageSize: 15,
-})
-
-//删除评论刷新操作
-const updateComments = async () => {
-  try {
-    commentloading.value = true // 显示加载状态
-    const res = await queryCommentUsingPost(queryRequest)
-    if (res.data.data != null) {
-      // 确保评论ID作为字符串处理
-      comments.value = res.data.data.records.map((comment) => ({
-        ...comment,
-        commentId: comment.commentId?.toString(),
-        parentCommentId: comment.parentCommentId?.toString(),
-      }))
-      commentloading.value = false
-    } else {
-      comments.value = []
-      isEndOfData.value = true
-      commentloading.value = false
-    }
-  } catch (error) {
-    console.error('查询评论异常', error)
-    commentloading.value = false
-  }
-}
-// 打开弹窗
-const doComments = async (picture, e) => {
-  currPicture.value = picture
-  queryRequest.pictureId = picture.id
-  e.stopPropagation()
-  visible.value = true
-  try {
-    // 数据清理操作
-    comments.value = [] // 先清空评论数据
-    firstcomment.value = []
-    queryRequest.current = 1
-    const res = await queryCommentUsingPost(queryRequest)
-    if (res.data.data != null) {
-      comments.value = res.data.data.records
-      commentloading.value = false // 数据加载完成，关闭加载状态
-    } else {
-      isEndOfData.value = true
-      commentloading.value = false // 关闭加载状态
-    }
-  } catch (error) {
-    console.error('查询评论异常', error)
-    commentloading.value = false // 关闭加载状态
-  }
-}
-
-// 新增用于移动端分页的页码变量
-const page = ref(1)
-const isEndOfData = ref(false)
-const isLoading = ref(false)
-
-// 处理滚动事件
-const handleScroll = throttle(async (e: Event) => {
-  // console.log('滚动事件触发')
-  if (isLoading.value || isEndOfData.value) return
-  const target = e.target as HTMLElement
-  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
-    isLoading.value = true
-    try {
-      page.value++
-      queryRequest.current = page.value
-      const res = await queryCommentUsingPost(queryRequest)
-      if (res.data.code === 0 && res.data.data) {
-        const newData = res.data.data.records ?? []
-        comments.value = [...comments.value, ...newData]
-        isEndOfData.value = newData.length === 0
-        // console.log('newData:', newData)
-      } else {
-        message.error('获取数据失败，' + res.data.message)
-      }
-    } catch (error) {
-      console.error('加载更多评论异常', error)
-    } finally {
-      isLoading.value = false
-    }
-  }
-}, 1500)
-
-// 关闭弹窗
-const closeModal = () => {
-  replyCommentId.value = ''
-  visible.value = false
-  // 数据清理操作
-  firstcomment.value = []
-  newCommentContent.value = ''
-  showFirstComment.value = false
-  commentloading.value = false // 关闭加载状态
-}
-
-const requestBody: API.CommentsAddRequest = {
-  content: newCommentContent.value,
-  parentCommentId: 0, // 这里将 parentCommentId 设为 0，可根据需求修改
-  pictureId: 0,
-  userId: loginUserStore.loginUser.id,
-}
-// 添加评论
-const addComment = async () => {
-  try {
-    if (!newCommentContent.value.trim()) {
-      message.warning('评论内容不能为空')
-      return
-    }
-
-    const requestBody: API.CommentsAddRequest = {
-      content: newCommentContent.value,
-      // 使用字符串形式传递 parentCommentId
-      parentCommentId: replyCommentId.value ? replyCommentId.value : '0',
-      pictureId: currPicture.value.id,
-      userId: loginUserStore.loginUser.id,
-    }
-
-    // console.log('发送评论请求体:', requestBody) // 添加日志
-
-    const res = await addCommentUsingPost(requestBody)
-    if (res.data.code === 0) {
-      message.success('评论成功')
-      newCommentContent.value = ''
-      replyCommentId.value = ''
-
-      // 刷新评论列表
-      queryRequest.current = 1
-      page.value = 1
-      isEndOfData.value = false
-      await updateComments()
-    }
-  } catch (error) {
-    console.error('添加评论失败，请求体:', requestBody, '错误:', error)
-    message.error('评论失败，请稍后重试')
-  }
-}
-
 // 处理图片加载完成事件，根据宽高比设置行内样式
 const handleImageLoad = (picture: API.PictureVO) => {
   const imgElement = event.target as HTMLImageElement
@@ -551,68 +259,6 @@ const handleImageError = (picture: API.PictureVO) => {
   imgElement.src = picture.url // 将图片src替换为picture.url
 }
 
-// 点赞操作
-const doLike = async (picture, e) => {
-  e.stopPropagation()
-  const requestBody: API.LikeRequest = {
-    targetId: picture.id,
-    targetType: 1, // 1 表示图片类型
-    isLiked: picture.isLiked !== 1
-  }
-
-  try {
-    const res = await doLikeUsingPost(requestBody)
-    if (res.data.code === 0) {
-      // 更新前端数据
-      if (requestBody.isLiked) {
-        picture.likeCount++
-        picture.isLiked = 1
-      } else {
-        picture.likeCount--
-        picture.isLiked = 0
-      }
-    }
-  } catch (error) {
-    message.error('操作异常')
-  }
-}
-
-// 分享操作相关变量
-const shareModalRef = ref()
-const shareLink = ref<string>()
-// 用于存储每个分享按钮的颜色，以图片id作为键
-const shareButtonColor = ref<{ [key: string]: string }>({})
-
-// 分享
-// 处理分享
-const doShare = async (picture: API.PictureVO, e: Event) => {
-  e.stopPropagation()
-
-  // 设置分享链接和图片
-  shareLink.value = window.location.origin + '/picture/' + picture.id
-
-  // 显示分享模态框
-  shareModalRef.value?.openModal()
-
-  // 调用通用分享接口
-  try {
-    const requestBody: API.ShareRequest = {
-      targetId: picture.id,
-      targetType: 1, // 1 表示图片类型
-      isShared: true
-    }
-    const res = await doShareUsingPost(requestBody)
-    if (res.data.code === 0) {
-      // 更新分享数
-      picture.shareCount++
-      // 更新分享按钮颜色
-      shareButtonColor.value[picture.id] = '#60c3d5'
-    }
-  } catch (error) {
-    console.error('分享失败:', error)
-    message.error('分享失败')
-  }
-}
 // 格式化数字的函数，将较大数字转换为带k、w的格式，保留两位小数
 const formatNumber = (num: number): string => {
   if (num >= 10000) {
@@ -623,13 +269,6 @@ const formatNumber = (num: number): string => {
     return `${qian}k`
   }
   return num.toString()
-}
-
-// 取消回复状态
-const cancelReply = () => {
-  if (replyCommentId.value) {
-    replyCommentId.value = ''
-  }
 }
 
 // 审核弹窗相关
@@ -652,17 +291,6 @@ const getReviewModalTitle = (status?: number) => {
     default:
       return '审核状态'
   }
-}
-
-// 表情选择器相关
-const showEmojiPicker = ref(false)
-
-const toggleEmojiPicker = () => {
-  showEmojiPicker.value = !showEmojiPicker.value
-}
-
-const onEmojiSelect = (emoji: string) => {
-  newCommentContent.value += emoji
 }
 </script>
 
@@ -741,33 +369,6 @@ const onEmojiSelect = (emoji: string) => {
 
 .picture-card:hover .image-container img {
   transform: scale(1.05);
-}
-
-.interaction-bar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-top: 8px;
-}
-
-.action-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.action-icon {
-  transition: transform 0.2s ease;
-
-  &:active {
-    transform: scale(1.2);
-  }
-}
-
-.action-count {
-  font-size: 13px;
-  color: #94a3b8;
 }
 
 .operation-buttons {
@@ -859,146 +460,6 @@ const onEmojiSelect = (emoji: string) => {
   }
 }
 
-.drawer-content {
-  padding: 16px;
-  overflow-y: auto;
-  height: calc(100% - 120px);
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-}
-
-.no-more-data {
-  text-align: center;
-  color: #94a3b8;
-  padding: 16px;
-  margin-bottom: 60px;
-}
-
-.comment-input-wrapper {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px 16px;
-  background: white;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  z-index: 1000;
-
-  &.is-replying {
-    padding-top: 12px;
-    transform: translateY(-8px);
-    background: #f8fafc;
-    animation: slideUp 0.3s ease;
-  }
-}
-
-.reply-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: #fff6f3;
-  border-radius: 8px 8px 0 0;
-  border-bottom: 1px solid #ffe4d9;
-}
-
-.reply-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.reply-label {
-  font-size: 13px;
-  color: #ff8e53;
-  font-weight: 500;
-}
-
-.reply-arrow {
-  font-size: 12px;
-  color: #ff8e53;
-}
-
-.cancel-reply {
-  cursor: pointer;
-  padding: 4px;
-  color: #ff8e53;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.cancel-reply:hover {
-  transform: rotate(90deg);
-}
-
-.input-area {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  background: white;
-  transition: all 0.3s ease;
-}
-
-.input-area.is-replying {
-  background: #fff6f3;
-}
-
-.emoji-trigger {
-  cursor: pointer;
-  font-size: 20px;
-  color: #94a3b8;
-  transition: all 0.3s ease;
-  padding: 8px;
-}
-
-.emoji-trigger:hover,
-.emoji-trigger.active {
-  color: #ff8e53;
-  transform: scale(1.1);
-}
-
-.reply-icon {
-  color: #ff8e53;
-  margin-right: 4px;
-}
-
-.comment-input {
-  border-radius: 18px;
-}
-
-.word-count {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.send-button {
-  min-width: 64px;
-  height: 36px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.reply-button {
-  background: linear-gradient(135deg, #ff9c6e 0%, #ff8e53 100%);
-  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
-}
-
-.emoji-picker-container {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  z-index: 1000;
-  animation: slideUp 0.3s ease;
-}
-
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -1010,10 +471,6 @@ const onEmojiSelect = (emoji: string) => {
   }
 }
 
-.comments-area {
-  min-height: calc(100% - 80px);
-  padding-bottom: 80px;
-}
 
 .review-status {
   padding: 8px;
@@ -1121,6 +578,45 @@ const onEmojiSelect = (emoji: string) => {
 
   .review-message {
     font-size: 14px;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  min-height: 400px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 16px;
+
+  @media screen and (max-width: 480px) {
+    margin: 8px;
+    min-height: 300px;
+    border-radius: 16px;
+  }
+
+  .empty-text {
+    margin-top: 24px;
+
+    h3 {
+      font-size: 20px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 14px;
+      color: #94a3b8;
+      margin: 0;
+    }
   }
 }
 </style>

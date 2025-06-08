@@ -15,7 +15,14 @@
 
     <div class="main-content" :class="{ 'pc-main-content': device === DEVICE_TYPE_ENUM.PC }" style="z-index: 10;">
       <!-- 下拉刷新区域 -->
-      <van-pull-refresh v-model="refreshing" @refresh="onRefresh" v-if="device !== DEVICE_TYPE_ENUM.PC">
+      <van-pull-refresh
+        v-model="refreshing"
+        @refresh="onRefresh"
+        v-if="device !== DEVICE_TYPE_ENUM.PC"
+        :disabled="!isTop"
+        success-text="刷新成功"
+        :head-height="60"
+      >
         <!-- 顶部导航栏和搜索框 -->
         <div id="chatListHeader">
           <!-- 标签栏 -->
@@ -25,159 +32,118 @@
               :class="{ active: activeTab === 'all' }"
               @click="handleTabChange('all')"
             >
-              全部
+              <span>全部</span>
+              <div class="tab-line"></div>
             </div>
             <div
               class="tab-item"
               :class="{ active: activeTab === 'friend' }"
               @click="handleTabChange('friend')"
             >
-              好友
-              <span v-if="friendUnreadCount > 0" class="tab-badge">{{ friendUnreadCount }}</span>
+              <span>好友</span>
+              <div class="badge" v-if="friendUnreadCount > 0">{{ friendUnreadCount }}</div>
+              <div class="tab-line"></div>
             </div>
             <div
               class="tab-item"
               :class="{ active: activeTab === 'private' }"
               @click="handleTabChange('private')"
             >
-              私信
-              <span v-if="privateUnreadCount > 0" class="tab-badge">{{ privateUnreadCount }}</span>
+              <span>私信</span>
+              <div class="badge" v-if="privateUnreadCount > 0">{{ privateUnreadCount }}</div>
+              <div class="tab-line"></div>
             </div>
           </div>
           <!-- 搜索栏 -->
-          <div class="search-bar">
-            <div class="search-wrapper">
-              <a-input-search
-                v-model:value="searchText"
+          <div class="search-container">
+            <div class="search-box">
+              <input
+                type="text"
+                v-model="searchText"
                 placeholder="搜索聊天记录"
-                @search="handleSearch"
-                :loading="loading"
+                @keyup.enter="handleSearch"
                 class="search-input"
-              >
-                <template #enterButton>
-                  <SearchOutlined style="color: #ffffff" />
-                </template>
-              </a-input-search>
+              />
+              <button class="search-button" @click="handleSearch" :disabled="loading">
+                <i class="search-icon"></i>
+              </button>
             </div>
           </div>
         </div>
 
         <!-- 聊天列表 -->
-        <div id="chatListContent" :class="{ 'pc-chat-list': device === DEVICE_TYPE_ENUM.PC }">
+        <div class="chat-list-wrapper">
           <!-- 空状态 -->
           <div v-if="!loading && filteredChatList.length === 0" class="empty-state">
-            <lottie-player
-              :src="getEmptyLottieUrl()"
-              background="transparent"
-              speed="1"
-              style="width: 240px; height: 240px;"
-              loop
-              autoplay
-            ></lottie-player>
-            <div class="empty-text">
-              <h3>{{ getEmptyText() }}</h3>
-              <p v-if="searchText">换个关键词试试吧</p>
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" class="empty-svg">
+                <path fill="#52c41a" d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
+              </svg>
             </div>
+            <h3>{{ getEmptyText() }}</h3>
+            <p v-if="searchText">换个关键词试试吧</p>
           </div>
 
-          <a-list v-else
-                  :loading="loading"
-                  :data-source="filteredChatList"
-                  :split="true"
-                  class="chat-list"
-                  :style="{ height: 'calc(93vh - 120px)', overflowY: 'auto' }"
-                  @scroll="handleListScroll"
-          >
-            <template #renderItem="{ item }">
-              <a-list-item @click="handleChatClick(item)" :class="{ unread: getUnreadCount(item) > 0 }">
-                <a-list-item-meta>
-                  <template #avatar>
-                    <div class="avatar-wrapper">
-                      <a-avatar :src="item.targetUser?.userAvatar || getDefaultAvatar(item.targetUser?.userName)" />
-                      <a-badge
-                        :count="getUnreadCount(item)"
-                        :numberStyle="{ backgroundColor: '#73d13d' }"
-                      >
-                        <span v-if="getUnreadCount(item) > 0" class="unread-badge">
-                          {{ getUnreadCount(item) > 99 ? '99+' : getUnreadCount(item) }}
+          <!-- 聊天列表 -->
+          <div v-else class="chat-list" @scroll="handleListScroll">
+            <div
+              v-for="item in filteredChatList"
+              :key="item.id"
+              class="chat-item"
+              :class="{ unread: getUnreadCount(item) > 0 }"
+              @click="handleChatClick(item)"
+            >
+              <div class="chat-avatar">
+                <img
+                  :src="item.targetUser?.userAvatar || getDefaultAvatar(item.targetUser?.userName)"
+                  :alt="item.targetUser?.userName"
+                />
+                <span v-if="getUnreadCount(item) > 0" class="unread-badge">
+                  {{ getUnreadCount(item) > 99 ? '99+' : getUnreadCount(item) }}
+                </span>
+              </div>
+
+              <div class="chat-content">
+                <div class="chat-header">
+                  <div class="chat-name">
+
+                    {{ item.isSender ? item.userChatName : item.targetUserChatName }}
+                    <div class="chat-tags">
+                      <span :class="getChatTypeClass(item)">
+                          <template v-if="device === DEVICE_TYPE_ENUM.PC">
+                            <span class="tag-text">{{ item.chatType === 2 ? 'AI助手' : item.chatType === 1 ? '好友' : '私信' }}</span>
+                          </template>
+                          <template v-else>
+                            <i v-if="item.chatType === 2"><RobotOutlined /></i>
+                            <i v-else-if="item.chatType === 1"><UserOutlined /></i>
+                            <i v-else><MessageOutlined /></i>
+                          </template>
                         </span>
-                      </a-badge>
+                      <span v-if="item.isSender" class="sender-tag">
+                          <template v-if="device === DEVICE_TYPE_ENUM.PC">
+                            <span class="tag-text">发起者</span>
+                          </template>
+                          <template v-else>
+                            <i><SendOutlined /></i>
+                          </template>
+                        </span>
                     </div>
-                  </template>
-                  <template #title>
-                    <span class="chat-title">
-                      <!-- PC端使用tooltip，移动端使用点击事件 -->
-                      <a-tooltip
-                        v-if="!isMobile"
-                        :title="item.isSender ? item.userChatName : item.targetUserChatName"
-                        :mouseEnterDelay="0.5"
-                        placement="top"
-                      >
-                        <span class="username-text">{{ item.isSender ? item.userChatName : item.targetUserChatName }}</span>
-                      </a-tooltip>
-                      <!-- 移动端点击显示 -->
-                      <span
-                        v-else
-                        class="username-text"
-                        @click.stop="handleNameClick(item, item.isSender ? item.userChatName : item.targetUserChatName)"
-                      >
-                        {{ item.isSender ? item.userChatName : item.targetUserChatName }}
-                      </span>
-                      <span
-                        :class="{
-                          'friend-tag': item.chatType === 1,
-                          'private-tag': item.chatType === 0
-                        }"
-                      >
-                        {{ item.chatType === 1 ? '好友' : '私信' }}
-                      </span>
-                      <span v-if="item.isSender" class="sender-tag">发起者</span>
-                    </span>
-                  </template>
-                  <template #description>
-                    <div class="chat-desc">
-                      <span class="last-message">{{ item.lastMessage || '暂无消息' }}</span>
-                      <span class="message-time">{{ formatMessageTime(item.lastMessageTime) }}</span>
-                    </div>
-                  </template>
-                </a-list-item-meta>
-                <!-- 添加更多操作按钮 -->
-                <template #extra>
-                  <a-dropdown
-                    placement="bottomRight"
-                    trigger="click"
-                    @click.stop
-                  >
-                    <a-button
-                      type="text"
-                      class="more-btn"
-                      @click.stop
-                    >
-                      <EllipsisOutlined />
-                    </a-button>
-                    <template #overlay>
-                      <div class="action-menu">
-                        <div
-                          class="action-item"
-                          @click.stop="showEditNameModal(item)"
-                        >
-                          <EditOutlined class="action-icon" />
-                          <span>修改聊天名称</span>
-                        </div>
-                        <div
-                          class="action-item danger"
-                          @click.stop="showDeleteConfirm(item)"
-                        >
-                          <DeleteOutlined class="action-icon" />
-                          <span>删除聊天</span>
-                        </div>
-                      </div>
-                    </template>
-                  </a-dropdown>
-                </template>
-              </a-list-item>
-            </template>
-          </a-list>
+                  </div>
+                  <div class="chat-time">{{ formatMessageTime(item.lastMessageTime) }}</div>
+                </div>
+                <div class="chat-message">{{ item.lastMessage || '暂无消息' }}</div>
+              </div>
+
+              <div class="chat-actions">
+                <button class="action-btn edit" @click.stop="showEditNameModal(item)">
+                  <span class="action-icon">✎</span>
+                </button>
+                <button class="action-btn delete" @click.stop="showDeleteConfirm(item)">
+                  <span class="action-icon">×</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </van-pull-refresh>
 
@@ -191,39 +157,41 @@
               :class="{ active: activeTab === 'all' }"
               @click="handleTabChange('all')"
             >
-              全部
+              <span>全部</span>
+              <div class="tab-line"></div>
             </div>
             <div
               class="tab-item"
               :class="{ active: activeTab === 'friend' }"
               @click="handleTabChange('friend')"
             >
-              好友
-              <span v-if="friendUnreadCount > 0" class="tab-badge">{{ friendUnreadCount }}</span>
+              <span>好友</span>
+              <div class="badge" v-if="friendUnreadCount > 0">{{ friendUnreadCount }}</div>
+              <div class="tab-line"></div>
             </div>
             <div
               class="tab-item"
               :class="{ active: activeTab === 'private' }"
               @click="handleTabChange('private')"
             >
-              私信
-              <span v-if="privateUnreadCount > 0" class="tab-badge">{{ privateUnreadCount }}</span>
+              <span>私信</span>
+              <div class="badge" v-if="privateUnreadCount > 0">{{ privateUnreadCount }}</div>
+              <div class="tab-line"></div>
             </div>
           </div>
           <!-- 搜索栏 -->
-          <div class="search-bar">
-            <div class="search-wrapper">
-              <a-input-search
-                v-model:value="searchText"
+          <div class="search-container">
+            <div class="search-box">
+              <input
+                type="text"
+                v-model="searchText"
                 placeholder="搜索聊天记录"
-                @search="handleSearch"
-                :loading="loading"
+                @keyup.enter="handleSearch"
                 class="search-input"
-              >
-                <template #enterButton>
-                  <SearchOutlined style="color: #ffffff" />
-                </template>
-              </a-input-search>
+              />
+              <button class="search-button" @click="handleSearch" :disabled="loading">
+                <i class="search-icon"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -238,6 +206,7 @@
               style="width: 240px; height: 240px;"
               loop
               autoplay
+              @error="handleLottieError"
             ></lottie-player>
             <div class="empty-text">
               <h3>{{ getEmptyText() }}</h3>
@@ -269,7 +238,7 @@
                     </div>
                   </template>
                   <template #title>
-                    <span class="chat-title">
+                    <div class="chat-title">
                       <!-- PC端使用tooltip，移动端使用点击事件 -->
                       <a-tooltip
                         v-if="!isMobile"
@@ -290,13 +259,14 @@
                       <span
                         :class="{
                           'friend-tag': item.chatType === 1,
-                          'private-tag': item.chatType === 0
+                          'private-tag': item.chatType === 0,
+                          'ai-tag': item.chatType === 2
                         }"
                       >
-                        {{ item.chatType === 1 ? '好友' : '私信' }}
+                        {{ item.chatType === 2 ? 'AI助手' : item.chatType === 1 ? '好友' : '私信' }}
                       </span>
                       <span v-if="item.isSender" class="sender-tag">发起者</span>
-                    </span>
+                    </div>
                   </template>
                   <template #description>
                     <div class="chat-desc">
@@ -345,83 +315,92 @@
         </div>
 
         <!-- PC端分页器 -->
-        <div class="pagination-wrapper">
-          <a-pagination
-            v-model:current="searchParams.current"
-            v-model:pageSize="searchParams.pageSize"
-            :total="total"
-            :page-size-options="['4', '12', '20', '30']"
-            :show-total="(total) => `共 ${total} 条`"
-            @change="handlePageChange"
-            show-size-changer
-            show-quick-jumper
-            class="custom-pagination"
-          />
+        <div v-if="device === DEVICE_TYPE_ENUM.PC" class="pagination">
+          <div class="pagination-info">共 {{ total }} 条</div>
+          <div class="pagination-buttons">
+            <button
+              class="page-btn"
+              :disabled="pcsearchParams.current === 1"
+              @click="pchandlePageChange(pcsearchParams.current - 1, pcsearchParams.pageSize)"
+            >
+              上一页
+            </button>
+            <div class="page-numbers">
+              <button
+                v-for="page in pageNumbers"
+                :key="page"
+                class="page-number"
+                :class="{ active: page === pcsearchParams.current }"
+                @click="pchandlePageChange(page, pcsearchParams.pageSize)"
+              >
+                {{ page }}
+              </button>
+            </div>
+            <button
+              class="page-btn"
+              :disabled="pcsearchParams.current * pcsearchParams.pageSize >= total"
+              @click="pchandlePageChange(pcsearchParams.current + 1, pcsearchParams.pageSize)"
+            >
+              下一页
+            </button>
+          </div>
+          <div class="page-size">
+            <select
+              v-model="pcsearchParams.pageSize"
+              @change="pchandlePageChange(1, Number($event.target.value))"
+            >
+              <option value="4">4条/页</option>
+              <option value="12">12条/页</option>
+              <option value="20">20条/页</option>
+              <option value="30">30条/页</option>
+            </select>
+          </div>
         </div>
       </template>
     </div>
 
-    <!-- 删除确认弹框 -->
-    <a-modal
-      v-model:open="deleteConfirmVisible"
-      :title="null"
-      :footer="null"
-      :width="400"
-      class="delete-confirm-modal"
-    >
-      <div class="delete-confirm-content">
-        <div class="warning-icon">
-          <ExclamationCircleFilled style="color: #ff6b6b;" />
-        </div>
-        <h3 class="confirm-title">确认删除该聊天？</h3>
-        <p class="confirm-desc">
+    <!-- 删除确认弹窗 -->
+    <div v-if="deleteConfirmVisible" class="modal-overlay">
+      <div class="modal-content delete-modal">
+        <div class="modal-icon warning">!</div>
+        <h3>确认删除该聊天？</h3>
+        <p>
           用户名称：{{ selectedChat?.targetUser?.userName || '未设置' }}<br>
           聊天类型：{{ selectedChat?.chatType === 1 ? '好友' : '私信' }}
         </p>
-        <div class="confirm-actions">
-          <a-button class="cancel-button" @click="deleteConfirmVisible = false">取消</a-button>
-          <a-button class="confirm-button" danger @click="confirmDelete">
-            确认删除
-          </a-button>
+        <div class="modal-actions">
+          <button class="modal-btn cancel" @click="deleteConfirmVisible = false">取消</button>
+          <button class="modal-btn confirm" @click="confirmDelete">确认删除</button>
         </div>
       </div>
-    </a-modal>
+    </div>
 
     <!-- 修改名称弹窗 -->
-    <a-modal
-      v-model:open="editNameVisible"
-      title="修改聊天名称"
-      @ok="handleEditNameConfirm"
-      :confirmLoading="editNameLoading"
-      :class="'edit-name-modal'"
-      :maskStyle="{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }"
-      :zIndex="1001"
-    >
-      <div class="edit-name-content">
-        <div class="edit-icon">
-          <EditOutlined style="color: #ff8e53" />
-        </div>
-        <a-input
-          v-model:value="newChatName"
+    <div v-if="editNameVisible" class="modal-overlay">
+      <div class="modal-content edit-modal">
+        <div class="modal-icon edit">✎</div>
+        <h3>修改聊天名称</h3>
+        <input
+          v-model="newChatName"
+          type="text"
           placeholder="请输入新的聊天名称"
-          :maxLength="50"
-          show-count
+          maxlength="50"
           class="edit-input"
         />
-      </div>
-      <template #footer>
-        <div class="edit-actions">
-          <a-button class="cancel-btn" @click="editNameVisible = false">取消</a-button>
-          <a-button
-            class="confirm-btn"
-            :loading="editNameLoading"
+        <div class="input-counter">{{ newChatName.length }}/50</div>
+        <div class="modal-actions">
+          <button class="modal-btn cancel" @click="editNameVisible = false">取消</button>
+          <button
+            class="modal-btn confirm"
+            :disabled="editNameLoading"
             @click="handleEditNameConfirm"
           >
-            确认
-          </a-button>
+            <span v-if="editNameLoading" class="loading-dots">确认中</span>
+            <span v-else>确认</span>
+          </button>
         </div>
-      </template>
-    </a-modal>
+      </div>
+    </div>
 
     <!-- 底部加载状态 -->
     <div v-if="loading" class="loading-more">
@@ -435,47 +414,39 @@
 import { ref, onMounted, computed, watch, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal, notification } from 'ant-design-vue'
-import { SearchOutlined, EllipsisOutlined, DeleteOutlined, ExclamationCircleOutlined, ExclamationCircleFilled, EditOutlined } from '@ant-design/icons-vue'
+import { SearchOutlined, EllipsisOutlined, DeleteOutlined, ExclamationCircleOutlined, ExclamationCircleFilled, EditOutlined, UserOutlined, MessageOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons-vue'
 import { listPrivateChatByPageUsingPost, deletePrivateChatUsingPost, updateChatNameUsingPost } from '@/api/privateChatController'
 import { formatMessageTime } from "@/utils/dateUtils"
 import { getDefaultAvatar } from '@/utils/userUtils'
 import { useLoginUserStore } from '@/stores/useLoginUserStore'
-import PrivateChat = API.PrivateChat
-import { DEVICE_TYPE_ENUM } from '@/constants/device.ts'
-import { getDeviceType } from '@/utils/device.ts'
-// 定义用于存储设备类型的响应式变量
+import type { PrivateChat } from '@/api/types'
+import { DEVICE_TYPE_ENUM } from '@/constants/device'
+import { getDeviceType } from '@/utils/device'
+
+// 设备类型
 const device = ref<string>('')
-// 页面加载时获取设备类型并获取数据
-onMounted(async () => {
-  device.value = await getDeviceType()
-})
-const loginUserStore = useLoginUserStore()
-const router = useRouter()
+const isMobile = computed(() => window.innerWidth <= 768)
+
+// 状态变量
 const loading = ref(false)
-const chatList = ref<PrivateChat[]>([])
-const searchText = ref('')
-const current = ref(1)
-const pageSize = ref(10)
-const hasMore = ref(true)
-const activeTab = ref('all')  // 当前选中的标签
-const friendUnreadCount = ref(0)  // 好友未读消息总数
-const privateUnreadCount = ref(0)  // 私信未读消息总数
 const refreshing = ref(false)
-const total = ref(0)
-
-// 删除确认相关的状态
-const deleteConfirmVisible = ref(false)
+const isTop = ref(true)
+const searchText = ref('')
+const activeTab = ref('all')
+const friendUnreadCount = ref(0)
+const privateUnreadCount = ref(0)
+const chatList = ref<PrivateChat[]>([])
 const selectedChat = ref<PrivateChat | null>(null)
-
-// 修改名称相关
+const deleteConfirmVisible = ref(false)
 const editNameVisible = ref(false)
 const editNameLoading = ref(false)
 const newChatName = ref('')
+const hasMore = ref(true)
+const total = ref(0)
 
-// 判断是否为移动端
-const isMobile = computed(() => {
-  return window.innerWidth <= 768
-})
+// 移动端分页相关变量
+const mobileCurrentPage = ref(1)
+const isLoadingMore = ref(false)
 
 // 获取未读消息数
 const getUnreadCount = (chat: PrivateChat) => {
@@ -485,52 +456,6 @@ const getUnreadCount = (chat: PrivateChat) => {
   }
   // 如果当前登录用户是目标用户，返回targetUserUnreadCount
   return chat.userUnreadCount || 0
-}
-
-// 根据当前标签过滤聊天列表
-const filteredChatList = computed(() => {
-  if (activeTab.value === 'all') return chatList.value
-  return chatList.value.filter(chat =>
-    activeTab.value === 'friend' ? chat.chatType === 1 : chat.chatType === 0
-  )
-})
-
-// 获取空状态文本
-const getEmptyText = () => {
-  if (loading.value) return '加载中...'
-  if (searchText.value) return '没有找到相关聊天'
-  switch (activeTab.value) {
-    case 'friend':
-      return '暂无好友聊天'
-    case 'private':
-      return '暂无私信消息'
-    default:
-      return '暂无聊天记录'
-  }
-}
-
-// 获取空状态动画URL
-const getEmptyLottieUrl = () => {
-  if (loading.value) {
-    return 'https://assets5.lottiefiles.com/packages/lf20_syqnfe7c.json'  // 加载动画
-  }
-  if (searchText.value) {
-    return 'https://assets9.lottiefiles.com/packages/lf20_swnrn2oy.json'  // 搜索空结果动画
-  }
-  switch (activeTab.value) {
-    case 'friend':
-      return 'https://assets3.lottiefiles.com/packages/lf20_hy4txm7l.json'  // 好友相关动画
-    case 'private':
-      return 'https://assets1.lottiefiles.com/packages/lf20_zw7jo1.json'  // 消息相关动画
-    default:
-      return 'https://assets3.lottiefiles.com/private_files/lf30_bn5winlb.json'  // 默认动画
-  }
-}
-
-// 处理标签切换
-const handleTabChange = (tab: string) => {
-  activeTab.value = tab
-  fetchChatList(true)
 }
 
 // 计算未读消息数
@@ -547,20 +472,95 @@ const calculateUnreadCounts = () => {
 // 监听聊天列表变化，重新计算未读数
 watch(() => chatList.value, calculateUnreadCounts, { deep: true })
 
+// 优化: 列表过滤和排序
+const filteredChatList = computed(() => {
+  let filtered = chatList.value
+
+  // 根据标签过滤
+  if (activeTab.value !== 'all') {
+    filtered = filtered.filter(chat =>
+      activeTab.value === 'friend' ? chat.chatType === 1 : chat.chatType === 0
+    )
+  }
+
+  // 搜索过滤
+  if (searchText.value) {
+    const searchLower = searchText.value.toLowerCase()
+    filtered = filtered.filter(chat => {
+      const targetName = chat.targetUser?.userName?.toLowerCase() || ''
+      const chatName = (chat.isSender ? chat.userChatName : chat.targetUserChatName)?.toLowerCase() || ''
+      const lastMessage = chat.lastMessage?.toLowerCase() || ''
+      return targetName.includes(searchLower) ||
+        chatName.includes(searchLower) ||
+        lastMessage.includes(searchLower)
+    })
+  }
+
+  // 按最后消息时间排序
+  return filtered.sort((a, b) =>
+    new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+  )
+})
+
+// 优化: 分页处理
+const paginatedList = computed(() => {
+  if (isMobile.value) {
+    return filteredChatList.value
+  }
+  const start = (current.value - 1) * pageSize.value
+  return filteredChatList.value.slice(start, start + pageSize.value)
+})
+
+// 初始化
+onMounted(async () => {
+  device.value = await getDeviceType()
+  isMobile.value ? fetchChatList(true) : pcfetchChatList(true)
+})
+
+const loginUserStore = useLoginUserStore()
+const router = useRouter()
+const current = ref(1)
+const pageSize = ref(10)
+
+// 根据当前标签过滤聊天列表
+const handleTabChange = (tab: string) => {
+  activeTab.value = tab
+  fetchChatList(true)
+  pcfetchChatList(true)
+}
+
 // 修改搜索参数的定义
 const searchParams = reactive({
   current: 1,
-  pageSize: 7,
+  pageSize: 15,
   searchText: '',
   chatType: undefined
 })
 
-// 修改分页处理方法
-const handlePageChange = (page: number, size: number) => {
-  searchParams.current = page
-  searchParams.pageSize = size
-  fetchChatList(true)
-}
+const pcsearchParams = reactive({
+  current: 1,
+  pageSize: 6 ,
+  searchText: '',
+  chatType: undefined
+})
+
+// Add after the existing data declarations in setup
+const deepseekChat = reactive({
+  id: -1, // Special ID for DeepSeek chat
+  targetUser: {
+    id: -1,
+    userName: 'DeepSeek v3',
+    userAvatar: 'https://yuemu-picture-1328106169.cos.ap-chongqing.myqcloud.com/public/1866450683272450049/2025-03-14_ZKdnsKKV4Z3Rxvcx.webp',
+    userAccount: 'deepseek',
+    createTime: new Date().toISOString()
+  },
+  chatType: 2, // New type for AI chat
+  lastMessage: '你好!我是 DeepSeek v3, 一个智能AI助手',
+  lastMessageTime: new Date().toISOString(),
+  targetUserChatName: 'DeepSeek v3',
+  isSender: false,
+  userUnreadCount: 0
+})
 
 // 修改获取聊天列表的方法
 const fetchChatList = async (isRefresh = false) => {
@@ -569,17 +569,32 @@ const fetchChatList = async (isRefresh = false) => {
     loading.value = true
     if (isRefresh) {
       chatList.value = []
+      if (device.value !== DEVICE_TYPE_ENUM.PC) {
+        mobileCurrentPage.value = 1
+      }
     }
     const res = await listPrivateChatByPageUsingPost({
       searchText: searchText.value,
-      current: searchParams.current,
-      pageSize: searchParams.pageSize,
+      current: device.value === DEVICE_TYPE_ENUM.PC ? searchParams.current : mobileCurrentPage.value,
+      pageSize: device.value === DEVICE_TYPE_ENUM.PC ? 7 : 15,
       chatType: activeTab.value === 'all' ? undefined : activeTab.value === 'friend' ? 1 : 0
     })
     if (res.data.code === 0) {
       const { records, total: totalCount } = res.data.data
-      chatList.value = records
-      total.value = totalCount
+      // Add DeepSeek chat at the beginning
+      const allChats = [deepseekChat, ...records]
+      if (device.value === DEVICE_TYPE_ENUM.PC) {
+        chatList.value = allChats
+      } else {
+        // Mobile append data
+        if (isRefresh) {
+          chatList.value = allChats
+        } else {
+          chatList.value = [...chatList.value, ...records]
+        }
+        hasMore.value = records.length === 15
+      }
+      total.value = totalCount + 1 // Add 1 for DeepSeek chat
     } else {
       message.error('获取聊天列表失败：' + res.data.message)
     }
@@ -587,17 +602,32 @@ const fetchChatList = async (isRefresh = false) => {
     message.error('获取聊天列表失败：' + error.message)
   } finally {
     loading.value = false
+    isLoadingMore.value = false
   }
 }
 
 // 处理搜索
 const handleSearch = () => {
   fetchChatList(true)
+  pcfetchChatList(true)
 }
 
 // 点击聊天项
 const handleChatClick = (chat: PrivateChat) => {
-  if (chat.targetUser) {
+  if (chat.id === -1) {
+    // DeepSeek chat
+    router.push({
+      path: '/chat/ai',
+      query: {
+        userName: 'DeepSeek v3',
+        userAvatar: 'https://yuemu-picture-1328106169.cos.ap-chongqing.myqcloud.com/public/1866450683272450049/2025-03-14_ZKdnsKKV4Z3Rxvcx.webp',
+        userAccount: 'deepseek',
+        createTime: new Date().toISOString(),
+        isAI: 'true'
+      }
+    })
+  } else if (chat.targetUser) {
+    // Normal chat
     router.push({
       path: `/chat/${chat.targetUser.id}`,
       query: {
@@ -612,8 +642,31 @@ const handleChatClick = (chat: PrivateChat) => {
   }
 }
 
-// 下拉刷新处理
+// 添加移动端滚动加载处理
+const handleListScroll = async (e: Event) => {
+  if (device.value === DEVICE_TYPE_ENUM.PC) return
+
+  const { scrollHeight, scrollTop, clientHeight } = e.target as HTMLElement
+  // 更新顶部状态
+  isTop.value = scrollTop <= 0
+
+  const threshold = 50 // 距底部多少像素时触发加载
+
+  if (!loading.value && !isLoadingMore.value && hasMore.value && scrollHeight - scrollTop - clientHeight <= threshold) {
+    isLoadingMore.value = true
+    mobileCurrentPage.value++
+    await fetchChatList()
+    isLoadingMore.value = false
+  }
+}
+
+// 修改下拉刷新处理
 const onRefresh = async () => {
+  if (!isTop.value) {
+    refreshing.value = false
+    return
+  }
+
   try {
     await fetchChatList(true)
   } finally {
@@ -713,22 +766,206 @@ const showMobileNameToast = (name: string) => {
   })
 }
 
-// 处理列表滚动
-const handleListScroll = () => {}
+// 修改分页处理方法
+const pchandlePageChange = (page: number, size: number) => {
 
-onMounted(() => {
-  fetchChatList(true)
+  pcsearchParams.current = page
+  pcsearchParams.pageSize = size
+  pcfetchChatList(true)
+}
+// 修改获取聊天列表的方法
+const pcfetchChatList = async (isRefresh = false) => {
+  if (loading.value) return
+  try {
+    loading.value = true
+    if (isRefresh) {
+      chatList.value = []
+    }
+    const res = await listPrivateChatByPageUsingPost({
+      searchText: searchText.value,
+      current: pcsearchParams.current,
+      pageSize: pcsearchParams.pageSize,
+      chatType: activeTab.value === 'all' ? undefined : activeTab.value === 'friend' ? 1 : 0
+    })
+    console.log(res.data.data)
+    if (res.data.code === 0) {
+      const { records, total: totalCount } = res.data.data
+      chatList.value =[deepseekChat,...records]
+      total.value = totalCount
+    } else {
+      message.error('获取聊天列表失败：' + res.data.message)
+    }
+  } catch (error: any) {
+    message.error('获取聊天列表失败：' + error.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取聊天类型样式
+const getChatTypeClass = (chat: PrivateChat) => {
+  if (chat.chatType === 2) return 'ai-tag'
+  return chat.chatType === 1 ? 'friend-tag' : 'private-tag'
+}
+
+// 获取空状态动画URL
+const getEmptyLottieUrl = () => {
+  if (searchText.value) {
+    return 'https://assets1.lottiefiles.com/packages/lf20_bujdzzfn.json'
+  }
+  switch (activeTab.value) {
+    case 'friend':
+      return 'https://assets1.lottiefiles.com/packages/lf20_yg3groupm.json'
+    case 'private':
+      return 'https://assets1.lottiefiles.com/packages/lf20_AMBEWz.json'
+    default:
+      return 'https://assets1.lottiefiles.com/packages/lf20_yg3groupm.json'
+  }
+}
+
+// Add error handling for lottie player
+const handleLottieError = (e: any) => {
+  console.warn('Lottie animation failed to load:', e)
+  // You can set a fallback image or handle the error in another way
+}
+
+// 获取空状态文本
+const getEmptyText = () => {
+  if (searchText.value) {
+    return '没有找到相关聊天'
+  }
+  switch (activeTab.value) {
+    case 'friend':
+      return '暂无好友聊天'
+    case 'private':
+      return '暂无私信聊天'
+    default:
+      return '暂无聊天记录'
+  }
+}
+
+// 计算分页页码
+const pageNumbers = computed(() => {
+  const current = pcsearchParams.current
+  const pageCount = Math.ceil(total.value / pcsearchParams.pageSize)
+  const pages: number[] = []
+
+  if (pageCount <= 5) {
+    for (let i = 1; i <= pageCount; i++) {
+      pages.push(i)
+    }
+  } else {
+    if (current <= 3) {
+      for (let i = 1; i <= 5; i++) {
+        pages.push(i)
+      }
+    } else if (current >= pageCount - 2) {
+      for (let i = pageCount - 4; i <= pageCount; i++) {
+        pages.push(i)
+      }
+    } else {
+      for (let i = current - 2; i <= current + 2; i++) {
+        pages.push(i)
+      }
+    }
+  }
+
+  return pages
 })
+
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+/* 移动端性能优化 */
+@media screen and (max-width: 768px) {
+  .main-content {
+    backdrop-filter: none !important;
+
+  }
+
+  #chatListContent {
+    .chat-list {
+      transform: translate3d(0, 0, 0);
+      will-change: transform;
+      background: rgba(255, 255, 255, 0.9) !important; /* Semi-transparent background */
+      box-shadow: none;
+      border-radius: 12px;
+
+      :deep(.ant-list-item) {
+        transition: none !important;
+        animation: none !important;
+        transform: none !important;
+        background: rgba(255, 255, 255, 0.8) !important; /* Semi-transparent items */
+
+        &:hover {
+          transform: none !important;
+          box-shadow: none !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        &.unread {
+          background: rgba(82, 196, 26, 0.1) !important;
+        }
+
+        .ant-avatar {
+          transition: none !important;
+          transform: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+
+        .chat-title, .chat-desc {
+          transform: translateZ(0);
+        }
+      }
+    }
+  }
+
+  .background-animation {
+    display: none !important;
+  }
+
+  .search-container {
+    padding: 0 12px;
+    margin-bottom: 16px;
+
+    .search-input {
+      height: 40px;
+      font-size: 14px;
+    }
+
+    .search-button {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  .chat-tabs {
+    gap: 24px;
+    margin: 4px 0;
+
+    .tab-item {
+      font-size: 15px;
+    }
+  }
+
+  :deep(.van-pull-refresh__track) {
+    will-change: transform;
+  }
+
+  .loading-more {
+    opacity: 0.8;
+    transition: none !important;
+  }
+}
+
 #chatListPage {
-  min-height: 93vh;
+  max-height: 98vh;
   position: relative;
   overflow: hidden;
   margin-left: -20px!important;
   margin-right: -20px !important;
-  margin-top: -40px !important;
+  margin-top: -24px !important;
   border-radius: 24px !important;
 }
 
@@ -834,7 +1071,6 @@ onMounted(() => {
   z-index: 1;
   max-width: 800px;
   margin: 0 auto;
-  padding: 0 20px;
 }
 :deep(.ant-btn-primary) {
   background: #52c41a !important;
@@ -859,119 +1095,153 @@ onMounted(() => {
 #chatListHeader {
   display: flex;
   flex-direction: column;
-  margin-bottom: 16px;
+  margin-bottom: 6px;
 
   .chat-tabs {
     display: flex;
-    gap: 12px;
-    margin-top: 6px;
     justify-content: center;
+    gap: 32px;
+    margin: 8px 0;
+    padding: 0 16px;
+    position: relative;
   }
 
   .tab-item {
     position: relative;
-    padding: 8px 32px;
-    border-radius: 20px;
-    font-size: 14px;
-    color: #64748b;
+    padding: 8px 4px;
+    font-size: 16px;
+    color: #666;
     cursor: pointer;
     transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    user-select: none;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.8);
-      color: #1a1a1a;
+      color: #52c41a;
     }
 
     &.active {
-      background: linear-gradient(135deg, #95de64 0%, #73d13d 100%);
-      color: white;
+      color: #52c41a;
       font-weight: 500;
-      box-shadow: 0 2px 8px rgba(115, 209, 61, 0.15);
-    }
-  }
 
-  .tab-badge {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 6px;
-    border-radius: 9px;
-    background: #73d13d;
-    color: white;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: normal;
-  }
-
-  .search-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: -12px;
-  }
-
-  .search-wrapper {
-    flex: 1;
-    max-width: 800px;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    border-radius: 24px;
-    margin: 4px 0 8px 0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    padding: 2px;
-    transform-style: preserve-3d;
-    transition: all 0.3s ease;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-    }
-
-    :deep(.ant-input-search) {
-      .ant-input {
-        background: rgba(82, 196, 26, 0.05);
-      }
-
-      .ant-input-group-addon {
-        .ant-btn {
-          background: linear-gradient(135deg, #95de64 0%, #73d13d 100%);
-          border: none;
-
-          &:hover {
-            background: linear-gradient(135deg, #73d13d 0%, #52c41a 100%);
-          }
-        }
+      .tab-line {
+        transform: scaleX(1);
+        opacity: 1;
       }
     }
+
+    .tab-line {
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: #52c41a;
+      border-radius: 2px;
+      transform: scaleX(0);
+      opacity: 0;
+      transition: all 0.3s ease;
+      transform-origin: center;
+    }
+
+    .badge {
+      position: absolute;
+      top: -8px;
+      right: -12px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 6px;
+      background: #52c41a;
+      color: white;
+      font-size: 12px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: normal;
+      box-shadow: 0 2px 6px rgba(82, 196, 26, 0.2);
+    }
   }
 
-  .search-input {
-    :deep(.ant-input) {
-      background: transparent;
-      border-radius: 20px;
-      padding-left: 16px;
-      border: none;
-      box-shadow: none;
-      height: 40px;
-      font-size: 14px;
+  .search-container {
+    padding: 0 16px;
+    margin-bottom: 4px;
+
+    .search-box {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 44px 0 16px;
+      border: 2px solid #e8f5e9;
+      border-radius: 22px;
+      font-size: 15px;
+      background: #fff;
+      transition: all 0.3s ease;
+      color: #333;
 
       &:focus {
-        background: rgba(255, 255, 255, 0.9);
+        outline: none;
+        border-color: #52c41a;
+        box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.1);
+      }
+
+      &::placeholder {
+        color: #999;
       }
     }
 
-    :deep(.ant-input-group) {
-      display: flex !important;
-      background: transparent;
+    .search-button {
+      position: absolute;
+      right: 4px;
+      top: 4px;
+      width: 36px;
+      height: 36px;
       border: none;
-      border-radius: 20px;
-      overflow: hidden;
+      border-radius: 18px;
+      background: #52c41a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: #73d13d;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(1px);
+      }
+
+      &:disabled {
+        background: #d9d9d9;
+        cursor: not-allowed;
+      }
+
+      .search-icon {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        position: relative;
+
+        &::after {
+          content: '';
+          position: absolute;
+          width: 2px;
+          height: 8px;
+          background: #fff;
+          bottom: -6px;
+          right: -6px;
+          transform: rotate(-45deg);
+        }
+      }
     }
   }
 }
@@ -1153,459 +1423,21 @@ onMounted(() => {
     transform: translateY(-2px);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   }
-}
 
-.empty-text {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #333;
-    font-weight: 600;
-  }
-
-  p {
-    margin: 0;
-    font-size: 14px;
-    color: #666;
-  }
-}
-
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-  #chatListPage {
-    margin: 0;
-    border-radius: 0;
-  }
-
-  .background-animation {
-    display: none;
-  }
-
-  .main-content {
-    padding: 0 12px;
-  }
-
-  #chatListContent {
-    .chat-list {
-      background: #fff;
-      box-shadow: none;
-      backdrop-filter: none;
-      transform: none !important;
-      border-radius: 12px;
-    }
-  }
-
-  #chatListHeader {
-    .search-wrapper {
-      margin: 8px 0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-  }
-
-  .more-btn {
-    opacity: 1;
-    width: 40px;
-    height: 40px;
-    right: 8px;
-
-    .anticon {
-      font-size: 24px;
-    }
-  }
-
-  .action-menu {
-    padding: 8px;
-    z-index: 0;
-  }
-
-  .action-item {
-    padding: 12px 16px;
-
-    .action-icon {
-      font-size: 20px;
-    }
-  }
-
-  .empty-state {
-    background: #fff;
-    box-shadow: none;
-    backdrop-filter: none;
-    border-radius: 12px;
-    padding: 32px 16px;
-
-    &:hover {
-      transform: none;
-      box-shadow: none;
-    }
-  }
-}
-
-/* 下拉刷新样式定制 */
-:deep(.van-pull-refresh) {
-  overflow: visible;
-}
-
-:deep(.van-pull-refresh__track) {
-  overflow: visible;
-}
-
-:deep(.van-pull-refresh__head) {
-  color: #ff8e53;
-}
-
-.more-btn {
-  width: 32px;
-  height: 32px;
-  padding-bottom: 20px !important;
-  border-radius: 16px;
-  color: #666;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  padding: 0;
-
-  &:hover {
-    color: #ff8e53;
-    background: transparent;
-  }
-
-  .anticon {
-    font-size: 20px;
-  }
-}
-
-/* PC端样式 */
-@media screen and (min-width: 769px) {
-  .more-btn {
-    opacity: 0;
-  }
-
-  :deep(.ant-list-item) {
-    &:hover {
-      .more-btn {
-        opacity: 1;
-      }
-    }
-  }
-}
-
-.action-menu {
-  background: white;
-  border-radius: 8px;
-  padding: 4px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-  min-width: 120px;
-}
-
-.action-item {
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  color: #666;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.02);
-  }
-
-  &.danger {
-    color: #ff4d4f;
-
-    &:hover {
-      background: rgba(255, 77, 79, 0.1);
-    }
-  }
-
-  .action-icon {
-    font-size: 16px;
-  }
-}
-
-:deep(.ant-list-item) {
-  position: relative;
-
-  &:hover {
-    .more-btn {
-      opacity: 1;
-    }
-  }
-}
-
-/* 删除确认弹框样式 */
-:deep(.delete-confirm-modal) {
-  .ant-modal-content {
-    padding: 0;
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .ant-modal-body {
-    padding: 0;
-  }
-}
-
-.delete-confirm-content {
-  padding: 32px 24px;
-  text-align: center;
-}
-
-.warning-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-
-  .anticon {
-    animation: pulse 2s infinite;
-  }
-}
-
-.confirm-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 12px;
-}
-
-.confirm-desc {
-  font-size: 14px;
-  color: #64748b;
-  margin-bottom: 24px;
-  line-height: 1.6;
-}
-
-.confirm-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.cancel-button {
-  min-width: 100px;
-  height: 38px;
-  border-radius: 19px;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 14px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    color: #1a1a1a;
-    border-color: #94a3b8;
-    background: #f8fafc;
-  }
-}
-
-.confirm-button {
-  min-width: 100px;
-  height: 38px;
-  border-radius: 19px;
-  background: #ff6b6b;
-  border: none;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: #ff5252;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-  .delete-confirm-content {
-    padding: 24px 16px;
-  }
-
-  .warning-icon {
-    font-size: 40px;
-  }
-
-  .confirm-title {
-    font-size: 16px;
-  }
-
-  .confirm-desc {
-    font-size: 13px;
-  }
-
-  .confirm-actions {
-    gap: 8px;
-  }
-
-  .cancel-button,
-  .confirm-button {
-    min-width: 90px;
-    height: 36px;
-    font-size: 13px;
-  }
-}
-
-/* 修改名称弹框样式 */
-:deep(.edit-name-modal) {
-  .ant-modal-content {
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .ant-modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #f0f0f0;
-
-    .ant-modal-title {
+  .empty-text {
+    h3 {
+      margin: 0;
       font-size: 18px;
+      color: #333;
       font-weight: 600;
-      color: #1a1a1a;
-    }
-  }
-
-  .ant-modal-body {
-    padding: 24px;
-  }
-
-  .ant-modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid #f0f0f0;
-  }
-}
-
-.edit-name-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.edit-icon {
-  font-size: 32px;
-  width: 64px;
-  height: 64px;
-  border-radius: 32px;
-  background: rgba(255, 142, 83, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.edit-input {
-  width: 100%;
-
-  :deep(.ant-input) {
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 14px;
-    border-color: #e5e7eb;
-    transition: all 0.3s ease;
-
-    &:hover, &:focus {
-      border-color: #ff8e53;
-      box-shadow: 0 0 0 2px rgba(255, 142, 83, 0.1);
-    }
-  }
-
-  :deep(.ant-input-show-count-suffix) {
-    color: #a3a3a3;
-  }
-}
-
-.edit-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-
-  .cancel-btn {
-    min-width: 80px;
-    height: 36px;
-    border-radius: 18px;
-    border: 1px solid #e5e7eb;
-    color: #64748b;
-    transition: all 0.3s ease;
-
-    &:hover {
-      color: #1a1a1a;
-      border-color: #94a3b8;
-      background: #f8fafc;
-    }
-  }
-
-  .confirm-btn {
-    min-width: 80px;
-    height: 36px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
-    border: none;
-    color: white;
-    transition: all 0.3s ease;
-
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(82, 196, 26, 0.2);
     }
 
-    &:active {
-      transform: translateY(1px);
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
     }
   }
-}
-
-/* 下拉菜单样式 */
-:deep(.ant-dropdown) {
-  z-index: 1000 !important; /* 确保低于弹框的1001 */
-}
-
-/* Tooltip 样式 */
-:deep(.ant-tooltip) {
-  .ant-tooltip-inner {
-    background-color: rgba(0, 0, 0, 0.75);
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-size: 14px;
-    line-height: 1.4;
-    max-width: 300px;
-    word-break: break-all;
-  }
-
-  .ant-tooltip-arrow-content {
-    background-color: rgba(0, 0, 0, 0.75);
-  }
-}
-
-.username-text {
-  cursor: pointer;
 }
 
 .loading-more {
@@ -1613,208 +1445,664 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 0;
   color: #666;
   font-size: 14px;
+  padding: 12px 0;
 }
 
-/* 优化通知弹框样式 */
-:deep(.ant-notification-notice) {
-  padding: 0;
-  min-height: 40px;
+.no-more {
+  color: #999;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px 0;
+}
 
-  .ant-notification-notice-message {
-    display: none;
+.ai-tag {
+  width: auto;
+  color: #722ed1 !important;
+  background: linear-gradient(135deg, rgba(114, 46, 209, 0.1), rgba(173, 55, 255, 0.15)) !important;
+  padding: 2px 8px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.chat-list-wrapper {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  height: calc(100vh - 200px);
+  position: relative;
+}
+
+.chat-list {
+  height: 100%;
+  overflow-y: auto;
+  padding: 8px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
   }
 
-  .ant-notification-notice-description {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.4;
+  &::-webkit-scrollbar-track {
+    background: transparent;
   }
 
-  .ant-notification-notice-close {
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255,255,255,0.6);
+  &::-webkit-scrollbar-thumb {
+    background: rgba(82, 196, 26, 0.2);
+    border-radius: 3px;
 
     &:hover {
-      color: #fff;
+      background: rgba(82, 196, 26, 0.4);
     }
   }
 }
 
-/* PC端特定样式 */
-.pc-main-content {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  margin-bottom: 80px;
-}
-
-.pc-chat-list {
-  height: calc(100vh - 320px) !important;
-  min-height: 400px;
-  max-height: 600px;
-  overflow-y: auto !important;
-}
-
-/* 调整列表项样式 */
-:deep(.ant-list-item) {
-  padding: 16px !important;
-}
-
-/* 美化滚动条 */
-.pc-chat-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.pc-chat-list::-webkit-scrollbar-thumb {
-  background-color: #e5e7eb;
-  border-radius: 3px;
-}
-
-.pc-chat-list::-webkit-scrollbar-track {
-  background-color: transparent;
-}
-
-/* PC端分页器样式 */
-.pagination-wrapper {
-  margin-top: 16px;
-  padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.chat-item {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  padding: 12px;
+  margin: 4px 0;
+  border-radius: 12px;
+  background: #fafafa;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  border: 1px solid transparent;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: #b7eb8f;
+    box-shadow: 0 4px 12px rgba(82, 196, 26, 0.08);
+
+    .chat-actions {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  &.unread {
+    background: #f6ffed;
+    border-color: #b7eb8f;
+
+    .chat-message {
+      color: #52c41a;
+      font-weight: 500;
+    }
+  }
 }
 
-:deep(.custom-pagination) {
-  .ant-pagination-total-text {
-    color: #64748b;
-    margin-right: 12px;
-  }
+.chat-avatar {
+  position: relative;
+  margin-right: 12px;
+  flex-shrink: 0;
 
-  .ant-pagination-prev,
-  .ant-pagination-next,
-  .ant-pagination-item,
-  .ant-pagination-jump-prev,
-  .ant-pagination-jump-next {
-    border-radius: 8px;
+  img {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    object-fit: cover;
+    border: 2px solid #f0f0f0;
     transition: all 0.3s ease;
-    margin-right: 8px;
 
     &:hover {
-      border-color: #73d13d;
-      a {
-        color: #73d13d;
-      }
+      border-color: #52c41a;
+      transform: scale(1.05);
     }
   }
 
-  .ant-pagination-item-active {
-    background: linear-gradient(135deg, #95de64 0%, #73d13d 100%);
-    border: none;
-    box-shadow: 0 2px 8px rgba(115, 209, 61, 0.2);
+  .unread-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    background: #52c41a;
+    color: white;
+    font-size: 12px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(82, 196, 26, 0.2);
+  }
+}
 
-    a {
-      color: white !important;
+.chat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.chat-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+
+  span {
+
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: normal;
+  }
+}
+
+.friend-tag {
+  color: #52c41a;
+  background: #f6ffed;
+}
+
+.private-tag {
+  color: #1890ff;
+  background: #e6f7ff;
+}
+
+.ai-tag {
+  color: #722ed1;
+  background: #f9f0ff;
+}
+
+.sender-tag {
+  color: #fa8c16;
+  background: #fff7e6;
+}
+
+.chat-time {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.chat-message {
+  font-size: 14px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-actions {
+  display: flex;
+  margin-left: 12px;
+  margin-right: -4px;
+  margin-bottom: -18px;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all 0.3s ease;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #999;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
+  }
+
+  &.edit:hover {
+    color: #52c41a;
+  }
+
+  &.delete:hover {
+    color: #ff4d4f;
+  }
+
+  .action-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+
+    .empty-svg {
+      width: 100%;
+      height: 100%;
+      opacity: 0.5;
     }
+  }
+
+  h3 {
+    font-size: 16px;
+    color: #333;
+    margin: 0 0 8px;
+  }
+
+  p {
+    font-size: 14px;
+    color: #999;
+    margin: 0;
+  }
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: #666;
+  font-size: 14px;
+
+  .loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f0f0f0;
+    border-top-color: #52c41a;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .chat-list-wrapper {
+    height: calc(100vh - 155px);
+    border-radius: 12px;
+  }
+
+  .chat-item {
+    padding: 10px;
+    margin: 2px 0;
 
     &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(115, 209, 61, 0.3);
+      transform: none;
     }
   }
 
-  .ant-pagination-options {
-    .ant-select {
-      .ant-select-selector {
-        border-radius: 8px !important;
-        transition: all 0.3s ease;
-        height: 32px !important;
-        padding: 0 11px !important;
+  .chat-avatar img {
+    width: 40px;
+    height: 40px;
+  }
 
-        .ant-select-selection-item {
-          line-height: 30px !important;
-          color: #64748b;
-        }
+  .chat-name {
+    font-size: 14px;
+  }
 
-        &:hover {
-          border-color: #73d13d !important;
-          background: #f6ffed;
-        }
-      }
+  .chat-message {
+    font-size: 13px;
+  }
 
-      &.ant-select-focused .ant-select-selector {
-        border-color: #73d13d !important;
-        box-shadow: 0 0 0 2px rgba(115, 209, 61, 0.1) !important;
-      }
+  .chat-actions {
+    opacity: 1;
+    transform: none;
+  }
+
+  .action-btn {
+    width: 28px;
+    height: 28px;
+
+    .action-icon {
+      font-size: 16px;
+    }
+  }
+}
+
+/* 分页器样式 */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+
+  .pagination-info {
+    color: #666;
+    font-size: 14px;
+  }
+
+  .pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .page-btn {
+    padding: 6px 12px;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    background: #fff;
+    color: #666;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover:not(:disabled) {
+      color: #52c41a;
+      border-color: #52c41a;
     }
 
-    .ant-pagination-options-quick-jumper {
-      color: #64748b;
-      margin-left: 16px;
-
-      input {
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        height: 32px;
-        width: 50px;
-        text-align: center;
-        margin: 0 8px;
-
-        &:hover {
-          border-color: #73d13d;
-          background: #f6ffed;
-        }
-
-        &:focus {
-          border-color: #73d13d;
-          box-shadow: 0 0 0 2px rgba(115, 209, 61, 0.1);
-        }
-      }
+    &:disabled {
+      color: #d9d9d9;
+      border-color: #f0f0f0;
+      cursor: not-allowed;
     }
   }
 
-  /* 下拉菜单样式 */
-  :deep(.ant-select-dropdown) {
-    border-radius: 8px;
-    overflow: hidden;
-    padding: 4px;
+  .page-numbers {
+    display: flex;
+    gap: 4px;
+  }
 
-    .ant-select-item {
-      transition: all 0.3s ease;
-      padding: 8px 12px;
+  .page-number {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    background: #fff;
+    color: #666;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover:not(.active) {
+      color: #52c41a;
+      border-color: #52c41a;
+    }
+
+    &.active {
+      background: #52c41a;
+      color: #fff;
+      border-color: #52c41a;
+    }
+  }
+
+  .page-size {
+    select {
+      padding: 6px 24px 6px 12px;
+      border: 1px solid #e8e8e8;
       border-radius: 6px;
-      margin: 2px 0;
+      color: #666;
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 8px center;
+      transition: all 0.3s ease;
 
       &:hover {
-        background: #f6ffed;
-        color: #73d13d;
+        border-color: #52c41a;
       }
 
-      &-option-selected {
-        background: #f6ffed !important;
-        color: #73d13d !important;
-        font-weight: 500;
-      }
-
-      &-option-active {
-        background: #f6ffed !important;
-        color: #73d13d !important;
+      &:focus {
+        outline: none;
+        border-color: #52c41a;
+        box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.1);
       }
     }
   }
 }
 
-/* 移动端适配 */
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  .modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+    font-weight: bold;
+
+    &.warning {
+      background: #fff2e8;
+      color: #fa8c16;
+    }
+
+    &.edit {
+      background: #f6ffed;
+      color: #52c41a;
+    }
+  }
+
+  h3 {
+    margin: 0 0 16px;
+    color: #333;
+    font-size: 18px;
+  }
+
+  p {
+    margin: 0 0 24px;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.modal-btn {
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+
+  &.cancel {
+    background: #f5f5f5;
+    color: #666;
+
+    &:hover {
+      background: #e8e8e8;
+    }
+  }
+
+  &.confirm {
+    background: #52c41a;
+    color: #fff;
+
+    &:hover {
+      background: #73d13d;
+    }
+
+    &:disabled {
+      background: #d9d9d9;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #52c41a;
+    box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.1);
+  }
+}
+
+.input-counter {
+  text-align: right;
+  color: #999;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.loading-dots::after {
+  content: '...';
+  animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40%, 60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media screen and (max-width: 768px) {
-  .pc-main-content {
-    margin-bottom: 0;
+  .pagination {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 12px;
+
+    .page-btn, .page-number {
+      height: 36px;
+    }
+  }
+
+  .modal-content {
+    padding: 20px;
+    width: calc(100% - 32px);
+    margin: 16px;
+  }
+}
+
+.pc-main-content {
+  height: calc(100vh - 120px) !important;
+  display: flex;
+  flex-direction: column;
+}
+
+#chatListContent.pc-chat-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+// 修改 action-menu 的样式
+.action-menu {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+  min-width: 160px;
+
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    color: #333;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #f5f5f5;
+    }
+
+    &.danger {
+      color: #ff4d4f;
+
+      &:hover {
+        background: #fff1f0;
+      }
+    }
+
+    .action-icon {
+      font-size: 16px;
+    }
   }
 }
 </style>

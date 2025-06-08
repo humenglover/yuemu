@@ -199,13 +199,13 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .chat-page {
-  height: 89vh; /* PC 端高度 */
+  height: 90vh; /* PC 端高度 */
   overflow: hidden;
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0;
-  margin: 0;
+  margin: -20px;
+
   background: linear-gradient(45deg, rgba(255, 142, 83, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
 }
 
@@ -261,6 +261,7 @@ onBeforeUnmount(() => {
   padding: 16px;
   gap: 20px;
   width: 100%;
+  max-width: 1200px; /* 添加最大宽度限制 */
   margin: 0 auto;
   overflow: hidden;
 }
@@ -393,7 +394,7 @@ onBeforeUnmount(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 1;
+    z-index: 100000000000;
     margin: 0;
     background: #fff;
     height: 100vh;
@@ -403,6 +404,7 @@ onBeforeUnmount(() => {
   .chat-container {
     padding: 8px;
     height: 100%;
+    max-width: none; /* 移动端取消最大宽度限制 */
   }
 
   .chat-main {

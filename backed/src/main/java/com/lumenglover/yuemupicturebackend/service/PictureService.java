@@ -196,4 +196,20 @@ public interface PictureService extends IService<Picture> {
      */
     Page<PictureVO> listPictureVOByPage(PictureQueryRequest pictureQueryRequest, HttpServletRequest request);
 
+    /**
+     * 设置图片精选状态
+     * @param pictureFeatureRequest 请求参数
+     * @param loginUser 当前登录用户
+     * @return 是否成功
+     */
+    boolean setPictureFeature(PictureFeatureRequest pictureFeatureRequest, User loginUser);
+
+    /**
+     * 分页获取精选图片列表
+     * @param pictureQueryRequest 查询参数
+     * @param request HTTP请求
+     * @return 分页图片列表
+     */
+    Page<PictureVO> getFeaturePicture(PictureQueryRequest pictureQueryRequest, HttpServletRequest request);
+
 }

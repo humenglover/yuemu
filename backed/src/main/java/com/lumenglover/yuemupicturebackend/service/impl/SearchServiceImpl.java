@@ -46,6 +46,7 @@ import java.util.Date;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.RedisCallback;
 import cn.hutool.core.util.RandomUtil;
+import java.util.Arrays;
 
 @Service
 @Slf4j
@@ -144,6 +145,11 @@ public class SearchServiceImpl implements SearchService {
                         .collect(Collectors.toList());
             }
 
+            // 如果没有结果，返回默认的热门搜索词
+            if (resultList.isEmpty()) {
+                resultList = getDefaultHotSearchKeywords(type, size);
+            }
+
             // 如果有结果，更新缓存
             if (!resultList.isEmpty()) {
                 updateHotSearchCache(type, resultList);
@@ -153,6 +159,24 @@ public class SearchServiceImpl implements SearchService {
         } catch (Exception e) {
             log.error("获取热门搜索失败", e);
             return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 获取默认的热门搜索词
+     */
+    private List<String> getDefaultHotSearchKeywords(String type, Integer size) {
+        if ("space".equals(type) || "user".equals(type)) {
+            // 对于空间和用户，返回默认关键词 "鹿梦"
+            return Arrays.asList("鹿梦").stream().limit(size).collect(Collectors.toList());
+        } else {
+            // 对于帖子和图片，返回与图片相关的默认关键词
+            List<String> defaultKeywords = Arrays.asList(
+                    "风景", "动物", "城市", "自然", "艺术",
+                    "黑白", "抽象", "肖像", "摄影", "插画",
+                    "时尚", "美食", "旅行", "运动", "科技"
+            );
+            return defaultKeywords.stream().limit(size).collect(Collectors.toList());
         }
     }
 

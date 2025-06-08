@@ -29,6 +29,7 @@ import com.lumenglover.yuemupicturebackend.mapper.UserSignInRecordMapper;
 import com.lumenglover.yuemupicturebackend.model.dto.file.UploadPictureResult;
 import com.lumenglover.yuemupicturebackend.model.dto.user.UserModifyPassWord;
 import com.lumenglover.yuemupicturebackend.model.dto.user.UserQueryRequest;
+import com.lumenglover.yuemupicturebackend.model.dto.user.UserExportRequest;
 import com.lumenglover.yuemupicturebackend.model.entity.*;
 import com.lumenglover.yuemupicturebackend.model.entity.es.EsUser;
 import com.lumenglover.yuemupicturebackend.model.enums.UserRoleEnum;
@@ -50,14 +51,30 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.hssf.usermodel.HSSFFont;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 
 /**
  * @author 鹿梦
@@ -937,6 +954,175 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             String operation = isUnban ? "解封" : "封禁";
             throw new BusinessException(ErrorCode.OPERATION_ERROR,
                     String.format("该用户当前%s不需要%s", isUnban ? "未被封禁" : "已被封禁", operation));
+        }
+    }
+
+    @Override
+    public void exportUserData(UserExportRequest exportRequest, HttpServletRequest httpRequest,
+                               HttpServletResponse httpResponse) throws IOException {
+        if (exportRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        try (HSSFWorkbook workbook = new HSSFWorkbook()) {
+            // 1. 创建工作表
+            HSSFSheet sheet = workbook.createSheet("Sheet1");
+
+            // 2. 创建表头
+            String[] headers = {"用户ID", "账号", "邮箱", "昵称", "角色", "创建时间", "状态"};
+            HSSFRow headerRow = sheet.createRow(0);
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.setColumnWidth(i, 20 * 256);
+                headerRow.createCell(i).setCellValue(headers[i]);
+            }
+
+            // 3. 查询数据
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            setTimeRangeCondition(queryWrapper, exportRequest);
+            List<User> users = this.list(queryWrapper);
+
+            // 4. 填充数据
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            int rowIndex = 1;
+
+            for (User user : users) {
+                HSSFRow dataRow = sheet.createRow(rowIndex++);
+                dataRow.createCell(0).setCellValue(String.valueOf(user.getId()));
+                dataRow.createCell(1).setCellValue(user.getUserAccount());
+                dataRow.createCell(2).setCellValue(user.getEmail());
+                dataRow.createCell(3).setCellValue(user.getUserName());
+                dataRow.createCell(4).setCellValue(getUserRoleText(user.getUserRole()));
+                dataRow.createCell(5).setCellValue(user.getCreateTime() != null ?
+                        sdf.format(user.getCreateTime()) : "");
+                dataRow.createCell(6).setCellValue(getUserStatusText(user.getUserRole()));
+            }
+
+            // 5. 设置响应头
+            httpResponse.setContentType("application/vnd.ms-excel;charset=utf-8");
+            httpResponse.setCharacterEncoding("UTF-8");
+
+            // 6. 处理文件名
+            String fileName = generateExportFileName(exportRequest.getType(),
+                    exportRequest.getStartTime(), exportRequest.getEndTime());
+            httpResponse.setHeader("Content-Disposition",
+                    "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8") + ".xls");
+
+            // 7. 写入响应
+            workbook.write(httpResponse.getOutputStream());
+        } catch (IOException e) {
+            log.error("导出用户数据失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "导出失败");
+        }
+    }
+
+    /**
+     * 获取用户角色文本
+     */
+    private String getUserRoleText(String role) {
+        if (UserConstant.ADMIN_ROLE.equals(role)) {
+            return "管理员";
+        } else if (UserConstant.DEFAULT_ROLE.equals(role)) {
+            return "普通用户";
+        } else if (CrawlerConstant.BAN_ROLE.equals(role)) {
+            return "已封禁";
+        }
+        return "未知";
+    }
+
+    /**
+     * 获取用户状态文本
+     */
+    private String getUserStatusText(String role) {
+        if (CrawlerConstant.BAN_ROLE.equals(role)) {
+            return "已封禁";
+        }
+        return "正常";
+    }
+
+    /**
+     * 生成导出文件名
+     */
+    private String generateExportFileName(Integer type, Date startTime, Date endTime) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        String timeStr = sdf.format(new Date());
+
+        String periodStr;
+        switch (type) {
+            case 1:
+                periodStr = "日报";
+                break;
+            case 2:
+                periodStr = "周报";
+                break;
+            case 3:
+                periodStr = "月报";
+                break;
+            case 4:
+                periodStr = "年报";
+                break;
+            case 5:
+                if (startTime != null && endTime != null) {
+                    periodStr = sdf.format(startTime) + "-" + sdf.format(endTime);
+                } else {
+                    periodStr = "自定义";
+                }
+                break;
+            default:
+                periodStr = "未知";
+        }
+
+        return String.format("用户数据_%s", periodStr);
+    }
+
+    /**
+     * 设置时间范围查询条件
+     */
+    private void setTimeRangeCondition(QueryWrapper<User> queryWrapper, UserExportRequest request) {
+        Date now = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(now);
+
+        // 根据类型设置时间范围
+        switch (request.getType()) {
+            case 1: // 天
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                queryWrapper.ge("createTime", calendar.getTime());
+                break;
+            case 2: // 周
+                calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                queryWrapper.ge("createTime", calendar.getTime());
+                break;
+            case 3: // 月
+                calendar.set(Calendar.DAY_OF_MONTH, 1);
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                queryWrapper.ge("createTime", calendar.getTime());
+                break;
+            case 4: // 年
+                calendar.set(Calendar.MONTH, Calendar.JANUARY);
+                calendar.set(Calendar.DAY_OF_MONTH, 1);
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                queryWrapper.ge("createTime", calendar.getTime());
+                break;
+            case 5: // 自定义
+                if (request.getStartTime() != null) {
+                    queryWrapper.ge("createTime", request.getStartTime());
+                }
+                if (request.getEndTime() != null) {
+                    queryWrapper.le("createTime", request.getEndTime());
+                }
+                break;
+            default:
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的导出类型");
         }
     }
 }

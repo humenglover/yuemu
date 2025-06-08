@@ -325,6 +325,7 @@ onMounted(() => {
   padding: 16px;
   gap: 20px;
   width: 100%;
+  max-width: 1200px; /* 添加最大宽度限制 */
   margin: 0 auto;
   overflow: hidden;
 }
@@ -517,7 +518,7 @@ onMounted(() => {
     z-index: 1;
     margin: 0;
     background: #fff;
-    height: 100vh;  /* 确保全屏高度 */
+    height: 88vh;  /* 确保全屏高度 */
     overflow: hidden;  /* 防止滚动 */
   }
 

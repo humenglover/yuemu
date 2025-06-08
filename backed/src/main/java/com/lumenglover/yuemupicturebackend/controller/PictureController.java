@@ -380,4 +380,38 @@ public class PictureController {
         PictureVO pictureVO = pictureService.uploadPostPicture(multipartFile, pictureUploadRequest, loginUser);
         return ResultUtils.success(pictureVO);
     }
+
+    /**
+     * 设置图片精选状态
+     */
+    @PostMapping("/feature")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> setPictureFeature(@RequestBody PictureFeatureRequest pictureFeatureRequest,
+                                                   HttpServletRequest request) {
+        if (pictureFeatureRequest == null || pictureFeatureRequest.getId() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = pictureService.setPictureFeature(pictureFeatureRequest, loginUser);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 获取精选图片列表
+     */
+    @PostMapping("/feature/list")
+    public BaseResponse<Page<PictureVO>> getFeaturePicture(@RequestBody PictureQueryRequest pictureQueryRequest,
+                                                           HttpServletRequest request) {
+        if (pictureQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // 限制爬虫
+        long size = pictureQueryRequest.getPageSize();
+        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        crawlerManager.detectNormalRequest(request);
+
+        Page<PictureVO> picturePage = pictureService.getFeaturePicture(pictureQueryRequest, request);
+        return ResultUtils.success(picturePage);
+    }
 }

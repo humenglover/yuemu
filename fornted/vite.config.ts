@@ -41,11 +41,16 @@ export default defineConfig(({ command, mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: isProd ? 'https://your_server_url' : 'http://localhost:8123',
+          // target: isProd ? 'https://lumenglover.com' : 'http://localhost:8123',
+          target: 'https://lumenglover.com' ,
           changeOrigin: true,
           ws: true
         }
       },
+      // headers: {
+      //   'Cross-Origin-Opener-Policy': 'same-origin',
+      //   'Cross-Origin-Embedder-Policy': 'require-corp'
+      // }
     },
     // 生产环境特定配置
     build: {

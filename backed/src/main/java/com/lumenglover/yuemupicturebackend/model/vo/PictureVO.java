@@ -153,6 +153,23 @@ public class PictureVO implements Serializable {
      */
     private Long viewCount;
 
+    /**
+     * 聊天总数
+     */
+    private Long chatCount;
+
+    /**
+     * 是否精选
+     */
+    private Integer isFeature;
+
+    /**
+     * 是否允许下载：0-禁止下载 1-允许下载
+     */
+    private Integer isDownload;
+
+    private Double recommendScore;
+
     private static final long serialVersionUID = 1L;
 
     /**

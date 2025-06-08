@@ -177,7 +177,7 @@ const postPagination = ref({
   current: 1,
   pageSize: 8
 })
-
+const isEndOfData = ref(false)
 // 页面加载时获取设备类型并获取数据
 onMounted(async () => {
   device.value = await getDeviceType()
@@ -313,7 +313,7 @@ const loading = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
 const pageSize = 12
-const isEndOfData = ref(false)
+
 
 // 加载图片数据
 const loadPictureData = async () => {
@@ -464,7 +464,7 @@ const startPrivateChat = async () => {
 .page-content {
   margin-left: -20px;
   margin-right: -20px;
-  margin-top: -40px;
+  margin-top: -20px;
 }
 
 .user-card {

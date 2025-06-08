@@ -52,7 +52,7 @@ public class EmailSenderUtil {
 
         try {
             MimeMessage message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(from));
+            message.setFrom(new InternetAddress(from, "悦木", "UTF-8"));
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
 
             // 编码邮件主题
@@ -103,7 +103,7 @@ public class EmailSenderUtil {
 
         try {
             MimeMessage message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(from));
+            message.setFrom(new InternetAddress(from, "悦木", "UTF-8"));
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
 
             // 编码邮件主题

@@ -123,6 +123,15 @@
                 </template>
                 <template v-else-if="column.key === 'action'">
                   <div class="action-buttons">
+                    <!-- 查看详情按钮 -->
+                    <a-button
+                      type="link"
+                      class="table-button view-button"
+                      @click="goToUserDetail(record.id)"
+                    >
+                      <EyeOutlined />
+                      查看详情
+                    </a-button>
                     <!-- 封禁按钮 -->
                     <a-button
                       v-if="record.userRole !== 'admin' && record.id !== loginUserStore.loginUser.id && record.userRole !== 'ban'"
@@ -263,6 +272,7 @@
             <van-checkbox-group v-model="state.selectedRowKeys">
               <van-cell-group inset v-for="user in dataList" :key="user.id">
                 <van-card
+
                   :title="user.userName || '未设置昵称'"
                   :desc="user.userProfile || '这个人很懒，什么都没写~'"
                   :thumb="user.userAvatar"
@@ -304,6 +314,19 @@
                         v-if="user.userRole !== 'admin' && user.id !== loginUserStore.loginUser.id"
                         class="card-checkbox"
                       />
+                      <van-button
+                        size="mini"
+                        type="primary"
+                        plain
+                        @click="goToUserDetail(user.id)"
+                        class="view-button"
+                        style="margin-right: 8px"
+                      >
+                        <template #icon>
+                          <EyeOutlined />
+                        </template>
+                        查看
+                      </van-button>
                       <!-- 封禁按钮 -->
                       <van-button
                         v-if="user.userRole !== 'admin' && user.id !== loginUserStore.loginUser.id && user.userRole !== 'ban'"
@@ -481,8 +504,12 @@ import {
   SearchOutlined,
   ExclamationCircleFilled,
   MailOutlined,
+  EyeOutlined,
 } from '@ant-design/icons-vue'
+import { useRouter } from 'vue-router'
+
 const loginUserStore = useLoginUserStore()
+const router = useRouter()
 // 定义用于存储设备类型的响应式变量
 const device = ref<string>('')
 // 页面加载时获取设备类型并获取数据
@@ -837,6 +864,11 @@ const handleBanOrUnban = async (user: API.UserVO) => {
   } catch (error: any) {
     message.error(error.response?.data?.message || '操作失败')
   }
+}
+
+// 跳转到用户详情页
+const goToUserDetail = (userId: string) => {
+  router.push(`/user/${userId}`)
 }
 </script>
 
@@ -1503,6 +1535,26 @@ const handleBanOrUnban = async (user: API.UserVO) => {
     padding: 0 12px;
     border-radius: 4px;
     min-width: 72px;
+  }
+
+  .view-button {
+    height: 28px;
+    line-height: 26px;
+    font-size: 13px;
+    padding: 0 12px;
+    border-radius: 4px;
+    color: #1890ff;
+    border-color: #1890ff;
+
+    :deep(.anticon) {
+      font-size: 14px;
+      margin-right: 4px;
+      vertical-align: -0.125em;
+    }
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 }
 

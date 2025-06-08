@@ -467,7 +467,8 @@ onMounted(async () => {
 /* 移动端适配 */
 @media screen and (max-width: 768px) {
   .message-center {
-    margin: 0;
+    margin-left: -20px !important;
+    margin-right: -20px !important;
     padding: 0;
     background: #f8fafc;
   }
@@ -573,7 +574,7 @@ onMounted(async () => {
     border-radius: 0;
     box-shadow: none;
     margin-top: 0;
-    min-height: calc(100vh - 220px);
+    min-height: 100vh ;
   }
 
   .list-header {
@@ -632,7 +633,7 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   margin-top: 24px;
   overflow: hidden;
-  min-height: calc(100vh - 400px);
+  min-height: calc(100vh - 350px);
 }
 
 .list-header {

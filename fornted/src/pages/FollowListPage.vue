@@ -1,151 +1,98 @@
 <template>
-  <div id="followListPage">
-    <!-- 顶部标签页切换 -->
-    <van-tabs v-model:active="activeTab" sticky animated swipeable class="custom-tabs">
-      <template #nav-right>
-        <div class="tab-count-wrapper">
-          <div class="tab-count">
-            {{ formatCount(activeTab === 'follow' ? followCount : fansCount) }}
+  <div class="page-container">
+
+
+    <!-- 搜索框 -->
+    <div class="search-container">
+      <!-- 顶部导航 -->
+      <div class="nav-container">
+        <div class="nav-tabs">
+          <div
+            class="nav-tab"
+            :class="{ active: activeTab === 'follow' }"
+            @click="activeTab = 'follow'"
+          >
+            <span class="tab-text">关注</span>
+            <span class="tab-count">{{ followCount }}</span>
+          </div>
+          <div
+            class="nav-tab"
+            :class="{ active: activeTab === 'fans' }"
+            @click="activeTab = 'fans'"
+          >
+            <span class="tab-text">粉丝</span>
+            <span class="tab-count">{{ fansCount }}</span>
           </div>
         </div>
-      </template>
-      <van-tab title="关注" name="follow">
-        <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-          <van-list
-            v-model:loading="loading"
-            :finished="finished"
-            finished-text="没有更多了"
-            @load="loadMore"
-            class="user-list"
-          >
-            <div class="list-container">
-              <!-- 搜索框 -->
-              <div class="search-wrapper">
-                <van-search
-                  v-model="searchText"
-                  placeholder="请输入用户ID"
-                  shape="round"
-                  @search="handleSearch"
-                  @clear="handleClear"
-                  class="search-box"
-                  type="text"
-                  :formatter="idFormatter"
-                />
-              </div>
-              <template v-if="userList.length">
-                <div v-for="user in userList" :key="user.id" class="user-item">
-                  <div class="user-info" @click="goToUserSpace(user)">
-                    <van-image
-                      :src="user.userAvatar || getDefaultAvatar(user.userName)"
-                      round
-                      width="48"
-                      height="48"
-                      class="avatar"
-                    />
-                    <div class="user-detail">
-                      <div class="username">{{ user.userName }}</div>
-                      <div class="user-id">ID: {{ user.id }}</div>
-                    </div>
-                  </div>
-                  <div class="button-group" v-if="activeTab === 'follow'">
-<!--                    <van-button -->
-<!--                      size="small"-->
-<!--                      type="default"-->
-<!--                      round-->
-<!--                      :loading="user.loading"-->
-<!--                      @click.stop="handleUnfollow(user)"-->
-<!--                      class="unfollow-button"-->
-<!--                    >-->
-<!--                      取消关注-->
-<!--                    </van-button>-->
-                  </div>
-                  <div v-else>
-                    <van-button
-                      size="small"
-                      :type="user.isFollowing ? 'default' : 'primary'"
-                      round
-                      :loading="user.loading"
-                      @click="toggleFollow(user)"
-                      class="follow-button"
-                    >
-                      {{ user.isFollowing ? '已关注' : '关注' }}
-                    </van-button>
-                  </div>
-                </div>
-              </template>
-              <template v-else-if="!loading">
-                <div class="empty-state">
-                  <van-empty
-                    :image="activeTab === 'follow' ? 'search' : 'error'"
-                    :description="activeTab === 'follow' ? '还没有关注任何人' : '还没有粉丝'"
-                  >
-                    <template #bottom>
-                      <div class="empty-hint">
-                        {{ activeTab === 'follow' ? '去发现更多有趣的人吧' : '分享更多内容来吸引粉丝吧' }}
-                      </div>
-                      <div class="empty-action">
-                        <van-button
-                          round
-                          type="primary"
-                          size="small"
-                          @click="goToHome"
-                          class="go-home-btn"
-                        >
-                          去首页看看
-                        </van-button>
-                      </div>
-                    </template>
-                  </van-empty>
-                </div>
-              </template>
-            </div>
-          </van-list>
-        </van-pull-refresh>
-      </van-tab>
+      </div>
+      <div class="search-box">
+        <i class="search-icon">🔍</i>
+        <input
+          type="text"
+          :placeholder="activeTab === 'follow' ? '搜索关注' : '搜索粉丝'"
+          v-model="searchText"
+          @input="handleSearch"
+          class="search-input"
+        />
+        <div class="search-clear" @click="handleClear" v-if="searchText">✕</div>
+      </div>
+    </div>
 
-      <van-tab title="粉丝" name="fans">
-        <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-          <van-list
-            v-model:loading="loading"
-            :finished="finished"
-            finished-text="没有更多了"
-            @load="loadMore"
-            class="user-list"
-          >
-            <div class="list-container">
-              <!-- 搜索框 -->
-              <div class="search-wrapper">
-                <van-search
-                  v-model="searchText"
-                  placeholder="搜索粉丝"
-                  shape="round"
-                  @search="handleSearch"
-                  @clear="handleClear"
-                  class="search-box"
-                />
-              </div>
-              <template v-if="userList.length">
-                <div v-for="user in userList" :key="user.id" class="user-item">
-                  <div class="user-info" @click="goToUserSpace(user)">
-                    <van-image
-                      :src="user.userAvatar || getDefaultAvatar(user.userName)"
-                      round
-                      width="48"
-                      height="48"
-                    />
-                    <div class="user-detail">
-                      <div class="username">{{ user.userName }}</div>
-                      <div class="user-id">ID: {{ user.id }}</div>
-                    </div>
-                  </div>
-
-                </div>
-              </template>
+    <!-- 用户列表 -->
+    <div class="content-container" @scroll="handleScroll">
+      <div class="user-list">
+        <div v-for="user in userList" :key="user.id" class="user-card">
+          <div class="user-info" @click="goToUserSpace(user)">
+            <div class="avatar-wrapper">
+              <img
+                :src="user.userAvatar || getDefaultAvatar(user.userName)"
+                class="avatar"
+                alt="avatar"
+              />
+              <div class="avatar-border"></div>
             </div>
-          </van-list>
-        </van-pull-refresh>
-      </van-tab>
-    </van-tabs>
+            <div class="user-details">
+              <div class="username">{{ user.userName }}</div>
+              <div class="user-id">
+                <span class="id-label">ID:</span>
+                <span class="id-value">{{ user.id }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="action-area">
+            <button
+              v-if="activeTab === 'follow'"
+              class="follow-btn unfollow"
+              @click="handleUnfollow(user)"
+            >
+              取消关注
+            </button>
+            <button
+              v-else
+              class="follow-btn"
+              :class="{ following: user.isFollowing }"
+              @click="toggleFollow(user)"
+            >
+              {{ user.isFollowing ? '已关注' : '关注' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 加载状态 -->
+      <div class="loading-state" v-if="loading">
+        <div class="loading-spinner"></div>
+        <span>加载中...</span>
+      </div>
+
+      <!-- 空状态 -->
+      <div class="empty-state" v-if="!loading && !userList.length">
+        <div class="empty-icon">🤔</div>
+        <div class="empty-text">{{ activeTab === 'follow' ? '还没有关注任何人' : '还没有粉丝' }}</div>
+        <div class="empty-hint">{{ activeTab === 'follow' ? '去发现更多有趣的人吧' : '分享更多内容来吸引粉丝吧' }}</div>
+        <button class="explore-btn" @click="goToHome">去首页看看</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -378,318 +325,430 @@ onMounted(() => {
 </script>
 
 <style scoped>
-#followListPage {
-  min-height: calc(100vh - 100px);
-  background: #f8fafc;
-  padding: 0 12px;
-}
-
-.custom-tabs {
-  margin: 0 -12px;
-  background: white;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-:deep(.van-tabs__nav) {
-  padding: 0 12px;
-}
-
-:deep(.van-tab) {
-  padding: 0 20px;
-  font-size: 15px;
-  color: #64748b;
+.page-container {
+  min-height: 92vh;
+  background: linear-gradient(135deg, #f0f7ff 0%, #fff5f5 100%);
   position: relative;
+  margin: -28px!important;
+  padding: 0;
+  width: 100vw;
+  overflow-x: hidden;
 }
 
-.tab-count-wrapper {
+.nav-container {
+  position: sticky;
+  top: 0;
+
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 16px 0;
+  width: 100%;
+  margin: 0;
+}
+
+.nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+
+}
+
+.nav-tab {
+  position: relative;
   display: flex;
   align-items: center;
-  padding-right: 16px;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+}
+
+.nav-tab.active {
+  background: linear-gradient(135deg, #ff6b6b10 0%, #ffd93d10 100%);
+}
+
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -17px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right, #ff6b6b, #ffd93d);
+  border-radius: 3px;
+}
+
+.tab-text {
+  font-size: 17px;
+  font-weight: 600;
+  color: #2d3436;
+  transition: all 0.3s ease;
+}
+
+.nav-tab.active .tab-text {
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .tab-count {
-  font-size: 13px;
-  color: #64748b;
-  background: linear-gradient(135deg, #fff6f3 0%, #fff9f8 100%);
-  border: 1px solid #ffeae3;
-  padding: 2px 8px;
-  border-radius: 14px;
-  min-width: 32px;
-  text-align: center;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(255, 142, 83, 0.1);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff6b6b20, #ffd93d20);
+  color: #ff6b6b;
+}
+
+.search-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  margin-top: 24px;
+}
+
+.search-box:focus-within {
+  box-shadow: 0 4px 25px rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.search-icon {
+  font-size: 18px;
+  margin-right: 12px;
+  opacity: 0.5;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #2d3436;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: #b2bec3;
+}
+
+.search-clear {
+  cursor: pointer;
+  padding: 4px;
+  color: #b2bec3;
+  transition: all 0.3s ease;
+}
+
+.search-clear:hover {
+  color: #ff6b6b;
+}
+
+.content-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+  position: relative;
+
 }
 
 .user-list {
-  padding: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
-.list-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 0 12px;
-}
-
-.user-item {
+.user-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin-bottom: 12px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  margin-bottom: 16px;
 }
 
-.user-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.user-item:last-child {
-  margin-bottom: 0;
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 16px;
   cursor: pointer;
 }
 
+.avatar-wrapper {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .avatar {
-  border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  transition: all 0.3s ease;
 }
 
-.user-info:active .avatar {
-  transform: scale(0.95);
+.avatar-border {
+  position: absolute;
+  inset: -2px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+  opacity: 0;
+  transition: all 0.3s ease;
+
 }
 
-.user-detail {
+.user-info:hover .avatar-border {
+  opacity: 1;
+  inset: -3px;
+}
+
+.user-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .username {
-  font-size: 15px;
-  font-weight: 500;
-  color: #1a1a1a;
-  line-height: 1.2;
-  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3436;
+  line-height: 1.4;
 }
 
 .user-id {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1;
-}
-
-.button-group {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
 }
 
-.follow-button,
-.unfollow-button {
-  min-width: 72px;
-  height: 32px;
+.id-label {
   font-size: 13px;
+  color: #b2bec3;
 }
 
-.unfollow-button {
-  color: #64748b;
-  border-color: #e2e8f0;
-  background: #f8fafc;
-}
-
-.unfollow-button:active {
-  opacity: 0.8;
-}
-
-:deep(.van-button--primary) {
-  background: #ff8e53;
-  border-color: #ff8e53;
-  box-shadow: 0 2px 6px rgba(255, 142, 83, 0.2);
-}
-
-:deep(.van-button--default) {
-  border-color: #e2e8f0;
-  color: #64748b;
-  background: #f8fafc;
-}
-
-:deep(.van-tabs__line) {
-  background-color: #ff8e53;
-  height: 3px;
-  border-radius: 3px;
-  bottom: 0;
-}
-
-:deep(.van-list__loading),
-:deep(.van-list__finished-text) {
-  padding: 16px 0;
-  color: #94a3b8;
+.id-value {
   font-size: 13px;
-  text-align: center;
-  opacity: 0.8;
+  color: #636e72;
+  font-weight: 500;
 }
 
-:deep(.van-pull-refresh__track) {
-  min-height: calc(100vh - 100px);
-  background: #f8fafc;
-  padding-bottom: 24px;
+.follow-btn {
+  padding: 8px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.2);
 }
 
-:deep(.van-pull-refresh__head),
-:deep(.van-loading__spinner) {
-  color: #ff8e53;
+.follow-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+}
+
+.follow-btn.following {
+  background: #f5f6fa;
+  color: #636e72;
+  box-shadow: none;
+}
+
+.follow-btn.unfollow {
+  background: rgba(245, 246, 250, 0.95);
+  color: #636e72;
+  box-shadow: none;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.follow-btn.unfollow:hover {
+  background: #fff1f1;
+  color: #ff6b6b;
+  border-color: #ffd8d8;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: #636e72;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #ff6b6b20;
+  border-top-color: #ff6b6b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .empty-state {
-  padding: 60px 0;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
   text-align: center;
-  margin-top: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  margin-top: 40px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.empty-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3436;
+  margin-bottom: 8px;
 }
 
 .empty-hint {
-  margin-top: 16px;
-  color: #94a3b8;
   font-size: 15px;
+  color: #636e72;
+  margin-bottom: 24px;
 }
 
-.empty-action {
-  margin-top: 24px;
-}
-
-.go-home-btn {
-  min-width: 120px;
-  height: 36px;
-  font-size: 14px;
-  font-weight: 500;
-  background: linear-gradient(135deg, #ff8e53 0%, #ff7676 100%);
+.explore-btn {
+  padding: 12px 32px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+  color: white;
   border: none;
-  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.3);
+  cursor: pointer;
   transition: all 0.3s ease;
-  display: inline-block;
+  box-shadow: 0 4px 20px rgba(255, 107, 107, 0.2);
 }
 
-.go-home-btn:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
+.explore-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(255, 107, 107, 0.3);
 }
 
-:deep(.van-empty__image) {
-  width: 120px;
-  height: 120px;
-}
-
-:deep(.van-empty__description) {
-  color: #64748b;
-  font-size: 16px;
-  margin-top: 16px;
-  font-weight: 500;
-}
-
-/* 移动端适配 */
 @media screen and (max-width: 768px) {
-  .list-container {
-    padding: 0 8px;
+  .page-container {
+    padding: 0;
   }
 
-  .user-list {
-    padding: 8px;
+  .nav-container {
+    padding: 12px 0;
   }
 
-  .user-item {
-    margin-bottom: 8px;
-    padding: 12px;
+  .search-container {
+    padding: 16px;
+  }
+
+  .content-container {
+    padding: 0 16px 16px;
+  }
+
+  .user-card {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 16px;
   }
 
   .empty-state {
-    margin: 0 8px;
-    padding: 40px 0;
-    margin-top: 8px;
+    margin: 20px 16px;
+    padding: 40px 16px;
+    border-radius: 20px;
   }
 
-  .empty-action {
-    margin-top: 20px;
+  .nav-tabs {
+    gap: 20px;
+    padding: 0 16px;
   }
 
-  .go-home-btn {
-    min-width: 110px;
-    height: 34px;
+  .nav-tab {
+    padding: 6px 12px;
+  }
+
+  .tab-text {
+    font-size: 16px;
+  }
+
+  .tab-count {
+    font-size: 13px;
+    padding: 3px 8px;
+  }
+
+  .search-box {
+    padding: 10px 16px;
+  }
+
+  .avatar-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .username {
+    font-size: 15px;
+  }
+
+  .follow-btn {
+    padding: 6px 20px;
     font-size: 13px;
   }
 
-  :deep(.van-tab) {
-    padding: 0 16px;
-    font-size: 14px;
+  .empty-text {
+    font-size: 16px;
   }
 
   .empty-hint {
     font-size: 14px;
-    margin-top: 16px;
   }
-}
 
-/* 标签页样式 */
-:deep(.van-tab) {
-  font-size: 17px;
-  font-weight: 500;
-}
-
-:deep(.van-tabs__nav) {
-  padding: 8px 0;
-}
-
-:deep(.van-tab--active) {
-  font-weight: 500;
-  color: #ff8e53;
-}
-
-/* 移动端适配 */
-@media screen and (max-width: 768px) {
-  :deep(.van-tab) {
-    font-size: 16px;
+  .explore-btn {
+    padding: 10px 28px;
+    font-size: 14px;
   }
-}
-
-/* 搜索框样式 */
-.search-wrapper {
-  padding: 12px 16px;
-  margin-bottom: 8px;
-}
-
-.search-box {
-  width: 100%;
-}
-
-:deep(.van-search) {
-  padding: 0;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-:deep(.van-search__content) {
-  background: #f8fafc;
-  border-radius: 6px;
-}
-
-:deep(.van-field__control) {
-  color: #1a1a1a;
-  font-size: 14px;
-}
-
-:deep(.van-field__control::placeholder) {
-  color: #94a3b8;
 }
 </style>

@@ -29,15 +29,12 @@ import com.lumenglover.yuemupicturebackend.manager.auth.model.SpaceUserPermissio
 import com.lumenglover.yuemupicturebackend.manager.upload.FilePictureUpload;
 import com.lumenglover.yuemupicturebackend.manager.upload.PictureUploadTemplate;
 import com.lumenglover.yuemupicturebackend.manager.upload.UrlPictureUpload;
+import com.lumenglover.yuemupicturebackend.mapper.ChatMessageMapper;
 import com.lumenglover.yuemupicturebackend.mapper.PictureMapper;
 import com.lumenglover.yuemupicturebackend.model.dto.file.UploadPictureResult;
 import com.lumenglover.yuemupicturebackend.model.dto.picture.*;
-import com.lumenglover.yuemupicturebackend.model.entity.Picture;
-import com.lumenglover.yuemupicturebackend.model.entity.Space;
-import com.lumenglover.yuemupicturebackend.model.entity.User;
+import com.lumenglover.yuemupicturebackend.model.entity.*;
 import com.lumenglover.yuemupicturebackend.model.entity.es.EsPicture;
-import com.lumenglover.yuemupicturebackend.model.entity.LikeRecord;
-import com.lumenglover.yuemupicturebackend.model.entity.ShareRecord;
 import com.lumenglover.yuemupicturebackend.model.enums.OperationEnum;
 import com.lumenglover.yuemupicturebackend.model.enums.PictureReviewStatusEnum;
 import com.lumenglover.yuemupicturebackend.model.vo.PictureVO;
@@ -121,6 +118,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private CrawlerManager crawlerManager;
+
+    @Resource
+    private ChatMessageMapper chatMessageMapper;
 
     @Override
     public void validPicture(Picture picture) {
@@ -303,25 +303,27 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 设置实时浏览量
         pictureVO.setViewCount(getViewCount(picture.getId()));
 
-        // 关联查询用户信息
-        Long userId = picture.getUserId();
-        if (userId != null && userId > 0) {
-            User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
-            pictureVO.setUser(userVO);
-        }
 
-        // 设置点赞状态 - 使用新的通用点赞表
-        if (loginUser != null) {
-            boolean isLiked = likeRecordService.isContentLiked(picture.getId(), 1, loginUser.getId());
-            pictureVO.setIsLiked(isLiked ? 1 : 0);
-            // 获取分享状态
-            boolean isShared = shareRecordService.isContentShared(picture.getId(), 1, loginUser.getId());
-            pictureVO.setIsShared(isShared ? 1 : 0);
-        } else {
-            pictureVO.setIsLiked(0);
-            pictureVO.setIsShared(0);
-        }
+        //优化首页查询性能，只保留浏览量
+         // 关联查询用户信息
+         Long userId = picture.getUserId();
+         if (userId != null && userId > 0) {
+             User user = userService.getById(userId);
+             UserVO userVO = userService.getUserVO(user);
+             pictureVO.setUser(userVO);
+         }
+
+        // // 设置点赞状态 - 使用新的通用点赞表
+        // if (loginUser != null) {
+        //     boolean isLiked = likeRecordService.isContentLiked(picture.getId(), 1, loginUser.getId());
+        //     pictureVO.setIsLiked(isLiked ? 1 : 0);
+        //     // 获取分享状态
+        //     boolean isShared = shareRecordService.isContentShared(picture.getId(), 1, loginUser.getId());
+        //     pictureVO.setIsShared(isShared ? 1 : 0);
+        // } else {
+        //     pictureVO.setIsLiked(0);
+        //     pictureVO.setIsShared(0);
+        // }
 
         return pictureVO;
     }
@@ -683,6 +685,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     public void checkPictureAuth(User loginUser, Picture picture) {
         Long spaceId = picture.getSpaceId();
         Long loginUserId = loginUser.getId();
+
+        // 预上传状态(-3)和帖子图片(-1)只需验证用户所有权
+        if (spaceId != null && (spaceId == -3L || spaceId == -1L)) {
+            if (!picture.getUserId().equals(loginUserId)) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+            }
+            return;
+        }
+
         if (spaceId == null) {
             // 公共图库，仅本人或管理员可操作
             if (!picture.getUserId().equals(loginUserId) && !userService.isAdmin(loginUser)) {
@@ -741,19 +752,21 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void editPicture(PictureEditRequest pictureEditRequest, User loginUser) {
-        // 在此处将实体类和 DTO 进行转换
+        Long pictureId = pictureEditRequest.getId();
+        Picture oldPicture = this.getById(pictureId);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
+
+        // 检查权限 - 修正参数数量
+        checkPictureAuth(loginUser, oldPicture);
+
+        // 创建新的图片对象
         Picture picture = new Picture();
         BeanUtils.copyProperties(pictureEditRequest, picture);
-        // 注意将 list 转为 string
-        picture.setTags(JSONUtil.toJsonStr(pictureEditRequest.getTags()));
-        // 设置编辑时间
-        picture.setEditTime(new Date());
-        // 数据校验
-        this.validPicture(picture);
-        // 判断是否存在
-        long id = pictureEditRequest.getId();
-        Picture oldPicture = this.getById(id);
-        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+
+        // 设置默认值
+        if (picture.getIsDownload() == null) {
+            picture.setIsDownload(1);  // 默认允许下载
+        }
 
         // 保留原有数据中的一些字段
         picture.setUrl(oldPicture.getUrl());
@@ -768,38 +781,24 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setSpaceId(oldPicture.getSpaceId());
         picture.setCreateTime(oldPicture.getCreateTime());
 
-        // 补充审核参数
-        this.fillReviewParams(picture, loginUser);
-        // 操作数据库
-        boolean result = this.updateById(picture);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        // 设置编辑时间
+        picture.setEditTime(new Date());
 
-        // 同步更新 ES 数据
+        // 更新图片
+        boolean success = this.updateById(picture);
+        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
+
+        // 同步到ES
         try {
-            // 先查询 ES 中是否存在该数据
-            Optional<EsPicture> esOptional = esPictureDao.findById(id);
-            EsPicture esPicture;
-            if (esOptional.isPresent()) {
-                // 如果存在，获取现有数据
-                esPicture = esOptional.get();
-                // 只更新需要修改的字段
-                esPicture.setName(picture.getName());
-                esPicture.setIntroduction(picture.getIntroduction());
-                esPicture.setCategory(picture.getCategory());
-                esPicture.setTags(picture.getTags());
-                esPicture.setEditTime(picture.getEditTime());
-                esPicture.setReviewStatus(picture.getReviewStatus());
-                esPicture.setReviewMessage(picture.getReviewMessage());
-            } else {
-                // 如果不存在，创建新的 ES 文档
-                esPicture = new EsPicture();
+            Optional<EsPicture> esPictureOptional = esPictureDao.findById(pictureId);
+            if (esPictureOptional.isPresent()) {
+                EsPicture esPicture = esPictureOptional.get();
                 BeanUtils.copyProperties(picture, esPicture);
+                esPictureDao.save(esPicture);
             }
-            // 保存或更新到 ES
-            esPictureDao.save(esPicture);
         } catch (Exception e) {
-            log.error("Failed to sync picture to ES during edit, pictureId: {}", picture.getId(), e);
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "同步 ES 数据失败");
+            log.error("同步ES数据失败", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "同步ES数据失败");
         }
     }
 
@@ -1202,6 +1201,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         });
     }
 
+
     /**
      * nameRule 格式：图片{序号}
      *
@@ -1385,6 +1385,31 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         PictureVO pictureVO = this.getPictureVO(picture, request);
         pictureVO.setPermissionList(permissionList);
 
+        // 获取聊天总数
+        String chatCountKey = String.format("picture:chatCount:%d", id);
+        String cachedChatCount = stringRedisTemplate.opsForValue().get(chatCountKey);
+
+        if (cachedChatCount != null) {
+            // 如果缓存存在，直接使用缓存的值
+            pictureVO.setChatCount(Long.valueOf(cachedChatCount));
+        } else {
+            // 缓存不存在，查询数据库
+            QueryWrapper<ChatMessage> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("pictureId", id)
+                    .eq("isDelete", 0);
+            long chatCount = chatMessageMapper.selectCount(queryWrapper);
+
+            // 更新缓存，设置5分钟过期时间
+            stringRedisTemplate.opsForValue().set(
+                    chatCountKey,
+                    String.valueOf(chatCount),
+                    300 + RandomUtil.randomInt(0, 60), // 添加随机过期时间，避免缓存雪崩
+                    TimeUnit.SECONDS
+            );
+
+            pictureVO.setChatCount(chatCount);
+        }
+
         return pictureVO;
     }
 
@@ -1481,8 +1506,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             // 用户图片查询
             handleUserQuery(userId, loginUser, queryWrapper);
         } else {
-            // 公开图库查询
-            handlePublicQuery(queryWrapper);
+            // 公开图库查询 - 自定义排序逻辑
+            handlePublicQueryWithCustomSort(queryWrapper);
         }
 
         // 执行查询
@@ -1527,10 +1552,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     /**
-     * 处理公开图库查询
+     * 处理公开图库查询 - 自定义排序逻辑
      */
-    private void handlePublicQuery(QueryWrapper<Picture> queryWrapper) {
-
+    private void handlePublicQueryWithCustomSort(QueryWrapper<Picture> queryWrapper) {
         // 获取当前用户
         User loginUser = null;
         try {
@@ -1547,6 +1571,42 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 公开图库只显示审核通过的图片
         queryWrapper.eq("reviewStatus", PictureReviewStatusEnum.PASS.getValue())
                 .isNull("spaceId");
+
+        // 普通用户按推荐分数倒序排序，分数相同时按时间倒序
+        queryWrapper.orderByDesc("recommendScore", "createTime");
+    }
+
+    @Override
+    public boolean setPictureFeature(PictureFeatureRequest pictureFeatureRequest, User loginUser) {
+        ThrowUtils.throwIf(!UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole()),
+                ErrorCode.NO_AUTH_ERROR, "仅管理员可设置精选");
+
+        Long pictureId = pictureFeatureRequest.getId();
+        Picture picture = this.getById(pictureId);
+        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
+
+        // 更新精选状态
+        picture.setIsFeature(pictureFeatureRequest.getIsFeature());
+        return this.updateById(picture);
+    }
+
+    @Override
+    public Page<PictureVO> getFeaturePicture(PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
+        long current = pictureQueryRequest.getCurrent();
+        long size = pictureQueryRequest.getPageSize();
+
+        // 构建查询条件
+        QueryWrapper<Picture> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("isFeature", 1)
+                .eq("reviewStatus", PictureReviewStatusEnum.PASS.getValue())
+                .isNull("spaceId")
+                .orderByDesc("createTime");
+
+        // 执行查询
+        Page<Picture> picturePage = this.page(new Page<>(current, size), queryWrapper);
+
+        // 返回结果
+        return getPictureVOPage(picturePage, request);
     }
 }
 

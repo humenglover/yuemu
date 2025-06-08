@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.springframework.util.CollectionUtils;
 import cn.hutool.core.util.StrUtil;
+import java.io.IOException;
+import javax.servlet.http.HttpServletResponse;
 
 
 @RestController
@@ -408,6 +410,21 @@ public class UserController {
 
         boolean result = userService.banOrUnbanUser(request.getUserId(), request.getIsUnban(), admin);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 导出用户数据（仅管理员）
+     */
+    @PostMapping("/export")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public void exportUsers(@RequestBody UserExportRequest exportRequest,
+                            HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        try {
+            userService.exportUserData(exportRequest, httpRequest, httpResponse);
+        } catch (IOException e) {
+            log.error("导出用户数据失败", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "导出失败");
+        }
     }
 
 }

@@ -33,7 +33,7 @@
           style="font-size: 12px"
           v-if="comment.commentUser?.id === loginUserStore.loginUser?.id"
           @click="(e) => doDelete(comment, e)"
-          ><DeleteOutlined
+        ><DeleteOutlined
         /></span>
         <span
           key="comment-nested-reply-to"
@@ -46,14 +46,19 @@
           v-if="comment.children && comment.children.length > 0"
           :key="`expand-${comment.commentId}`"
           @click="toggleExpand(comment)"
-          >{{ comment.isExpanded ? '折叠' : '展开' }}</span
+        >{{ comment.isExpanded ? '折叠' : '展开' }}</span
         >
       </template>
       <template #author>
         <a>{{ comment.commentUser?.userName }}</a>
       </template>
       <template #avatar>
-        <a-avatar :src="comment.commentUser?.userAvatar" alt="User" />
+        <a-avatar
+          :src="comment.commentUser?.userAvatar || getDefaultAvatar(comment.commentUser?.userName)"
+          alt="User"
+          class="user-avatar"
+          @click="handleUserClick(comment.commentUser)"
+        />
       </template>
       <template #content>
         <p>
@@ -63,8 +68,8 @@
       <template #datetime>
         <a-tooltip>
           <span key="comment-nested-reply-to" style="font-size: 12px">{{
-            formatTime(comment.createTime)
-          }}</span>
+              formatTime(comment.createTime)
+            }}</span>
         </a-tooltip>
       </template>
       <CommentList
@@ -91,6 +96,10 @@ import moment from 'moment'
 import { deleteCommentUsingPost, likeCommentUsingPost } from '@/api/commentsController.ts'
 import { message, Modal } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
+import { useRouter } from 'vue-router'
+import { getDefaultAvatar } from '@/utils/userUtils'
+
+const router = useRouter()
 
 const loginUserStore = useLoginUserStore()
 
@@ -244,6 +253,13 @@ const handleReplyClick = (commentId: string) => {
   emit('reply-clicked', commentId.toString())
   // console.log('CommentList - 回复被点击，评论 ID:', commentId.toString())
 }
+
+// 处理用户头像点击
+const handleUserClick = (user: any) => {
+  if (user?.id) {
+    router.push(`/user/${user.id}`)
+  }
+}
 </script>
 
 <style scoped>
@@ -258,5 +274,14 @@ const handleReplyClick = (commentId: string) => {
 
 :deep(.comment-list-wrapper) {
   padding-left: -100px !important;
+}
+
+.user-avatar {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.user-avatar:hover {
+  transform: scale(1.1);
 }
 </style>

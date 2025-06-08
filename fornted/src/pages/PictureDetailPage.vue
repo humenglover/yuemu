@@ -1,319 +1,508 @@
 <template>
-  <div id="pictureDetailPage" v-show="mounted" :class="{ mounted }">
-    <!-- 图片已删除状态 -->
-    <div v-if="isDeleted" class="deleted-state">
-      <div class="deleted-content">
-        <DeleteOutlined class="deleted-icon" />
-        <h2>图片已删除</h2>
-        <p>该图片可能已被作者删除或管理员删除</p>
-        <a-button type="primary" @click="router.back()" class="back-button">
-          返回上一页
-        </a-button>
+  <div class="picture-detail" :class="{ 'is-loaded': mounted }">
+    <!-- 欢迎层 -->
+    <div class="welcome-layer" v-if="!mounted">
+      <div class="welcome-content">
+        <div class="emoji-row">ʕ •ᴥ•ʔ</div>
+        <div class="emoji-row">(｡♥‿♥｡)</div>
       </div>
     </div>
 
-    <!-- 正常显示图片内容 -->
-    <template v-else>
-      <a-row :gutter="[16, 16]">
-        <!-- 图片预览 -->
-        <a-col :sm="24" :md="16" :xl="18" class="preview-col">
-          <a-card class="preview-card" :bordered="false">
-            <template #title> </template>
-            <div class="image-container" :class="{ loaded: pictureLoaded }">
-              <template v-if="pictureLoaded">
-                <a-image :src="picture.url" class="main-image" />
-              </template>
-              <template v-else>
-                <div class="loading-container">
-                  <div class="loading-content">
-                    <div class="loading-spinner">
-                      <a-spin size="large">
-                        <template #indicator>
-                          <LoadingOutlined :style="{ fontSize: '24px', color: '#ff8e53' }" spin />
-                        </template>
-                      </a-spin>
-                    </div>
-                    <div class="loading-text">
-                      <div class="primary-text">图片加载中...</div>
-                      <div class="secondary-text">请稍候片刻</div>
-                    </div>
-                  </div>
+    <!-- 背景层,只在图片加载完成后显示 -->
+    <template v-if="pictureLoaded && picture.id">
+      <div :style="{
+        backgroundImage: picture.url ? `url(${picture.url})` : 'none',
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        filter: 'blur(120px) brightness(0.6) saturate(120%)',
+        transform: 'scale(1.5)',
+        opacity: '0.85',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1,
+        transition: 'opacity 0.6s ease'
+      }"></div>
+
+      <div :style="{
+        backgroundImage: picture.url ? `url(${picture.url})` : 'none',
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        filter: 'blur(60px) brightness(0.8) saturate(110%)',
+        transform: 'scale(1.5)',
+        opacity: '0.6',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 2,
+        transition: 'opacity 0.8s ease'
+      }"></div>
+
+      <div :style="{
+        backgroundImage: picture.url ? `url(${picture.url})` : 'none',
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        filter: 'blur(30px) brightness(1) saturate(100%)',
+        transform: 'scale(1.5)',
+        opacity: '0.4',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 3,
+        transition: 'opacity 1s ease'
+      }"></div>
+    </template>
+
+    <!-- 内容层 -->
+    <div class="content-layer" :style="{
+      position: 'relative',
+      zIndex: 5,
+      height: '100%',
+      opacity: mounted ? '1' : '0',
+      transition: 'opacity 0.6s ease'
+    }">
+      <!-- Font Awesome -->
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+      <!-- 删除状态 -->
+      <div v-if="isDeleted" class="deleted-view">
+        <div class="deleted-content">
+          <i class="icon-trash"></i>
+          <h2>图片已删除</h2>
+          <p>该图片可能已被作者删除或管理员删除</p>
+          <button class="btn-primary" @click="router.back()">返回上一页</button>
+        </div>
+      </div>
+
+      <!-- 主要内容 -->
+      <template v-else>
+        <div class="layout">
+          <!-- 左侧预览区 -->
+          <div class="preview-section" :class="{ 'is-loaded': pictureLoaded }">
+            <div class="image-wrapper" :class="{ 'is-loaded': pictureLoaded }">
+              <img
+                v-if="pictureLoaded"
+                :src="picture.url"
+                :alt="picture.name"
+                class="preview-image"
+                @click="handleImageClick"
+                @load="handleImageLoad"
+              />
+              <div v-else class="loading-state">
+                <svg class="loader" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#FF6B6B">
+                        <animate attributeName="stop-color"
+                                 values="#FF6B6B; #4FACFE; #43E97B; #F6D365; #FF6B6B"
+                                 dur="4s" repeatCount="indefinite"/>
+                      </stop>
+                      <stop offset="100%" stop-color="#4FACFE">
+                        <animate attributeName="stop-color"
+                                 values="#4FACFE; #43E97B; #F6D365; #FF6B6B; #4FACFE"
+                                 dur="4s" repeatCount="indefinite"/>
+                      </stop>
+                    </linearGradient>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <g class="loader-group">
+                    <path class="loader-camera" d="M86,36H42c-8.284,0-15,6.716-15,15v26c0,8.284,6.716,15,15,15h44c8.284,0,15-6.716,15-15V51 C101,42.716,94.284,36,86,36z M64,84c-9.941,0-18-8.059-18-18s8.059-18,18-18s18,8.059,18,18S73.941,84,64,84z"/>
+                    <circle class="loader-lens" cx="64" cy="66" r="12"/>
+                    <path class="loader-flash" d="M86,36h-8l-4-8H54l-4,8H27c0,0,15,0.021,15,15"/>
+                  </g>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- 全屏预览组件 -->
+          <div
+            class="fullscreen-viewer"
+            :class="{ 'active': isFullscreen }"
+            :style="{
+              background: picture.picColor ? `rgba(${hexToRgb(toHexColor(picture.picColor))[0]}, ${hexToRgb(toHexColor(picture.picColor))[1]}, ${hexToRgb(toHexColor(picture.picColor))[2]}, 0.95)` : 'rgba(0, 0, 0, 0.95)'
+            }"
+            @click="closeFullscreen"
+          >
+            <div class="image-container">
+              <img
+                :src="picture.url"
+                :alt="picture.name"
+                @click.stop
+                @touchstart.prevent="handleTouchStartAndDoubleTap"
+                @touchmove.prevent="handleImageTouchMove"
+                @touchend.prevent="handleImageTouchEnd"
+                :style="{
+                  transform: `scale(${scale}) translateX(${translateX}px)`,
+                  transition: isTransitioning ? 'transform 0.3s ease' : 'none',
+                  'touch-action': 'pan-x',
+                  'user-select': 'none',
+                  '-webkit-user-select': 'none'
+                }"
+              />
+            </div>
+            <button class="close-button" @click="closeFullscreen">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- 右侧信息栏 -->
+          <div class="info-section"
+               ref="infoSection"
+               @touchstart="handleTouchStart"
+               @touchmove="handleTouchMove"
+               @touchend="handleTouchEnd"
+               :class="{ 'is-expanded': isInfoExpanded }">
+            <div class="info-section-content" ref="infoSectionContent">
+              <!-- 作者信息 -->
+              <div class="author-info">
+                <div class="author-avatar"  style="cursor: pointer;">
+                  <img @click="handleUserClick(picture.user)" :src="picture.user?.userAvatar || getDefaultAvatar(picture.user?.userName)" :alt="picture.user?.userName">
                 </div>
-              </template>
-            </div>
-          </a-card>
-        </a-col>
-
-
-        <!-- 图片信息区域 -->
-        <a-col :sm="24" :md="8" :xl="6" class="info-col">
-          <a-card class="info-card" :bordered="false">
-            <!-- 信息描述列表 -->
-            <!-- 添加聊天室 -->
-            <div class="chat-section" v-if="showChatRoom">
-              <a-button
-                type="primary"
-                class="chat-button"
-                @click="openChatModal"
-              >
-                <template #icon><MessageOutlined /></template>
-                <span class="chat-button-text">
-              聊天室
-              <a-avatar-group
-                :maxCount="5"
-                size="small"
-                class="online-avatars"
-              >
-                <a-tooltip
-                  v-for="user in onlineUsers"
-                  :key="user.id"
-                  :title="user.userName"
-                >
-                  <a-avatar
-                    :src="user.userAvatar || getDefaultAvatar(user.userName)"
-                  />
-                </a-tooltip>
-              </a-avatar-group>
-              <span class="online-count">({{ onlineCount }}人在线)</span>
-            </span>
-              </a-button>
-            </div>
-            <a-descriptions :column="1" class="info-descriptions">
-              <a-descriptions-item label="作者" class="author-item" >
-                <a-space>
-                  <a-avatar
-                    :size="28"
-                    @click="handleUserClick(picture.user)"
-                    :src="picture.user?.userAvatar || getDefaultAvatar(picture.user?.userName)"
-                  />
-                  <div class="author-name">{{ picture.user?.userName }}</div>
-                  <a-button
+                <div class="author-details">
+                  <h3 class="author-name"  style="cursor: pointer;">{{ picture.user?.userName }}</h3>
+                  <button
                     v-if="picture.user?.id !== loginUserStore.loginUser?.id"
-                    :type="isFollowed ? 'default' : 'primary'"
-                    size="small"
-                    class="follow-button"
+                    class="btn-follow"
+                    :class="{ 'is-followed': isFollowed }"
                     @click="handleFollow"
-                    :loading="followLoading"
                   >
                     {{ isFollowed ? '已关注' : '关注' }}
-                  </a-button>
-                </a-space>
-              </a-descriptions-item>
-              <a-descriptions-item label="名称">
-                {{ picture.name ?? '未命名' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="简介">
-                {{ picture.introduction ?? '-' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="分类" v-if="canEdit">
-                {{ picture.category ?? '默认' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="标签" v-if="canEdit">
-                <a-tag v-for="tag in picture.tags" :key="tag">
-                  {{ tag }}
-                </a-tag>
-              </a-descriptions-item>
-              <a-descriptions-item label="格式" v-if="device === DEVICE_TYPE_ENUM.PC">
-                {{ picture.picFormat ?? '-' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="宽度" v-if="device === DEVICE_TYPE_ENUM.PC">
-                {{ picture.picWidth ?? '-' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="高度" v-if="device === DEVICE_TYPE_ENUM.PC">
-                {{ picture.picHeight ?? '-' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="宽高比">
-                {{ picture.picScale ?? '-' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="大小">
-                {{ formatSize(picture.picSize) }}
-              </a-descriptions-item>
-              <a-descriptions-item label="主色调">
-                <a-space>
-                  <div
-                    v-if="picture.picColor"
-                    :style="{
-                    width: '66px',
-                    height: '24px',
-                    backgroundColor: toHexColor(picture.picColor),
-                  }"
-                  />
-                  <div v-else>-</div>
-                </a-space>
-              </a-descriptions-item>
-              <a-descriptions-item v-if="device !== DEVICE_TYPE_ENUM.PC">
-                <div class="mobile-actions">
-                  <a-space align="start">
-                    <a-button type="primary" @click="doDownload" class="action-btn download-btn">
-                      <DownloadOutlined />
-                    </a-button>
-                    <a-button
-                      type="primary"
-                      @click="doShare"
-                      v-if="showShareButton"
-                      class="action-btn share-btn"
-                    >
-                      <ShareAltOutlined />
-                    </a-button>
-                    <a-button
-                      type="primary"
-                      @click="doEdit"
-                      v-if="canEdit"
-                      class="action-btn edit-btn"
-                    >
-                      <EditOutlined />
-                    </a-button>
-                    <a-button
-                      type="primary"
-                      @click="showDeleteConfirm"
-                      v-if="canDelete"
-                      class="action-btn delete-btn"
-                    >
-                      <DeleteOutlined />
-                    </a-button>
-                  </a-space>
+                  </button>
                 </div>
-              </a-descriptions-item>
-            </a-descriptions>
+              </div>
 
-            <!-- 操作按钮区域 -->
-            <div class="action-area" v-if="device === DEVICE_TYPE_ENUM.PC">
-              <a-space wrap>
-                <a-button type="primary" @click="doDownload" class="action-btn download-btn">
-                  <DownloadOutlined />
-                </a-button>
-                <a-button
-                  type="primary"
+              <!-- 聊天室入口 -->
+              <div v-if="showChatRoom" class="chat-section">
+                <button class="btn-chat" @click="openChatModal">
+                  <i class="fas fa-comments"></i>
+                  <span class="chat-text">聊天室</span>
+                  <div class="online-info">
+                    <a-avatar-group
+                      :maxCount="3"
+                      size="small"
+                      class="online-avatars"
+                    >
+                      <a-tooltip
+                        v-for="user in onlineUsers"
+                        :key="user.id"
+                        :title="user.userName"
+                      >
+                        <a-avatar
+                          :size="24"
+                          :src="user.userAvatar || getDefaultAvatar(user.userName)"
+                        />
+                      </a-tooltip>
+                    </a-avatar-group>
+                  </div>
+                </button>
+              </div>
+
+              <!-- 互动按钮 -->
+              <div class="interaction-buttons">
+                <button
+                  class="btn-action like"
+                  :class="{ 'is-liked': picture.isLiked === 1 }"
+                  @click="doLike"
+                >
+                  <i class="fas fa-heart"></i>
+                  <span>{{ formatNumber(picture.likeCount || 0) }}</span>
+                </button>
+                <button
+                  class="btn-action comment"
+                  @click="handleCommentClick"
+                >
+                  <i class="fas fa-comment"></i>
+                  <span>{{ formatNumber(picture.commentCount || 0) }}</span>
+                </button>
+                <button
+                  class="btn-action share"
+                  :class="{ 'is-shared': picture.isShared === 1 }"
                   @click="doShare"
-                  v-if="showShareButton"
-                  class="action-btn share-btn"
                 >
-                  <ShareAltOutlined />
-                </a-button>
-                <a-button type="primary" @click="doEdit" v-if="canEdit" class="action-btn edit-btn">
-                  <EditOutlined />
-                </a-button>
-                <a-button
-                  type="primary"
-                  @click="showDeleteConfirm"
-                  v-if="canDelete"
-                  class="action-btn delete-btn"
+                  <i class="fas fa-share-alt"></i>
+                  <span>{{ formatNumber(picture.shareCount || 0) }}</span>
+                </button>
+                <button
+                  class="btn-action download"
+                  :disabled="picture.isDownload === 0"
+                  @click="handleDownload"
                 >
-                  <DeleteOutlined />
-                </a-button>
-              </a-space>
-            </div>
-          </a-card>
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
 
-        </a-col>
-      </a-row>
-    </template>
-    <ShareModal ref="shareModalRef" :link="shareLink" :imageUrl="shareImage" />
-    <!-- 聊天室弹框 -->
-    <a-modal
-      v-model:visible="showChatModal"
-      title="聊天室"
-      :width="800"
-      :footer="null"
-      :class="{ 'mobile-chat-modal': device !== DEVICE_TYPE_ENUM.PC }"
-      :closable="device === DEVICE_TYPE_ENUM.PC"
-      :bodyStyle="{ height: '600px', overflow: 'hidden' }"
-    >
-      <template #title>
-        <div class="modal-header">
-          <div class="header-title">
-            <span class="title-text">图片讨论</span>
-            <a-popover
-              placement="bottomRight"
-              trigger="hover"
-              :overlayClassName="'online-users-popover'"
-            >
-              <template #content>
-                <div class="online-users-list">
-                  <div class="section-title">在线用户 ({{ onlineCount }})</div>
-                  <div v-for="user in onlineUsers" :key="user.id" class="online-user-item">
-                    <a-avatar :src="user.userAvatar || getDefaultAvatar(user.userName)" size="small" />
-                    <span class="online-user-name">{{ user.userName }}</span>
-                    <span class="online-status active"></span>
+              <!-- 图片信息 -->
+              <div class="picture-info">
+                <div class="info-group">
+                  <label>名称</label>
+                  <div>{{ picture.name || '未命名' }}</div>
+                </div>
+                <div class="info-group">
+                  <label>简介</label>
+                  <div>{{ picture.introduction || '-' }}</div>
+                </div>
+                <div v-if="canEdit" class="info-group">
+                  <label>分类</label>
+                  <div>{{ picture.category || '默认' }}</div>
+                </div>
+                <div v-if="canEdit" class="info-group">
+                  <label>标签</label>
+                  <div class="tags">
+                    <span v-for="tag in picture.tags" :key="tag" class="tag">
+                      {{ tag }}
+                    </span>
                   </div>
                 </div>
-              </template>
-              <a-avatar-group
-                :maxCount="5"
-                class="header-avatars"
-              >
-                <a-tooltip
-                  v-for="user in onlineUsers"
-                  :key="user.id"
-                  :title="user.userName"
+                <div class="info-group">
+                  <label>尺寸</label>
+                  <div class="specs">
+                    <span>{{ picture.picWidth || '-' }} × {{ picture.picHeight || '-' }}</span>
+                    <span class="divider">|</span>
+                    <span>{{ formatSize(picture.picSize) }}</span>
+                  </div>
+                </div>
+                <div class="info-group">
+                  <label>发布时间</label>
+                  <div>{{ formatTime(picture.createTime) }}</div>
+                </div>
+                <div class="info-group">
+                  <label>主色调</label>
+                  <div class="color-preview" v-if="picture.picColor">
+                    <div class="color-box" :style="{ backgroundColor: toHexColor(picture.picColor) }"></div>
+                    <span>{{ toHexColor(picture.picColor) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 管理按钮 -->
+              <div v-if="canEdit || canDelete" class="management-buttons">
+                <button
+                  v-if="canEdit"
+                  class="btn-action edit"
+                  @click="doEdit"
                 >
-                  <a-avatar :src="user.userAvatar || getDefaultAvatar(user.userName)" />
-                </a-tooltip>
-              </a-avatar-group>
-            </a-popover>
-            <span class="online-count">({{ onlineCount }}人在线)</span>
+                  <i class="fas fa-edit"></i>
+                  <span>编辑</span>
+                </button>
+                <button
+                  v-if="canDelete"
+                  class="btn-action delete"
+                  @click="showDeleteConfirm"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                  <span>删除</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </template>
 
-      <PictureChatRoom
-        ref="chatRoomRef"
-        :pictureId="props.id"
-        @message="handleChatMessage"
-        class="modal-chat-room"
-      />
-    </a-modal>
-    <!-- 删除确认弹框 -->
-    <a-modal
-      v-model:open="deleteConfirmVisible"
-      :title="null"
-      :footer="null"
-      :width="400"
-      class="delete-confirm-modal"
-    >
-      <div class="delete-confirm-content">
-        <div class="warning-icon">
-          <ExclamationCircleFilled style="color: #ff6b6b;" />
-        </div>
-        <h3 class="confirm-title">确认删除该图片？</h3>
-        <p class="confirm-desc">
-          <span>删除后将无法恢复，是否继续？</span>
-        </p>
-        <div class="confirm-actions">
-          <a-button class="cancel-button" @click="deleteConfirmVisible = false">取消</a-button>
-          <a-button class="confirm-button" danger @click="confirmDelete">
-            确认删除
-          </a-button>
+      <!-- 分享弹框 -->
+      <div v-if="showShareModal" class="share-modal">
+        <div class="share-content" :class="{ 'mobile': isMobile }">
+          <div class="share-header">
+            <h3>分享图片</h3>
+            <button class="btn-close" @click="showShareModal = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="share-body">
+            <div class="preview-box">
+              <img :src="picture.thumbnailUrl || picture.url" :alt="picture.name" />
+            </div>
+            <div class="share-info">
+              <div class="link-box">
+                <input ref="linkInput" type="text" readonly :value="shareLink" />
+                <button class="btn-copy" @click="copyLink">
+                  <i class="fas fa-copy"></i>
+                  <span>复制链接</span>
+                </button>
+              </div>
+              <div class="share-options">
+                <button class="btn-share-option" @click="shareToWeChat">
+                  <i class="fab fa-weixin"></i>
+                  <span>微信</span>
+                </button>
+                <button class="btn-share-option" @click="shareToWeibo">
+                  <i class="fab fa-weibo"></i>
+                  <span>微博</span>
+                </button>
+                <button class="btn-share-option" @click="shareToQQ">
+                  <i class="fab fa-qq"></i>
+                  <span>QQ</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </a-modal>
+
+      <!-- 聊天室弹窗 -->
+      <div v-if="showChatModal" class="chat-room-modal">
+        <div class="chat-room-content" :class="{ 'mobile': device !== DEVICE_TYPE_ENUM.PC }">
+          <div class="chat-room-header">
+            <div class="chat-room-title">
+              <h3>聊天室</h3>
+              <div class="online-info">
+                <a-popover
+                  placement="bottomRight"
+                  trigger="hover"
+                  :overlayClassName="'online-users-popover'"
+                >
+                  <template #content>
+                    <div class="online-users-list">
+                      <div class="section-title">在线用户 ({{ onlineCount }})</div>
+                      <div v-for="user in onlineUsers" :key="user.id" class="online-user-item">
+                        <a-avatar :src="user.userAvatar || getDefaultAvatar(user.userName)" size="small" />
+                        <span class="online-user-name">{{ user.userName }}</span>
+                        <span class="online-status active"></span>
+                      </div>
+                    </div>
+                  </template>
+                  <a-avatar-group
+                    :maxCount="5"
+                    size="small"
+                    class="online-avatars"
+                  >
+                    <a-tooltip
+                      v-for="user in onlineUsers"
+                      :key="user.id"
+                      :title="user.userName"
+                    >
+                      <a-avatar :src="user.userAvatar || getDefaultAvatar(user.userName)" />
+                    </a-tooltip>
+                  </a-avatar-group>
+                </a-popover>
+                <span class="online-count">({{ onlineCount }}人在线)</span>
+              </div>
+            </div>
+            <button class="btn-close" @click="showChatModal = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="chat-room-body">
+            <PictureChatRoom
+              ref="chatRoomRef"
+              :pictureId="props.id"
+              @message="handleChatMessage"
+              class="modal-chat-room"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 删除确认弹窗 -->
+      <div v-if="deleteConfirmVisible" class="modal delete-modal">
+        <div class="modal-content">
+          <i class="icon-warning"></i>
+          <h3>确认删除该图片？</h3>
+          <p>删除后将无法恢复，是否继续？</p>
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="deleteConfirmVisible = false">取消</button>
+            <button class="btn-danger" @click="confirmDelete">确认删除</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 评论弹框 -->
+      <div v-if="visible" class="comment-drawer">
+        <div class="drawer-content">
+          <div class="drawer-header">
+            <h2>评论 ({{ picture.commentCount || 0 }})</h2>
+            <button class="close-btn" @click="closeModal">×</button>
+          </div>
+
+          <div class="comments-list" ref="scrollContainer" @scroll="handleScroll">
+            <div v-if="commentloading" class="loading-state">加载中...</div>
+            <template v-else>
+              <comment-list
+                :comments="comments"
+                @reply-clicked="handleReplyClick"
+                @update-comments="queryComments"
+              />
+              <div v-if="isEndOfData" class="end-message">没有更多评论了~</div>
+            </template>
+          </div>
+
+          <div class="comment-input">
+            <div v-if="replyCommentId" class="reply-bar">
+              <span>回复评论</span>
+              <button @click="cancelReply">取消回复</button>
+            </div>
+            <div class="input-box">
+              <button class="emoji-btn" @click="toggleEmojiPicker">😊</button>
+              <textarea
+                v-model="commentContent"
+                placeholder="写下你的评论..."
+                @keydown.enter.prevent="addComment"
+              ></textarea>
+              <button
+                class="send-btn"
+                :disabled="!commentContent.trim()"
+                @click="addComment"
+              >
+                发送
+              </button>
+            </div>
+            <div v-if="showEmojiPicker" class="emoji-picker-wrapper">
+              <emoji-picker
+                class="custom-emoji-picker"
+                :i18n="emojiI18n"
+                @select="onEmojiSelect"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, ref, watch, nextTick, onUnmounted } from 'vue'
-import { deletePictureUsingPost, getPictureVoByIdUsingGet } from '@/api/pictureController.ts'
-import { message } from 'ant-design-vue'
-import {
-  DeleteOutlined,
-  DownloadOutlined,
-  EditOutlined,
-  ShareAltOutlined,
-  LoadingOutlined,
-  MessageOutlined,
-  ExclamationCircleFilled,
-} from '@ant-design/icons-vue'
-import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, nextTick, onUnmounted, reactive } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useLoginUserStore } from '@/stores/useLoginUserStore'
 import { downloadImage, formatSize, toHexColor } from '@/utils'
-import { getDeviceType } from '@/utils/device.ts'
-import { DEVICE_TYPE_ENUM } from '@/constants/device.ts'
+import { getDeviceType } from '@/utils/device'
+import { DEVICE_TYPE_ENUM } from '@/constants/device'
+import { SPACE_PERMISSION_ENUM } from '@/constants/space'
 import { prevRoute } from '@/router'
 import ShareModal from '@/components/ShareModal.vue'
-import { SPACE_PERMISSION_ENUM } from '@/constants/space.ts'
-import { addUserFollowsUsingPost, findIsFollowUsingPost } from '@/api/userFollowsController'
 import PictureChatRoom from '@/components/PictureChatRoom.vue'
 import { getDefaultAvatar } from '@/utils/userUtils'
+import {
+  deletePictureUsingPost,
+  getPictureVoByIdUsingGet
+} from '@/api/pictureController'
+import {
+  addUserFollowsUsingPost,
+  findIsFollowUsingPost
+} from '@/api/userFollowsController'
+import { message } from 'ant-design-vue'
+import CommentList from '@/components/CommentList.vue'
+import { addCommentUsingPost, queryCommentUsingPost } from '@/api/commentsController'
+import EmojiPicker from '@/components/EmojiPicker.vue'
+import { doLikeUsingPost } from '@/api/likeRecordController.ts'
+import { throttle } from 'lodash'
+import { doShareUsingPost } from '@/api/shareRecordController'
+import { formatTime } from '@/utils/dateUtils.ts'
 
 const route = useRoute() // 获取当前路由实例
 // 定义用于存储设备类型的响应式变量
@@ -321,30 +510,318 @@ const device = ref<string>('')
 // 新增一个响应式变量用于标记图片是否加载完成，初始化为false
 const pictureLoaded = ref(false)
 const mounted = ref(false)
-const isDeleted = computed(() => !picture.value || !picture.value.id)
+const isDeleted = computed(() => {
+  // 只有当图片数据加载完成且确实被删除时才显示删除状态
+  return pictureLoaded.value && (!picture.value || !picture.value.id)
+})
+const showAnimation = ref(false)
+
+// 添加信息区域展开状态
+const isInfoExpanded = ref(false);
+const infoSection = ref<HTMLElement | null>(null);
+const infoSectionContent = ref<HTMLElement | null>(null);
+let touchStartY = 0;
+let touchMoveY = 0;
+let initialHeight = 0;
+let lastScrollTop = 0;
+
+// 处理触摸开始
+const handleTouchStart = (e: TouchEvent) => {
+  if (!infoSection.value) return;
+
+  touchStartY = e.touches[0].clientY;
+  touchMoveY = touchStartY;
+  initialHeight = infoSection.value.clientHeight;
+
+  // 记录当前滚动位置
+  if (infoSectionContent.value) {
+    lastScrollTop = infoSectionContent.value.scrollTop;
+  }
+};
+
+// 处理触摸移动
+const handleTouchMove = (e: TouchEvent) => {
+  if (!infoSection.value || !infoSectionContent.value) return;
+
+  const currentY = e.touches[0].clientY;
+  const deltaY = touchStartY - currentY;
+  touchMoveY = currentY;
+
+  // 获取内容区域的滚动状态
+  const { scrollTop, scrollHeight, clientHeight } = infoSectionContent.value;
+  const isAtTop = scrollTop <= 0;
+  const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 1;
+
+  // 只有在以下情况下阻止默认滚动：
+  // 1. 内容未展开时的上下滑动
+  // 2. 内容已展开，在顶部向下滑动
+  // 3. 内容已展开，在底部向上滑动
+  if (
+    (!isInfoExpanded.value) ||
+    (isInfoExpanded.value && isAtTop && deltaY < 0) ||
+    (isInfoExpanded.value && isAtBottom && deltaY > 0)
+  ) {
+    e.preventDefault();
+
+    // 计算新的高度
+    let newHeight;
+    if (deltaY > 0) { // 上滑展开
+      newHeight = Math.min(initialHeight + Math.abs(deltaY), window.innerHeight * 0.8);
+    } else { // 下滑收起
+      newHeight = Math.max(initialHeight - Math.abs(deltaY), window.innerHeight * 0.35);
+    }
+
+    // 更新高度
+    infoSection.value.style.transition = 'none';
+    infoSection.value.style.maxHeight = `${newHeight}px`;
+  }
+};
+
+// 处理触摸结束
+const handleTouchEnd = () => {
+  if (!infoSection.value || !infoSectionContent.value) return;
+
+  const { scrollTop } = infoSectionContent.value;
+  const isAtTop = scrollTop <= 0;
+
+  // 如果内容已展开但不在顶部，不处理折叠
+  if (isInfoExpanded.value && !isAtTop) {
+    return;
+  }
+
+  infoSection.value.style.transition = 'max-height 0.3s ease';
+
+  // 计算滑动速度和方向
+  const swipeDirection = touchStartY - touchMoveY;
+  const swipeThreshold = 50;
+
+  // 根据滑动方向和距离决定是否展开
+  if (Math.abs(swipeDirection) > swipeThreshold) {
+    isInfoExpanded.value = swipeDirection > 0;
+  } else {
+    // 如果滑动距离不够，根据当前高度决定状态
+    const currentHeight = infoSection.value.clientHeight;
+    const threshold = window.innerHeight * 0.5;
+    isInfoExpanded.value = currentHeight > threshold;
+  }
+
+  // 设置最终高度
+  const finalHeight = isInfoExpanded.value ? '80%' : '35%';
+  infoSection.value.style.maxHeight = finalHeight;
+};
+
+// 移除点击处理函数
+// const handleInfoSectionClick = () => { ... }; // 删除这个函数
+
+// 全屏状态
+const isFullscreen = ref(false)
+const isMobile = ref(false)
+
+// 处理图片点击
+const handleImageClick = () => {
+  isFullscreen.value = true
+}
+
+// 处理图片触摸开始
+const handleImageTouchStart = (e: TouchEvent) => {
+  e.preventDefault()
+  const touches = e.touches
+
+  if (touches.length === 2) {
+    // 双指触摸 - 准备缩放
+    initialScale = scale.value
+    const dx = touches[1].clientX - touches[0].clientX
+    const dy = touches[1].clientY - touches[0].clientY
+    initialDistance = Math.sqrt(dx * dx + dy * dy)
+  } else if (touches.length === 1) {
+    // 单指触摸 - 准备移动
+    lastTouchX = touches[0].clientX
+  }
+  isTransitioning.value = false
+}
+
+// 处理图片触摸移动
+const handleImageTouchMove = (e: TouchEvent) => {
+  e.preventDefault()
+  const touches = e.touches
+
+  // 获取图片和容器元素
+  const imageElement = e.target as HTMLImageElement
+  const container = document.querySelector('.image-container') as HTMLElement
+
+  if (!imageElement || !container) return
+
+  if (touches.length === 2) {
+    // 双指缩放
+    const dx = touches[1].clientX - touches[0].clientX
+    const dy = touches[1].clientY - touches[0].clientY
+    const distance = Math.sqrt(dx * dx + dy * dy)
+
+    requestAnimationFrame(() => {
+      // 计算新的缩放值，使用更平滑的缩放系数
+      const scaleFactor = distance / initialDistance
+      let newScale = initialScale * (1 + (scaleFactor - 1) * 0.8)
+
+      // 限制缩放范围在 1-3 倍之间，使用缓动函数
+      const minScale = 1
+      const maxScale = 3
+      newScale = minScale + (Math.min(Math.max(newScale - minScale, 0), maxScale - minScale))
+
+      scale.value = newScale
+
+      // 计算容器的宽度（即屏幕宽度）
+      const containerWidth = container.clientWidth
+      // 限制在屏幕宽度范围内，使用缓动
+      const maxTranslateX = containerWidth / 2
+      const currentTranslateX = translateX.value
+      const targetTranslateX = Math.min(Math.max(currentTranslateX, -maxTranslateX), maxTranslateX)
+      translateX.value = currentTranslateX + (targetTranslateX - currentTranslateX) * 0.3
+    })
+  } else if (touches.length === 1 && scale.value > 1) {
+    // 单指平移，使用 requestAnimationFrame 优化
+    const currentX = touches[0].clientX
+    const deltaX = currentX - lastTouchX
+
+    requestAnimationFrame(() => {
+      // 计算容器的宽度（即屏幕宽度）
+      const containerWidth = container.clientWidth
+      // 计算新的位置，添加平滑过渡
+      const newTranslateX = translateX.value + deltaX * 0.8
+
+      // 限制在屏幕宽度范围内
+      const maxTranslateX = containerWidth / 2
+      translateX.value = Math.min(Math.max(newTranslateX, -maxTranslateX), maxTranslateX)
+    })
+
+    // 更新最后的触摸位置
+    lastTouchX = currentX
+  }
+}
+
+// 处理图片触摸结束
+const handleImageTouchEnd = () => {
+  // 使用 requestAnimationFrame 优化过渡动画
+  requestAnimationFrame(() => {
+    const container = document.querySelector('.image-container') as HTMLElement
+
+    if (container && scale.value > 1) {
+      const containerWidth = container.clientWidth
+      const maxTranslateX = containerWidth / 2
+
+      isTransitioning.value = true
+
+      // 使用缓动函数平滑过渡到边界位置
+      if (translateX.value < -maxTranslateX) {
+        translateX.value = -maxTranslateX
+      } else if (translateX.value > maxTranslateX) {
+        translateX.value = maxTranslateX
+      }
+
+      // 300ms 后关闭过渡动画
+      setTimeout(() => {
+        isTransitioning.value = false
+      }, 300)
+    }
+
+    // 如果缩放比例接近 1，平滑过渡到初始状态
+    if (scale.value < 1.1) {
+      isTransitioning.value = true
+      const duration = 300
+      const startScale = scale.value
+      const startTranslateX = translateX.value
+      const startTime = performance.now()
+
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+
+        scale.value = startScale + (1 - startScale) * easeProgress
+        translateX.value = startTranslateX * (1 - easeProgress)
+
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          isTransitioning.value = false
+        }
+      }
+
+      requestAnimationFrame(animate)
+    }
+  })
+}
+
+// 添加双击重置功能
+let lastTapTime = 0
+const handleImageDoubleTap = (e: TouchEvent) => {
+  const currentTime = new Date().getTime()
+  const tapLength = currentTime - lastTapTime
+
+  if (tapLength < 300 && tapLength > 0) {
+    e.preventDefault()
+    isTransitioning.value = true
+
+    requestAnimationFrame(() => {
+      const targetScale = scale.value > 1 ? 1 : 2
+      const duration = 300
+      const startScale = scale.value
+      const startTranslateX = translateX.value
+
+      // 使用 easeOutQuart 缓动函数
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 4)
+
+        scale.value = startScale + (targetScale - startScale) * easeProgress
+
+        // 如果是缩小，重置位置到中心
+        if (targetScale === 1) {
+          translateX.value = startTranslateX * (1 - easeProgress)
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          isTransitioning.value = false
+        }
+      }
+
+      const startTime = performance.now()
+      requestAnimationFrame(animate)
+    })
+  }
+  lastTapTime = currentTime
+}
+
+// 修改关闭全屏函数
+const closeFullscreen = () => {
+  isFullscreen.value = false
+  scale.value = 1
+  translateX.value = 0
+}
 
 // 页面加载时获取设备类型并获取数据
 onMounted(async () => {
   device.value = await getDeviceType()
-  const currentRoutePath = route.path // 获取当前路由的路径
-  // console.log('当前路由路径：', currentRoutePath)
-  // 获取图片详情，在获取成功后将图片加载完成标记设为true
-  await fetchPictureDetail()
-  await checkIsFollowed()
-  pictureLoaded.value = true
 
-  // 添加淡入动画
+  // 先显示欢迎动画
   setTimeout(() => {
     mounted.value = true
-  }, 100)
+  }, 300)
 
-  // 自动触发一次聊天室按钮点击
+  // 获取图片详情
+  await fetchPictureDetail()
+  await checkIsFollowed()
+
+  // 自动触发聊天室按钮点击，但不显示
   if (loginUserStore.loginUser) {
-    showChatModal.value = true
     nextTick(() => {
       showChatModal.value = false
     })
   }
+
+  isMobile.value = device.value === DEVICE_TYPE_ENUM.MOBILE
 })
 
 // 通用权限检查函数
@@ -360,9 +837,8 @@ const canDelete = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_DELETE)
 
 //是否显示分享按钮
 const showShareButton = computed(() => {
-  // 仅登录用户可分享
-  // console.log('prevRoute.name', prevRoute)
-  return prevRoute.name !== '空间详情'
+  // 移除之前的限制，让分享按钮始终显示
+  return true
 })
 
 // 判断是否显示聊天室
@@ -391,11 +867,33 @@ const fetchPictureDetail = async () => {
     })
     if (res.data.code === 0 && res.data.data) {
       picture.value = res.data.data
+      onlineCount.value = res.data.data.chatCount || 0
+
+      // 预加载图片
+      if (res.data.data.url) {
+        const img = new Image()
+        img.src = res.data.data.url
+        img.onload = () => {
+          pictureLoaded.value = true
+          mounted.value = true
+        }
+        img.onerror = () => {
+          pictureLoaded.value = true
+          mounted.value = true
+        }
+      } else {
+        pictureLoaded.value = true
+        mounted.value = true
+      }
     } else {
-      // message.error('获取图片详情失败，' + res.data.message)
+      // 如果请求成功但没有数据，说明图片确实被删除了
+      pictureLoaded.value = true
+      mounted.value = true
     }
   } catch (e: any) {
-    // message.error('获取图片详情失败：' + e.message)
+    // 发生错误时也要设置加载完成状态
+    pictureLoaded.value = true
+    mounted.value = true
   }
 }
 
@@ -412,49 +910,137 @@ const doEdit = () => {
   })
 }
 
-// 删除图片
+// 删除相关的状态
 const deleteConfirmVisible = ref(false)
 
+// 显示删除确认弹窗
 const showDeleteConfirm = () => {
   deleteConfirmVisible.value = true
 }
 
+// 确认删除
 const confirmDelete = async () => {
   try {
     const res = await deletePictureUsingPost({
       id: picture.value?.id
     })
     if (res.data.code === 0) {
-      // message.success('删除成功')
+      message.success('删除成功')
       deleteConfirmVisible.value = false
       router.back()
     } else {
-      // message.error('删除失败：' + res.data.message)
+      message.error('删除失败：' + res.data.message)
     }
-  } catch (error) {
-    // message.error('删除失败，请稍后重试')
+  } catch (error: any) {
+    message.error('删除失败：' + error.message)
   }
 }
 
-// 下载图片
-const doDownload = () => {
-  downloadImage(picture.value.url)
+// 修改下载处理函数
+const handleDownload = () => {
+  if (picture.value.isDownload === 0) {
+    message.warning({
+      content: '抱歉，该图片暂不支持下载，请尊重作者的设置',
+      icon: h('i', { class: 'fas fa-lock', style: 'color: #faad14; margin-right: 8px;' }),
+      class: 'custom-message'
+    });
+    return;
+  }
+
+  // 创建一个临时的a标签来触发下载
+  const link = document.createElement('a');
+  link.href = picture.value.url;
+  link.download = picture.value.name || '未命名图片';
+  link.target = '_blank';
+
+  // 添加到文档中
+  document.body.appendChild(link);
+
+  // 触发点击
+  link.click();
+
+  // 移除临时元素
+  document.body.removeChild(link);
+
+  message.success({
+    content: '开始下载...',
+    icon: h('i', { class: 'fas fa-download', style: 'color: #52c41a; margin-right: 8px;' })
+  });
 }
 
 // ----- 分享操作 ----
 const shareModalRef = ref()
+const showShareModal = ref(false)
 // 分享链接
-const shareLink = ref<string>()
+const shareLink = computed(() => {
+  if (!picture.value?.id) return ''
+  // 获取当前页面的完整URL
+  const baseUrl = window.location.origin
+  return `${baseUrl}/picture/${picture.value.id}`
+})
 // 分享图片
 const shareImage = ref('')
 
 // 分享
-const doShare = () => {
-  shareLink.value = `${window.location.protocol}//${window.location.host}/picture/${picture.value.id}`
-  // 设置分享图片，优先使用缩略图
-  shareImage.value = picture.value.thumbnailUrl || picture.value.url
-  if (shareModalRef.value) {
-    shareModalRef.value.openModal()
+const doShare = async () => {
+  if (!loginUserStore.loginUser?.id) {
+    message.warning('请先登录')
+    return
+  }
+
+  // 如果已经分享过,则执行取消分享
+  if (picture.value.isShared === 1) {
+    try {
+      const requestBody: API.ShareRequest = {
+        targetId: picture.value.id,
+        targetType: 1, // 1 表示图片类型
+        isShared: false
+      }
+      const res = await doShareUsingPost(requestBody)
+      if (res.data.code === 0) {
+        picture.value.shareCount = String(Number(picture.value.shareCount || 0) - 1)
+        picture.value.isShared = 0
+      }
+    } catch (error) {
+      // console.error('取消分享失败:', error)
+    }
+    return
+  }
+
+  // 未分享过,显示分享模态框并调用分享接口
+  try {
+    const requestBody: API.ShareRequest = {
+      targetId: picture.value.id,
+      targetType: 1,
+      isShared: true
+    }
+    const res = await doShareUsingPost(requestBody)
+    if (res.data.code === 0) {
+      picture.value.shareCount = String(Number(picture.value.shareCount || 0) + 1)
+      picture.value.isShared = 1
+      // 成功后显示分享模态框
+      showShareModal.value = true
+    }
+  } catch (error) {
+    // console.error('分享失败:', error)
+  }
+}
+
+// 处理分享成功
+const handleShareSuccess = async () => {
+  try {
+    const requestBody: API.ShareRequest = {
+      targetId: picture.value.id,
+      targetType: 1, // 1 表示图片类型
+      isShared: true
+    }
+    const res = await doShareUsingPost(requestBody)
+    if (res.data.code === 0) {
+      picture.value.shareCount = String(Number(picture.value.shareCount || 0) + 1)
+      picture.value.isShared = 1
+    }
+  } catch (error) {
+    // console.error('分享失败:', error)
   }
 }
 
@@ -515,7 +1101,7 @@ const handleFollow = async () => {
 // 修改聊天相关的状态
 const showChatModal = ref(false)
 const onlineUsers = ref<any[]>([])
-const onlineCount = ref(0)
+const onlineCount = ref(picture.value?.chatCount || 0)  // 使用 chatCount 作为初始值
 const chatRoomRef = ref()
 
 // 处理聊天消息
@@ -556,1237 +1142,1324 @@ onUnmounted(() => {
   if (chatRoomRef.value) {
     chatRoomRef.value.disconnect()
   }
+  document.body.style.overflow = ''
 })
 
+// 格式化数字为k,w
+const formatNumber = (num: number) => {
+  if (!num) return '0'
+  if (num >= 10000) {
+    return (num / 10000).toFixed(1) + 'w'
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k'
+  }
+  return num.toString()
+}
+
+// 添加背景色计算
+const backgroundGradient = computed(() => {
+  if (!picture.value?.picColor) {
+    return {
+      start: '#1a1a1a',
+      end: '#0a0a0a'
+    }
+  }
+
+  try {
+    const color = toHexColor(picture.value.picColor)
+    // 调整渐变色的亮度范围
+    const lightenColor = adjustColor(color, 10)  // 减小变亮程度
+    const darkenColor = adjustColor(color, -30)  // 增加变暗程度
+
+    return {
+      start: lightenColor,
+      end: darkenColor
+    }
+  } catch (error) {
+    console.error('Error generating background gradient:', error)
+    return {
+      start: '#1a1a1a',
+      end: '#0a0a0a'
+    }
+  }
+})
+
+// 优化颜色调整函数
+function adjustColor(hex: string, percent: number) {
+  // 移除#号并确保是6位颜色值
+  hex = hex.replace('#', '').padStart(6, '0')
+
+  // 转换为RGB
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+
+  // 调整亮度
+  const adjustValue = (value: number) => {
+    const adjusted = value + (value * (percent / 100))
+    return Math.min(255, Math.max(0, Math.round(adjusted)))
+  }
+
+  // 转回HEX
+  const rr = adjustValue(r).toString(16).padStart(2, '0')
+  const gg = adjustValue(g).toString(16).padStart(2, '0')
+  const bb = adjustValue(b).toString(16).padStart(2, '0')
+
+  return `#${rr}${gg}${bb}`
+}
+
+// 分享功能相关
+const linkInput = ref<HTMLInputElement | null>(null)
+
+const copyLink = () => {
+  if (linkInput.value) {
+    linkInput.value.select()
+    document.execCommand('copy')
+    message.success('链接已复制')
+  }
+}
+
+const shareToWeChat = () => {
+  // 实现微信分享逻辑
+  message.info('请使用微信扫描二维码分享')
+}
+
+const shareToWeibo = () => {
+  const url = encodeURIComponent(shareLink.value)
+  const title = encodeURIComponent(`分享图片：${picture.value.name}`)
+  window.open(`http://service.weibo.com/share/share.php?url=${url}&title=${title}`)
+}
+
+const shareToQQ = () => {
+  const url = encodeURIComponent(shareLink.value)
+  const title = encodeURIComponent(`分享图片：${picture.value.name}`)
+  window.open(`http://connect.qq.com/widget/shareqq/index.html?url=${url}&title=${title}`)
+}
+
+// 处理图片加载完成
+const handleImageLoad = () => {
+  pictureLoaded.value = true
+}
+
+// 辅助函数：将十六进制颜色转换为RGB
+function hexToRgb(hex: string) {
+  // 移除#号并确保是6位颜色值
+  hex = hex.replace('#', '').padStart(6, '0')
+
+  // 转换为RGB
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+
+  return [r, g, b]
+}
+
+const backgroundStyle = computed(() => ({
+  backgroundImage: picture.value?.url ? `url(${picture.value.url})` : 'none',
+  backgroundPosition: 'center',
+  backgroundSize: 'cover',
+  backgroundRepeat: 'no-repeat',
+  // 添加透明模糊效果
+  backdropFilter: 'blur(5px) brightness(0.1)', // 模糊半径 5px，亮度降低到 80%
+  webkitBackdropFilter: 'blur(5px) brightness(0.8)' // 兼容 Safari 浏览器
+}))
+
+// 添加评论相关状态
+const visible = ref(false)
+const comments = ref<API.Comment[]>([])
+const commentContent = ref('')
+const replyCommentId = ref('')
+const commentloading = ref(false)
+const showEmojiPicker = ref(false)
+const isEndOfData = ref(false)
+
+// 查询评论请求对象
+const queryRequest = reactive<API.CommentsQueryRequest>({
+  targetId: props.id,
+  targetType: 1, // 1 表示图片类型
+  current: 1,
+  pageSize: 15,
+})
+
+// 查询评论
+const queryComments = async () => {
+  try {
+    commentloading.value = true
+    queryRequest.targetId = props.id // 确保每次查询都使用最新的图片ID
+
+    const res = await queryCommentUsingPost(queryRequest)
+    if (res.data.data != null) {
+      const newComments = res.data.data.records.map(comment => ({
+        ...comment,
+        commentId: comment.commentId?.toString(),
+        parentCommentId: comment.parentCommentId?.toString(),
+      }))
+
+      if (queryRequest.current === 1) {
+        comments.value = newComments
+      } else {
+        // 使用数组扩展运算符添加新评论，保持响应式
+        comments.value = [...comments.value, ...newComments]
+      }
+
+      isEndOfData.value = newComments.length < queryRequest.pageSize
+    } else {
+      if (queryRequest.current === 1) {
+        comments.value = []
+      }
+      isEndOfData.value = true
+    }
+  } catch (error) {
+    // console.error('查询评论异常', error)
+  } finally {
+    commentloading.value = false
+  }
+}
+
+// 添加评论
+const addComment = async () => {
+  if (!commentContent.value.trim()) {
+    message.warning('评论内容不能为空')
+    return
+  }
+
+  try {
+    const requestBody: API.CommentsAddRequest = {
+      targetId: picture.value.id,
+      targetType: 1, // 1 表示图片类型
+      content: commentContent.value.trim(),
+      parentCommentId: replyCommentId.value || '0'
+    }
+
+    const res = await addCommentUsingPost(requestBody)
+    if (res.data.code === 0) {
+      // message.success('评论成功')
+      commentContent.value = ''
+      replyCommentId.value = ''
+      // 刷新评论列表
+      queryRequest.current = 1
+      await queryComments()
+      // 更新评论数
+      picture.value.commentCount = String(Number(picture.value.commentCount || 0) + 1)
+    }
+  } catch (error) {
+    // console.error('评论失败:', error)
+    // message.error('评论失败')
+  }
+}
+
+// 添加表情相关代码
+const toggleEmojiPicker = () => {
+  showEmojiPicker.value = !showEmojiPicker.value
+}
+
+const onEmojiSelect = (emoji: string) => {
+  commentContent.value += emoji
+  showEmojiPicker.value = false
+}
+
+// 点击其他区域关闭表情选择器
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.emoji-picker') && !target.closest('.emoji-btn')) {
+    showEmojiPicker.value = false
+  }
+}
+
+// 添加评论相关方法
+const handleReplyClick = (commentId: string) => {
+  replyCommentId.value = commentId
+  nextTick(() => {
+    const inputEl = document.querySelector('.comment-input') as HTMLInputElement
+    if (inputEl) {
+      inputEl.focus()
+      inputEl.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  })
+}
+
+const cancelReply = () => {
+  replyCommentId.value = ''
+}
+
+// 添加表情选择器国际化配置
+const emojiI18n = {
+  search: '搜索表情',
+  categories: {
+    recent: '最近使用',
+    smileys: '表情',
+    people: '人物',
+    nature: '自然',
+    foods: '食物',
+    activity: '活动',
+    places: '地点',
+    objects: '物品',
+    symbols: '符号',
+    flags: '旗帜'
+  }
+}
+
+// 关闭弹窗
+const closeModal = () => {
+  visible.value = false
+  commentContent.value = ''
+  replyCommentId.value = ''
+}
+
+// 修改滚动处理函数，添加节流
+const handleScroll = throttle(() => {
+  const container = scrollContainer.value
+  if (!container) return
+
+  const { scrollTop, clientHeight, scrollHeight } = container
+  // 提前 100px 触发加载更多
+  if (scrollTop + clientHeight >= scrollHeight - 100 && !commentloading.value && !isEndOfData.value) {
+    // 保存当前滚动位置
+    const oldScrollHeight = scrollHeight
+    const oldScrollTop = scrollTop
+
+    // 加载更多评论
+    loadMoreComments(oldScrollHeight, oldScrollTop)
+  }
+}, 200) // 200ms 的节流时间
+
+// 加载更多评论的函数
+const loadMoreComments = async (oldScrollHeight: number, oldScrollTop: number) => {
+  if (commentloading.value || isEndOfData.value) return
+
+  queryRequest.current++
+  await queryComments()
+
+  // 等待 DOM 更新
+  await nextTick()
+
+  // 恢复滚动位置
+  const container = scrollContainer.value
+  if (container) {
+    const newScrollHeight = container.scrollHeight
+    const heightDiff = newScrollHeight - oldScrollHeight
+    container.scrollTop = oldScrollTop + heightDiff
+  }
+}
+
+// 添加 scrollContainer ref
+const scrollContainer = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  if (picture.value.id) {
+    queryRequest.targetId = picture.value.id
+    queryComments()
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+// 修改评论按钮点击处理
+const handleCommentClick = () => {
+  visible.value = true
+  queryComments()
+}
+
+// 点赞功能
+const doLike = async () => {
+  try {
+    const requestBody: API.LikeRequest = {
+      targetId: props.id,
+      targetType: 1, // 1 表示图片类型
+      isLiked: picture.value.isLiked !== 1
+    }
+
+    const res = await doLikeUsingPost(requestBody)
+    if (res.data.code === 0) {
+      // 更新前端数据
+      if (requestBody.isLiked) {
+        picture.value.likeCount++
+        picture.value.isLiked = 1
+      } else {
+        picture.value.likeCount--
+        picture.value.isLiked = 0
+      }
+    }
+  } catch (error) {
+    message.error('操作异常')
+  }
+}
+
+// 打开评论
+const openComments = () => {
+  visible.value = true
+  queryComments()
+}
+
+const scale = ref(1)
+const translateX = ref(0)
+const translateY = ref(0)
+const isTransitioning = ref(false)
+
+// 触摸相关变量
+let initialScale = 1
+let initialDistance = 0
+let lastTouchX = 0
+let lastTouchY = 0
+let startTouchX = 0
+let startTouchY = 0
+
+// 合并触摸开始和双击处理函数
+const handleTouchStartAndDoubleTap = (e: TouchEvent) => {
+  handleImageTouchStart(e)
+  handleImageDoubleTap(e)
+}
 </script>
 
 <style scoped>
-#pictureDetailPage {
-  margin-bottom: 16px;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+.picture-detail {
+  height: calc(100vh - 132px);
+  margin: -20px;
+  position: relative;
+  border-radius: 20px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #fff;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgba(28, 31, 44, 0.95) 0%,
+    rgba(45, 55, 72, 0.95) 50%,
+    rgba(74, 85, 104, 0.95) 100%
+  );
 }
 
-#pictureDetailPage.mounted {
+/* 添加可爱的颜文字背景 */
+.picture-detail::before {
+  content: '(｡♥‿♥｡) ♪(´▽｀) (◕‿◕✿) (｡◕‿◕｡) (●´∀｀●) (◠‿◠✿) ʕ•ᴥ•ʔ (◕‿◕✿)';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 32px;
+  padding: 48px;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.05);
+  white-space: pre-wrap;
+  line-height: 2;
+  text-align: center;
+  transform: rotate(-5deg);
+  pointer-events: none;
+  animation: floatEmoji 20s linear infinite;
+  z-index: 1;
+}
+
+@keyframes floatEmoji {
+  0% {
+    transform: rotate(-5deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-2deg) translateY(-10px);
+  }
+  100% {
+    transform: rotate(-5deg) translateY(0);
+  }
+}
+
+/* Add ambient light effect */
+.picture-detail::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  z-index: 2;
+  opacity: 0.5;
+}
+
+.picture-detail.is-loaded {
   opacity: 1;
   transform: translateY(0);
 }
 
-.preview-col,
-.info-col {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+/* Improve background layer transitions */
+.background-layer {
+  position: absolute;
+  inset: 0;
   opacity: 0;
-  transform: translateY(20px);
+  transition: opacity 0.3s ease;
+  z-index: 2;
 }
 
-#pictureDetailPage.mounted .preview-col {
+.background-layer.is-loaded {
   opacity: 1;
-  transform: translateY(0);
-  transition-delay: 0.2s;
 }
 
-#pictureDetailPage.mounted .info-col {
-  opacity: 1;
-  transform: translateY(0);
-  transition-delay: 0.3s;
-}
-
-/* 图片容器动画 */
-.image-container {
+/* Ensure content is visible on dark background */
+.content-layer {
+  position: relative;
+  z-index: 3;
+  height: 100%;
   opacity: 0;
-  transform: scale(0.98);
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.2s ease;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
 }
 
-.image-container.loaded {
+.content-layer.is-loaded {
+  opacity: 1;
+}
+
+/* 预览区域动画 */
+.preview-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.is-loaded .preview-section {
   opacity: 1;
   transform: scale(1);
 }
 
-/* 预览卡片样式优化 */
-.preview-card {
-  background: #f9f9f9;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  overflow: hidden;
-
-  &:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  }
-}
-
-/* 图片样式优化 */
-.main-image {
-  transition: all 0.3s ease;
-
-  &:deep(.ant-image-img) {
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-  }
-
-  &:hover:deep(.ant-image-img) {
-    transform: scale(1.02);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  }
-}
-
-/* 信息卡片样式优化 */
-.info-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  }
-}
-
-/* 深色模式适配 */
-@media (prefers-color-scheme: dark) {
-  .preview-card,
-  .info-card {
-    background: #262626;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  }
-
-  .preview-card:hover,
-  .info-card:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  }
-
-  .image-container {
-    background: #1a1a1a;
-  }
-
-  .main-image:deep(.ant-image-img) {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .username,
-  .title-text {
-    color: #e5e7eb;
-  }
-
-  .info-descriptions :deep(.ant-descriptions-item-label),
-  .info-descriptions :deep(.ant-descriptions-item-content) {
-    color: #9ca3af;
-  }
-}
-
-/* 移动端适配优化 */
-@media screen and (max-width: 768px) {
-  #pictureDetailPage {
-    margin: 0;
-  }
-
-  .preview-card,
-  .info-card {
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .image-container {
-    padding: 0;
-  }
-
-  .main-image:deep(.ant-image-img) {
-    border-radius: 0;
-  }
-
-  .deleted-state {
-    margin: 16px;
-    min-height: calc(100vh - 232px);
-  }
-
-  .deleted-icon {
-    font-size: 40px;
-  }
-
-  .deleted-content h2 {
-    font-size: 18px;
-  }
-
-  .deleted-content p {
-    font-size: 13px;
-  }
-
-  .back-button {
-    min-width: 110px;
-    height: 36px;
-  }
-}
-
-/* 预览卡片样式 */
-.preview-card {
-  background: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.preview-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-}
-
-.card-title {
-  font-size: 16px;
-  color: #333;
-  font-weight: 500;
-}
-
-/* 图片容器样式优化 */
-.image-container {
+/* 信息栏动画 */
+.info-section {
   position: relative;
   width: 100%;
-  min-height: 200px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(20px);
+  border-radius: 20px 20px 0 0;
   padding: 16px;
-  transition: all 0.3s ease;
-}
-
-/* 预览遮罩层样式优化 */
-.preview-mask {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: white;
-  font-size: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  transition: all 0.3s ease;
-  opacity: 0;
-  transform: translateY(10px);
-
-  &:hover {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 预览模式样式优化 */
-:deep(.ant-image-preview) {
-  .ant-image-preview-img {
-    max-width: 90vw;
-    max-height: 90vh;
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  }
-
-  .ant-image-preview-operations {
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-    border-radius: 8px;
-    margin: 16px;
-    padding: 8px 16px;
-  }
-
-  .ant-image-preview-operations-operation {
-    padding: 8px;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-    }
-  }
-}
-
-/* 信息卡片样式 */
-.info-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.card-title {
-  font-size: 16px;
-  color: #333;
-  font-weight: 500;
-}
-
-/* 描述列表样式 */
-.info-descriptions :deep(.ant-descriptions-item) {
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.info-descriptions :deep(.ant-descriptions-item-label) {
-  color: #666;
-  font-size: 14px;
-  width: 80px;
-}
-
-.info-descriptions :deep(.ant-descriptions-item-content) {
-  color: #333;
-  font-size: 14px;
-}
-
-/* 作者信息样式 */
-.author-item {
-  margin-bottom: 8px;
-}
-
-.author-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}
-
-/* 按钮区域样式 */
-.action-area {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* 统一的按钮基础样式 */
-.action-btn {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none !important;
-  position: relative;
+  margin-bottom: 0;
+  max-height: 35%;
   overflow: hidden;
-  border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: white !important;
-}
-
-/* 下载按钮 - 蓝紫渐变 */
-:deep(.download-btn.ant-btn-primary) {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
-}
-
-/* 分享按钮 - 蓝橙渐变 */
-:deep(.share-btn.ant-btn-primary) {
-  background: linear-gradient(135deg, #0ea5e9, #f59e0b) !important;
-  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);
-}
-
-/* 编辑按钮 - 绿色渐变 */
-:deep(.edit-btn.ant-btn-primary) {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
-}
-
-/* 删除按钮 - 红色渐变 */
-:deep(.delete-btn.ant-btn-primary) {
-  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
-}
-
-/* 图标样式 */
-.action-btn :deep(.anticon) {
-  font-size: 18px;
-  color: white !important;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  transition: all 0.3s ease;
-}
-
-/* 按钮悬停效果 */
-.action-btn:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1) saturate(1.1);
-}
-
-.action-btn:hover :deep(.anticon) {
-  transform: scale(1.1);
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
-}
-
-/* 点击效果 */
-.action-btn:active {
-  transform: scale(0.95);
-  filter: brightness(0.95);
-}
-
-/* 按钮发光效果 */
-.action-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    120deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0) 20%,
-    rgba(255, 255, 255, 0.4) 50%,
-    rgba(255, 255, 255, 0) 80%,
-    transparent 100%
-  );
-  animation: shine 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-@keyframes shine {
-  0% {
-    left: -150%;
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.3;
-  }
-  100% {
-    left: 150%;
-    opacity: 0;
-  }
-}
-
-/* 让每个按钮的动画错开开始时间 */
-.download-btn::before {
-  animation-delay: 0s;
-}
-
-.share-btn::before {
-  animation-delay: 1s;
-}
-
-.edit-btn::before {
-  animation-delay: 2s;
-}
-
-.delete-btn::before {
-  animation-delay: 3s;
-}
-
-/* 按钮容器样式 */
-.action-area {
-  display: flex;
-  padding: 8px 0;
-}
-
-.action-area :deep(.ant-space) {
-  gap: 12px !important;
-}
-
-/* 移除旧的 PC 端按钮样式 */
-@media screen and (min-width: 769px) {
-  .action-btn {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-/* 移动端样式 */
-@media screen and (max-width: 768px) {
-  #pictureDetailPage {
-    margin: 0;
-    width: 100%;
-  }
-
-  .preview-card {
-    margin: 0;
-    border-radius: 0;
-    width: 100%;
-  }
-
-  .image-container {
-    border-radius: 0;
-    background: #f9f9f9;
-    width: 100%;
-    padding: 0;
-    min-height: 300px;
-    position: relative;
-  }
-
-  :deep(.ant-card-body) {
-    padding: 0;
-    width: 100%;
-  }
-
-  :deep(.ant-image) {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px;
-  }
-
-  :deep(.ant-image-img) {
-    width: 100% !important;
-    height: auto !important;
-    max-height: 660px;
-    min-width: 100%;
-    object-fit: contain;
-  }
-
-  /* 加载占位符样式优化 */
-  .loading-placeholder {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f9f9f9;
-    z-index: 1;
-
-    .loading-content {
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(8px);
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .loading-text {
-      font-size: 13px;
-      color: #64748b;
-      margin: 0;
-    }
-
-    :deep(.ant-spin) {
-      .ant-spin-dot {
-        font-size: 24px;
-        margin: auto;
-      }
-
-      .ant-spin-text {
-        padding-top: 8px;
-        font-size: 13px;
-        color: #64748b;
-      }
-    }
-  }
-
-  /* 针对小图的特殊处理 */
-  :deep(.ant-image-img[style*='width: 0']),
-  :deep(.ant-image-img[style*='width:0']),
-  :deep(.ant-image-img[style*='width: auto']),
-  :deep(.ant-image-img[style*='width:auto']) {
-    width: 100% !important;
-    height: auto !important;
-    object-fit: contain;
-  }
-
-  /* 修复信息卡片样式 */
-  .info-card {
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  .info-card :deep(.ant-card-body) {
-    padding: 12px 16px;
-  }
-
-  /* 修复描述列表样式 */
-  .info-descriptions :deep(.ant-descriptions-row) {
-    display: flex;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  .info-descriptions :deep(.ant-descriptions-item) {
-    padding: 8px 0;
-    width: 100%;
-  }
-
-  .info-descriptions :deep(.ant-descriptions-item-container) {
-    display: flex;
-  }
-
-  .info-descriptions :deep(.ant-descriptions-item-label) {
-    width: 60px;
-    font-size: 13px;
-    color: #666;
-    flex-shrink: 0;
-  }
-
-  .info-descriptions :deep(.ant-descriptions-item-content) {
-    flex: 1;
-    font-size: 13px;
-    color: #333;
-    padding-left: 8px;
-  }
-
-  /* 标签样式 */
-  :deep(.ant-tag) {
-    margin: 2px 4px 2px 0;
-    font-size: 12px;
-  }
-
-  /* 作者信息样式 */
-  .author-item :deep(.ant-space) {
-    display: flex;
-    align-items: center;
-  }
-
-  .author-name {
-    font-size: 13px;
-    margin-left: 8px;
-  }
-
-  /* 按钮区域样式 */
-  .info-descriptions :deep(.ant-descriptions-item:last-child) {
-    border-bottom: none;
-  }
-
-  .mobile-actions {
-    display: flex;
-    padding: 4px 0;
-  }
-
-  .mobile-actions :deep(.ant-space) {
-    width: 100%;
-    gap: 8px !important;
-    justify-content: flex-start;
-  }
-
-  .mobile-actions .action-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 6px;
-  }
-
-  .mobile-actions .action-btn :deep(.anticon) {
-    font-size: 16px;
-  }
-
-  /* 移动端按钮样式细节优化 */
-  .mobile-actions .action-btn:deep(.ant-btn-primary) {
-    background: linear-gradient(45deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
-    border: none;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-    color: white;
-  }
-
-  .mobile-actions .action-btn:deep(.ant-btn-primary.ant-btn-background-ghost) {
-    background: linear-gradient(45deg, #06b6d4 0%, #3b82f6 50%, #f97316 100%);
-    border: none;
-    color: white;
-    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
-  }
-
-  .mobile-actions .action-btn:deep(.ant-btn:not(.ant-btn-primary):not(.ant-btn-dangerous)) {
-    background: linear-gradient(45deg, #059669 0%, #10b981 50%, #34d399 100%);
-    border: none;
-    color: white;
-    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
-  }
-
-  .mobile-actions .action-btn:deep(.ant-btn-dangerous) {
-    background: linear-gradient(45deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
-    border: none;
-    color: white;
-    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
-  }
-
-  /* 按钮悬停效果增强 */
-  .mobile-actions .action-btn:hover {
-    transform: translateY(-2px) scale(1.05);
-    filter: brightness(1.1) contrast(1.1);
-  }
-
-  /* 点击效果增强 */
-  .mobile-actions .action-btn:active {
-    transform: scale(0.95);
-    filter: brightness(0.95) contrast(0.95);
-  }
-
-  /* 图标发光效果 */
-  .mobile-actions .action-btn :deep(.anticon) {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-  }
-
-  /* 涟漪效果增强 */
-  .mobile-actions .action-btn::after {
-    background: rgba(255, 255, 255, 0.8);
-  }
-
-  @keyframes ripple {
-    0% {
-      transform: scale(0, 0);
-      opacity: 0.8;
-    }
-    20% {
-      transform: scale(25, 25);
-      opacity: 0.5;
-    }
-    100% {
-      opacity: 0;
-      transform: scale(40, 40);
-    }
-  }
-
-  /* 按钮基础样式 */
-  .mobile-actions :deep(.action-btn.ant-btn) {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border: none !important;
-    position: relative;
-    overflow: hidden;
-    border-radius: 10px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    color: white !important;
-  }
-
-  /* 下载按钮 - 蓝紫渐变 */
-  .mobile-actions :deep(.download-btn.ant-btn-primary) {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
-  }
-
-  /* 分享按钮 - 蓝橙渐变 */
-  .mobile-actions :deep(.share-btn.ant-btn-primary) {
-    background: linear-gradient(135deg, #0ea5e9, #f59e0b) !important;
-    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);
-  }
-
-  /* 编辑按钮 - 绿色渐变 */
-  .mobile-actions :deep(.edit-btn.ant-btn-primary) {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
-  }
-
-  /* 删除按钮 - 红色渐变 */
-  .mobile-actions :deep(.delete-btn.ant-btn-primary) {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
-  }
-
-  /* 图标样式 */
-  .mobile-actions :deep(.action-btn .anticon) {
-    font-size: 18px;
-    color: white !important;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-    transition: all 0.3s ease;
-  }
-
-  /* 按钮悬停效果 */
-  .mobile-actions :deep(.action-btn:hover) {
-    transform: translateY(-2px);
-    filter: brightness(1.1) saturate(1.1);
-  }
-
-  .mobile-actions :deep(.action-btn:hover .anticon) {
-    transform: scale(1.1);
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
-  }
-
-  /* 点击效果 */
-  .mobile-actions :deep(.action-btn:active) {
-    transform: scale(0.95);
-    filter: brightness(0.95);
-  }
-
-  /* 按钮发光效果 */
-  .mobile-actions :deep(.action-btn)::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: shine 2s infinite;
-  }
-
-  @keyframes shine {
-    0% {
-      left: -100%;
-    }
-    50% {
-      left: 100%;
-    }
-    100% {
-      left: 100%;
-    }
-  }
-
-  /* 按钮容器样式 */
-  .mobile-actions {
-    display: flex;
-    padding: 8px 0;
-  }
-
-  .mobile-actions :deep(.ant-space) {
-    gap: 12px !important;
-  }
-
-  .loading-placeholder {
-    .loading-content {
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.95);
-    }
-
-    .loading-text {
-      font-size: 13px;
-    }
-
-    :deep(.ant-spin) {
-      .ant-spin-dot {
-        font-size: 24px;
-      }
-
-      .ant-spin-text {
-        padding-top: 8px;
-        font-size: 13px;
-      }
-    }
-  }
-}
-
-/* PC端样式 */
-@media screen and (min-width: 769px) {
-  .image-container {
-    min-height: 400px;
-    max-height: 660px;
-    background: #f9f9f9;
-    border-radius: 4px;
-    padding: 20px;
-  }
-
-  :deep(.ant-image) {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  :deep(.ant-image-img) {
-    max-width: 100%;
-    max-height: 620px;
-    object-fit: contain;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-  }
-}
-
-/* 添加悬停效果 */
-:deep(.ant-image-img:hover) {
-  transform: scale(1.02);
-  transition: all 0.3s ease;
-}
-
-/* PC端按钮样式 */
-@media screen and (min-width: 769px) {
-  .action-btn {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-  }
-
-  .action-btn :deep(.anticon) {
-    font-size: 18px;
-  }
-
-  /* 主按钮样式 */
-  .action-btn:deep(.ant-btn-primary) {
-    background: linear-gradient(135deg, #ff8e53, #ff6b6b);
-    border: none;
-    box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
-  }
-
-  /* 幽灵按钮样式 */
-  .action-btn:deep(.ant-btn-primary.ant-btn-background-ghost) {
-    border: 1px solid #ff8e53;
-    color: #ff8e53;
-  }
-
-  /* 普通按钮样式 */
-  .action-btn:deep(.ant-btn:not(.ant-btn-primary):not(.ant-btn-dangerous)) {
-    border: 1px solid #d9d9d9;
-    color: #666;
-  }
-
-  /* 危险按钮样式 */
-  .action-btn:deep(.ant-btn-dangerous) {
-    border: 1px solid #ff4d4f;
-    color: #ff4d4f;
-  }
-
-  /* 按钮悬停效果 */
-  .action-btn:hover {
-    transform: translateY(-2px);
-    transition: transform 0.2s;
-  }
-}
-
-/* 按钮交互效果 */
-.action-btn:active {
-  transform: scale(0.95);
-  transition: transform 0.2s;
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-  transition: transform 0.2s;
-}
-
-/* 加载占位符基础样式 */
-.loading-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f9f9f9;
-  z-index: 1;
-
-  .loading-content {
-    padding: 24px 32px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(8px);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    z-index: 2;
-  }
-
-  .loading-text {
-    color: #64748b;
-    font-size: 14px;
-    margin: 0;
-  }
-
-  :deep(.ant-spin) {
-    .ant-spin-dot {
-      font-size: 24px;
-      margin: auto;
-    }
-  }
-}
-
-@media screen and (max-width: 768px) {
-  /* ... 其他移动端样式保持不变 ... */
-
-  .image-container {
-    border-radius: 0;
-    background: #f9f9f9;
-    width: 100%;
-    padding: 0;
-    min-height: 300px;
-    position: relative;
-  }
-
-  :deep(.ant-image) {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  :deep(.ant-image-img) {
-    width: 100% !important;
-    height: auto !important;
-    max-height: 90vh;
-    object-fit: contain;
-  }
-
-  /* 移动端加载占位符样式调整 */
-  .loading-placeholder {
-    .loading-content {
-      padding: 20px 24px;
-      background: rgba(255, 255, 255, 0.95);
-    }
-
-    .loading-text {
-      font-size: 13px;
-    }
-
-    :deep(.ant-spin) {
-      .ant-spin-dot {
-        font-size: 22px;
-      }
-    }
-  }
-}
-
-/* 加载容器基础样式 */
-.loading-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  transition: max-height 0.3s ease;
   z-index: 10;
 }
 
-.loading-content {
+.is-loaded .info-section {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.info-section-content {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 8px;
+}
+
+.info-section.is-expanded {
+  max-height: 80%;
+}
+
+.info-section-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.info-section-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.info-section-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* 作者信息动画 */
+.author-info {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 16px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  animation: fadeIn 0.3s ease;
-  min-width: 200px;
+  margin-bottom: 32px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.loading-spinner {
+.is-loaded .author-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 图片信息动画 */
+.picture-info {
+  margin-bottom: 32px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.is-loaded .picture-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 操作按钮动画 */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+  padding: 0;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s;
+}
+
+.is-loaded .actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 聊天室入口动画 */
+.chat-section {
+  margin: -16px 0 24px;
+  padding: 0 4px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+}
+
+.is-loaded .chat-section {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 背景渐变动画 */
+.picture-detail::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: -1;
+}
+
+.is-loaded .picture-detail::before {
+  opacity: 0.95;
+}
+
+/* 移动端适配动画 */
+@media (max-width: 1024px) {
+  .info-section {
+    transform: translateY(30px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.3s ease;
+  }
+
+  .is-loaded .info-section {
+    transform: translateY(0);
+  }
+
+  .preview-section {
+    transform: scale(0.95) translateY(-20px);
+  }
+
+  .is-loaded .preview-section {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 添加图片加载动画 */
+.loading-state {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
-  animation: pulse 2s infinite ease-in-out;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
 }
 
-.loading-text {
-  text-align: center;
+.loader {
+  width: 120px;
+  height: 120px;
+  filter: url(#glow);
 }
 
-.primary-text {
-  color: #1a1a1a;
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 4px;
+.loader-group {
+  transform-origin: center;
+  animation: float 3s ease-in-out infinite;
 }
 
-.secondary-text {
-  color: #64748b;
-  font-size: 14px;
+.loader-camera {
+  fill: none;
+  stroke: url(#rainbow);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: drawCamera 3s ease-in-out infinite;
 }
 
-/* 移动端样式调整 */
-@media screen and (max-width: 768px) {
-  .loading-content {
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    min-width: 180px;
+.loader-lens {
+  fill: none;
+  stroke: url(#rainbow);
+  stroke-width: 4;
+  opacity: 0;
+  animation: showLens 3s ease-in-out infinite;
+}
+
+.loader-flash {
+  fill: none;
+  stroke: url(#rainbow);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: drawFlash 3s ease-in-out infinite;
+}
+
+@keyframes drawCamera {
+  0% {
+    stroke-dashoffset: 300;
   }
-
-  .primary-text {
-    font-size: 15px;
-    color: #1a1a1a;
-    font-weight: 500;
+  30% {
+    stroke-dashoffset: 0;
   }
-
-  .secondary-text {
-    font-size: 13px;
-    color: #64748b;
-    margin-top: 4px;
-  }
-
-  :deep(.ant-spin) {
-    .ant-spin-dot {
-      font-size: 22px !important;
-    }
-
-    .ant-spin-dot-item {
-      background-color: #ff8e53 !important;
-    }
-
-    .anticon {
-      font-size: 22px !important;
-      color: #ff8e53 !important;
-    }
-  }
-
-  .loading-spinner {
-    margin-bottom: 12px;
+  100% {
+    stroke-dashoffset: 0;
   }
 }
 
-/* 动画效果 */
-@keyframes fadeIn {
+@keyframes showLens {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  30% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes drawFlash {
+  0% {
+    stroke-dashoffset: 50;
+  }
+  30% {
+    stroke-dashoffset: 50;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+}
+
+/* 移除旧的加载动画样式 */
+.loader-circle, .loader-orbit {
+  display: none;
+}
+
+.loading-state p {
+  display: none;
+}
+
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translate(-50%, -40%);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, -50%);
   }
 }
 
-@keyframes pulse {
+/* 预览区域样式 */
+.preview-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: calc(100vh - 156px);
+  object-fit: contain;
+  border-radius: 12px;
+  opacity: 0;
+  transform: scale(0.98);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+  transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  cursor: zoom-in;
+}
+
+.image-wrapper.is-loaded .preview-image {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 移动端适配 */
+@media (max-width: 1024px) {
+  .preview-section {
+    padding: 0;
+  }
+
+  .preview-image {
+    cursor: zoom-in;
+  }
+}
+
+.layout {
+  display: flex;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* 预览区域样式 */
+.preview-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: calc(100vh - 156px);
+  object-fit: contain;
+  border-radius: 12px;
+  opacity: 0;
+  transform: scale(0.98);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+  transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  cursor: zoom-in;
+}
+
+.image-wrapper.is-loaded .preview-image {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 信息栏样式 */
+.info-section {
+  width: 360px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  padding: 24px;
+  height: 100%;
+  overflow-y: auto;
+  color: #fff;
+}
+
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.author-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.author-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.author-details {
+  flex: 1;
+}
+
+.author-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: color 0.3s ease;
+}
+
+.author-name:hover {
+  color: #ff8e53;
+}
+
+.btn-follow {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-follow.is-followed {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-follow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* 图片信息样式 */
+.picture-info {
+  margin-bottom: 32px;
+}
+
+.info-group {
+  margin-bottom: 24px;
+}
+
+.info-group label {
+  display: block;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.info-group div {
+  color: #fff;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.3px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tag:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.specs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+.specs span {
+  transition: color 0.3s ease;
+}
+
+.specs span:hover {
+  color: #ff8e53;
+}
+
+.divider {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.color-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 操作按钮样式 */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+  padding: 0;
+}
+
+.btn-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-action i {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+  color: #fff;
+  z-index: 1;
+}
+
+.btn-action span {
+  font-size: 13px;
+  color: #fff;
+  z-index: 1;
+}
+
+.btn-action::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: all 0.3s ease;
+  opacity: 0.9;
+}
+
+/* 点赞按钮 */
+.btn-action.like::before {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+}
+
+.btn-action.like.is-liked::before {
+  background: linear-gradient(135deg, #ff4b4b, #ff6b6b);
+}
+
+/* 评论按钮 */
+.btn-action.comment::before {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+/* 分享按钮 */
+.btn-action.share::before {
+  background: linear-gradient(135deg, #60c3d5, #45b1e8);
+}
+
+.btn-action.share.is-shared::before {
+  background: linear-gradient(135deg, #45b1e8, #3498db);
+}
+
+/* 下载按钮 */
+.btn-action.download::before {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+}
+
+/* 编辑按钮 */
+.btn-action.edit::before {
+  background: linear-gradient(135deg, #fa709a, #fee140);
+}
+
+/* 删除按钮 */
+.btn-action.delete::before {
+  background: linear-gradient(135deg, #ff4b4b, #ff6b6b);
+}
+
+.btn-action:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.btn-action:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+.btn-action:hover:not(:disabled) i {
+  transform: scale(1.1);
+}
+
+.btn-action:active {
+  transform: scale(0.95);
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-action:disabled::before {
+  opacity: 0.5;
+}
+
+@keyframes actionAnimation {
   0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.05);
+    transform: scale(1.2);
   }
   100% {
     transform: scale(1);
   }
 }
 
-.loading-spinner {
-  animation: pulse 2s infinite ease-in-out;
+.btn-action.like.is-liked i,
+.btn-action.share.is-shared i {
+  animation: actionAnimation 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 加载动画样式 */
-:deep(.ant-spin) {
-  .ant-spin-dot {
-    font-size: 24px !important;
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .actions {
+    gap: 8px;
+    margin: 12px 0;
   }
 
-  .ant-spin-dot-item {
-    background-color: #ff8e53;
+  .btn-action {
+    padding: 6px;
   }
 
-  .anticon {
-    font-size: 24px;
-    color: #ff8e53;
+  .btn-action i {
+    font-size: 18px;
+  }
+
+  .btn-action span {
+    font-size: 12px;
   }
 }
 
-.follow-button {
-  min-width: 68px;
-  height: 28px;
-  border-radius: 14px;
-  font-size: 13px;
-  padding: 0 12px;
-  transition: all 0.3s ease;
+@media screen and (max-width: 375px) {
+  .actions {
+    gap: 4px;
+    margin: 8px 0;
+  }
+
+  .btn-action {
+    padding: 4px;
+  }
+
+  .btn-action i {
+    font-size: 16px;
+  }
+
+  .btn-action span {
+    font-size: 11px;
+  }
 }
 
-.follow-button.ant-btn-primary {
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
-  border: none;
-  color: white;
-  box-shadow: 0 2px 6px rgba(255, 107, 107, 0.2);
-}
-
-.follow-button.ant-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-}
-
-.follow-button.ant-btn-default {
-  border-color: #e2e8f0;
-  color: #64748b;
-}
-
-.follow-button.ant-btn-default:hover {
-  color: #ff8e53;
-  border-color: #ff8e53;
-  background: #fff6f3;
-}
-
+/* 聊天室入口样式 */
 .chat-section {
-  margin-bottom: 16px;
-  display: flex;
-  justify-content: center;
+  margin: -16px 0 24px;
+  padding: 0 4px;
 }
 
-.chat-button {
+.btn-chat {
   width: 100%;
-  height: 40px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
-  border: none;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 12px;
+  cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 14px;
 }
 
-.chat-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.3);
+.btn-chat:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
 }
 
-.chat-button-text {
+.btn-chat i {
+  font-size: 18px;
+  color: #ff8e53;
+}
+
+.chat-text {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.online-info {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 
 .online-avatars {
-  margin: 0 8px;
+  display: flex;
+  align-items: center;
 }
 
 .online-count {
   font-size: 13px;
-  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
 }
 
-/* 弹框样式 */
-.chat-modal {
-  :deep(.ant-modal-content) {
-    border-radius: 12px;
-    overflow: hidden;
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .chat-section {
+    margin: -8px 0 16px;
   }
 
-  :deep(.ant-modal-header) {
-    padding: 16px 24px;
-    border-bottom: 1px solid #f0f0f0;
+  .btn-chat {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 
-  :deep(.ant-modal-body) {
-    padding: 0;
+  .btn-chat i {
+    font-size: 16px;
+  }
+
+  .online-count {
+    font-size: 12px;
   }
 }
 
-.modal-header {
+/* 聊天室弹窗样式 */
+.chat-room-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.chat-room-content {
+  background: linear-gradient(135deg, #1a1f35, #2d3748);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  width: 800px;
+  max-width: 90%;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-room-header {
+  padding: 16px 24px;
+  background: linear-gradient(to right, rgba(49, 130, 206, 0.1), rgba(66, 153, 225, 0.05));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.header-title {
+.chat-room-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
-.title-text {
-  font-size: 16px;
+.chat-room-title h3 {
+  margin: 0;
+  font-size: 20px;
   font-weight: 600;
-  color: #333;
+  background: linear-gradient(120deg, #63b3ed, #4299e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.header-avatars {
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-  }
+.chat-room-body {
+  flex: 1;
+  overflow: hidden;
 }
 
 .modal-chat-room {
   height: 100%;
 }
 
+.online-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .online-users-list {
-  max-height: 300px;
-  overflow-y: auto;
   min-width: 200px;
   padding: 12px;
 }
@@ -1798,18 +2471,22 @@ onUnmounted(() => {
   padding: 8px;
   border-radius: 8px;
   transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.02);
-  }
 }
 
-.online-status {
+.online-user-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.online-user-name {
+  flex: 1;
+  font-size: 14px;
+}
+
+.online-status.active {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #52c41a;
-  box-shadow: 0 0 4px rgba(82, 196, 26, 0.5);
+  background: #10b981;
 }
 
 .section-title {
@@ -1822,311 +2499,1531 @@ onUnmounted(() => {
   background: rgba(255, 142, 83, 0.05);
 }
 
-/* 标签容器样式 */
-.info-descriptions :deep(.ant-descriptions-item-content) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 0;
-}
-
-/* 标签样式优化 */
-:deep(.ant-tag) {
-  margin: 0;
-  padding: 6px 12px;
+.btn-close {
+  background: rgba(255, 255, 255, 0.1);
   border: none;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  color: #0284c7;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 18px;
+  color: #fff;
   cursor: pointer;
-  display: inline-flex;
+  padding: 8px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  display: flex;
   align-items: center;
-  height: 28px;
-  line-height: 1;
-
-  &:hover {
-    transform: translateY(-2px);
-    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
-  }
+  justify-content: center;
+  width: 36px;
+  height: 36px;
 }
 
-/* 不同类型标签使用不同配色 */
-:deep(.ant-tag):nth-child(3n+1) {
-  background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%);
-  color: #c026d3;
-
-  &:hover {
-    background: linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%);
-    box-shadow: 0 4px 12px rgba(192, 38, 211, 0.15);
-  }
-}
-
-:deep(.ant-tag):nth-child(3n+2) {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  color: #16a34a;
-
-  &:hover {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
-  }
-}
-
-/* 深色模式适配 */
-@media (prefers-color-scheme: dark) {
-  :deep(.ant-tag) {
-    background: linear-gradient(135deg, rgba(2, 132, 199, 0.1) 0%, rgba(2, 132, 199, 0.2) 100%);
-    color: #38bdf8;
-
-    &:hover {
-      background: linear-gradient(135deg, rgba(2, 132, 199, 0.2) 0%, rgba(2, 132, 199, 0.3) 100%);
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
-    }
-  }
-
-  :deep(.ant-tag):nth-child(3n+1) {
-    background: linear-gradient(135deg, rgba(192, 38, 211, 0.1) 0%, rgba(192, 38, 211, 0.2) 100%);
-    color: #e879f9;
-
-    &:hover {
-      background: linear-gradient(135deg, rgba(192, 38, 211, 0.2) 0%, rgba(192, 38, 211, 0.3) 100%);
-      box-shadow: 0 4px 12px rgba(192, 38, 211, 0.2);
-    }
-  }
-
-  :deep(.ant-tag):nth-child(3n+2) {
-    background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.2) 100%);
-    color: #4ade80;
-
-    &:hover {
-      background: linear-gradient(135deg, rgba(22, 163, 74, 0.2) 0%, rgba(22, 163, 74, 0.3) 100%);
-      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
-    }
-  }
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
 
 /* 移动端适配 */
-@media screen and (max-width: 768px) {
-  :deep(.ant-tag) {
-    padding: 4px 10px;
-    font-size: 12px;
-    height: 24px;
-  }
-
-  .info-descriptions :deep(.ant-descriptions-item-content) {
-    gap: 6px;
-    padding: 2px 0;
-  }
-}
-
-/* 移动端聊天室弹窗样式 */
-:deep(.mobile-chat-modal) {
-  top: 0;
-  padding: 0;
-  margin: 0;
-  max-width: 100vw;
-  width: 100vw !important;
-  height: 100vh !important;
-}
-
-:deep(.mobile-chat-modal .ant-modal-content) {
-  height: 100vh;
+.chat-room-content.mobile {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
   border-radius: 0;
 }
 
-:deep(.mobile-chat-modal .ant-modal-body) {
-  height: calc(100vh - 55px);
+@media (max-width: 768px) {
+  .chat-room-header {
+    padding: 12px 16px;
+  }
+
+  .chat-room-title h3 {
+    font-size: 18px;
+  }
+
+  .online-info {
+    gap: 4px;
+  }
+
+  .btn-close {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+
+/* 安全区域适配 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .chat-room-content.mobile {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 分享弹框样式 */
+.share-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  margin: 0;
   padding: 0;
 }
 
-:deep(.mobile-chat-modal .ant-modal-header) {
+.share-content {
+  background: linear-gradient(135deg, #1a1f35, #2d3748);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  width: 480px;
+  max-width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+  0 0 30px rgba(66, 153, 225, 0.15);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: auto;
+  position: relative;
 }
 
-/* 删除确认弹框样式 */
-:deep(.delete-confirm-modal) {
-  .ant-modal-content {
-    padding: 0;
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .ant-modal-body {
-    padding: 0;
-  }
+.share-header {
+  padding: 20px 24px;
+  background: linear-gradient(to right, rgba(49, 130, 206, 0.1), rgba(66, 153, 225, 0.05));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.delete-confirm-content {
-  padding: 32px 24px;
-  text-align: center;
-}
-
-.warning-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-
-  .anticon {
-    animation: pulse 2s infinite;
-  }
-}
-
-.confirm-title {
-  font-size: 18px;
+.share-header h3 {
+  margin: 0;
+  font-size: 20px;
   font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 12px;
+  background: linear-gradient(120deg, #63b3ed, #4299e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.confirm-desc {
-  font-size: 14px;
-  color: #64748b;
+.btn-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  font-size: 18px;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.share-body {
+  padding: 24px;
+}
+
+.preview-box {
+  width: 100%;
+  height: 240px;
+  border-radius: 16px;
+  overflow: hidden;
   margin-bottom: 24px;
-  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
 }
 
-.confirm-actions {
+.preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.preview-box:hover img {
+  transform: scale(1.02);
+}
+
+.share-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.link-box {
   display: flex;
   gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.link-box input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.link-box input:focus {
+  outline: none;
+  border-color: rgba(66, 153, 225, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-copy {
+  padding: 0 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-copy:hover {
+  background: linear-gradient(135deg, #3182ce, #2b6cb0);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+}
+
+.share-options {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btn-share-option {
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  min-width: 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-share-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(66, 153, 225, 0.1), rgba(49, 130, 206, 0.1));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-share-option:hover::before {
+  opacity: 1;
+}
+
+.btn-share-option i {
+  font-size: 28px;
+  background: linear-gradient(120deg, #63b3ed, #4299e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: transform 0.3s ease;
+}
+
+.btn-share-option:hover i {
+  transform: scale(1.1);
+}
+
+.btn-share-option span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* 移动端适配 */
+.share-content.mobile {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.share-content.mobile .share-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px;
+}
+
+.share-content.mobile .preview-box {
+  height: 200px;
+  margin-bottom: 20px;
+}
+
+.share-content.mobile .share-options {
+  position: sticky;
+  bottom: 0;
+  padding: 20px;
+  background: linear-gradient(to bottom, transparent, #1a1f35);
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 640px) {
+  .share-content {
+    background: linear-gradient(165deg, #1a1f35, #2d3748);
+  }
+
+  .btn-share-option {
+    padding: 12px;
+    min-width: 80px;
+    border-radius: 12px;
+  }
+
+  .btn-share-option i {
+    font-size: 24px;
+  }
+
+  .btn-share-option span {
+    font-size: 12px;
+  }
+
+  .link-box {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn-copy {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .share-header {
+    padding: 16px 20px;
+  }
+
+  .share-header h3 {
+    font-size: 18px;
+  }
+}
+
+/* 删除确认弹窗样式 */
+.delete-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+.delete-modal .modal-content {
+  background: linear-gradient(135deg, #1a1f35, #2d3748);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 32px;
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.delete-modal .icon-warning {
+  font-size: 48px;
+  color: #f56565;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.delete-modal h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.delete-modal p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 24px;
+  font-size: 16px;
+}
+
+.delete-modal .modal-actions {
+  display: flex;
+  gap: 16px;
   justify-content: center;
 }
 
-.cancel-button {
-  min-width: 100px;
-  height: 38px;
-  border-radius: 19px;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 14px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    color: #1a1a1a;
-    border-color: #94a3b8;
-    background: #f8fafc;
-  }
-}
-
-.confirm-button {
-  min-width: 100px;
-  height: 38px;
-  border-radius: 19px;
-  background: #ff6b6b;
-  border: none;
-  color: white;
+.delete-modal .btn-secondary {
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.3s ease;
+}
 
-  &:hover {
-    background: #ff5252;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+.delete-modal .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.delete-modal .btn-danger {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f56565, #e53e3e);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-modal .btn-danger:hover {
+  background: linear-gradient(135deg, #e53e3e, #c53030);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+@media (max-width: 640px) {
+  .delete-modal .modal-content {
+    padding: 24px;
   }
 
-  &:active {
-    transform: translateY(1px);
+  .delete-modal h3 {
+    font-size: 20px;
+  }
+
+  .delete-modal p {
+    font-size: 14px;
+  }
+
+  .delete-modal .btn-secondary,
+  .delete-modal .btn-danger {
+    padding: 10px 20px;
   }
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
+/* 移动端样式调整 */
+@media (max-width: 1024px) {
+  .picture-detail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    padding: 0;
+    border-radius: 0;
+    margin: 0;
+    z-index: 10;
+  }
+
+  .layout {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+
+  .preview-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .info-section {
+    position: relative;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(15px);
+    border-radius: 20px 20px 0 0;
+    padding: 0;
+    margin-bottom: 0;
+    max-height: 35%;
+    overflow: hidden;
+    transition: max-height 0.3s ease, background 0.3s ease;
+  }
+
+  .info-section.is-expanded {
+    max-height: 80%;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.45) 0%,
+      rgba(0, 0, 0, 0.35) 100%
+    );
+    backdrop-filter: blur(8px);
+  }
+
+  .info-section-content {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+  }
+
+  .info-section-content::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .info-section-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .info-section-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+
+  /* 添加滑动手柄样式 */
+  .info-section::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    z-index: 1;
+  }
+}
+
+/* 平板设备特殊处理 */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .layout {
+    flex-direction: row;
+  }
+
+  .preview-section {
+    flex: 2;
+  }
+
+  .info-section {
+    flex: 1;
+    max-width: 400px;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .info-section::before {
+    display: none;
+  }
+
+  .info-section.is-expanded {
+    max-height: 100%;
+  }
+}
+
+/* 安全区域适配 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 1024px) {
+    .info-section {
+      padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
+    }
+  }
+}
+
+/* 深色模式优化 */
+@media (prefers-color-scheme: dark) {
+  .info-section {
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .btn-action {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* 全屏预览样式 */
+.fullscreen-viewer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(30px) saturate(180%);
+}
+
+.fullscreen-viewer.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.fullscreen-viewer .image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.fullscreen-viewer img {
+  max-width: 90%;
+  max-height: 90vh;
+  object-fit: contain;
+  transform-origin: center center;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-x;
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fullscreen-viewer img:not(.is-transitioning) {
+  transition: none;
+}
+
+@media (max-width: 768px) {
+  .fullscreen-viewer .image-container {
+    padding: 16px;
+  }
+
+  .fullscreen-viewer img {
+    max-width: 85%;
+    max-height: 85vh;
+  }
+}
+
+.fullscreen-viewer .close-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 4;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.fullscreen-viewer .close-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.fullscreen-viewer .close-button:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .fullscreen-viewer .close-button {
+    top: auto;
+    bottom: 40px;
+    right: 50%;
+    transform: translateX(50%);
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .fullscreen-viewer .close-button:active {
+    transform: translateX(50%) scale(0.95);
+  }
+}
+
+.background-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.background-layer.is-loaded {
+  opacity: 1;
+}
+
+/* 添加额外的玻璃态效果层 */
+.overlay-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  backdrop-filter: blur(8px) brightness(1.15);
+  -webkit-backdrop-filter: blur(8px) brightness(1.15);
+  z-index: 2;
+  mix-blend-mode: overlay;
+  opacity: 0.2;
+}
+
+/* 确保内容层在背景之上 */
+.content-layer {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+}
+
+/* 评论弹框样式 */
+.comment-drawer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.drawer-content {
+  position: relative;
+  z-index: 10000;
+  width: 90%;
+  max-width: 600px;
+  height: 80vh;
+  max-height: 80vh;
+  background: linear-gradient(135deg, #1a1f35, #2d3748);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #fff;
+  margin: auto;
+  overflow: hidden;
+}
+
+/* 评论样式覆盖 */
+:deep(.ant-comment-content-author-name > *) {
+  color: #fff !important;
+}
+
+:deep(.ant-comment-content-author-name) {
+  color: #fff !important;
+}
+
+:deep(.ant-comment) {
+  background: transparent;
+  color: #fff !important;
+}
+
+:deep(.ant-comment-content-author) {
+  margin-bottom: 8px;
+}
+
+:deep(.ant-comment-content-author-time) {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:deep(.ant-comment-content-detail) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.ant-comment-actions) {
+  margin-top: 8px;
+}
+
+:deep(.ant-comment-actions > li > span) {
+  color: rgba(255, 255, 255, 0.6) !important;
+  transition: color 0.3s ease;
+}
+
+:deep(.ant-comment-actions > li > span:hover) {
+  color: #ff8e53 !important;
+}
+
+:deep(.ant-comment-nested) {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-top: 8px;
+  padding: 12px;
+}
+
+.drawer-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.drawer-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  background: linear-gradient(120deg, #63b3ed, #4299e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.comments-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  color: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.comments-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.comment-input {
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 0 0 20px 20px;
+  position: relative;
+}
+
+.input-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.input-box:focus-within {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.input-box textarea {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 8px 4px;
+  resize: none;
+  min-height: 36px;
+  max-height: 120px;
+  transition: all 0.3s ease;
+}
+
+.input-box textarea:focus {
+  outline: none;
+}
+
+.input-box textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.emoji-btn {
+  padding: 8px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.send-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.reply-bar {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.reply-bar button {
+  background: none;
+  border: none;
+  color: #ff8e53;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.reply-bar button:hover {
+  background: rgba(255, 142, 83, 0.1);
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .input-box {
+    border-radius: 12px;
+    padding: 6px;
+  }
+
+  .input-box textarea {
+    font-size: 14px;
+    padding: 6px 2px;
+  }
+
+  .emoji-btn {
+    padding: 6px;
+    font-size: 18px;
+  }
+
+  .send-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+    height: 32px;
+  }
+}
+
+.emoji-picker-wrapper {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 20px;
+  z-index: 10;
+  animation: fadeInUp 0.3s ease;
+}
+
+.custom-emoji-picker {
+  width: 320px;
+  max-height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
     opacity: 1;
+    transform: translateY(0);
   }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
+}
+
+.emoji-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+}
+
+.emoji-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
   }
-  100% {
-    transform: scale(1);
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
 }
 
 /* 移动端适配 */
 @media screen and (max-width: 768px) {
-  .delete-confirm-content {
-    padding: 24px 16px;
+  .drawer-content {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
   }
 
-  .warning-icon {
-    font-size: 40px;
+  .comments-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .confirm-title {
-    font-size: 16px;
+  .comment-input {
+    border-radius: 0;
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
   }
 
-  .confirm-desc {
-    font-size: 13px;
-  }
-
-  .confirm-actions {
-    gap: 8px;
-  }
-
-  .cancel-button,
-  .confirm-button {
-    min-width: 90px;
-    height: 36px;
-    font-size: 13px;
+  .drawer-header {
+    padding: calc(16px + env(safe-area-inset-top)) 16px 16px;
   }
 }
 
-/* 删除状态样式 */
-.deleted-state {
+.loading-state {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.end-message {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* 移动端底部操作栏样式 */
+.mobile-action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-around;
   align-items: center;
-  min-height: calc(100vh - 200px);
-  padding: 32px 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 100;
+
+  .action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    span {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .action-icon {
+      transition: transform 0.3s ease;
+    }
+
+    &:hover .action-icon {
+      transform: scale(1.1);
+    }
+  }
+}
+
+/* 修改评论抽屉样式以适应移动端底部操作栏 */
+.comments-drawer {
+  :deep(.ant-drawer-content-wrapper) {
+    margin-bottom: var(--mobile-action-bar-height, 60px);
+  }
+}
+
+/* 修改评论输入框样式 */
+.comment-input-wrapper {
   background: white;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 12px;
+  margin-bottom: var(--mobile-action-bar-height, 60px);
+
+  .input-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 8px 12px;
+
+    .emoji-trigger {
+      padding: 4px;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        color: #ff8e53;
+      }
+    }
+
+    .comment-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px;
+
+      &:focus {
+        outline: none;
+      }
+    }
+
+    .send-button {
+      min-width: 60px;
+      height: 32px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
+      border: none;
+      color: white;
+      font-size: 14px;
+
+      &:disabled {
+        opacity: 0.5;
+        background: #e2e8f0;
+      }
+    }
+  }
+}
+
+/* 添加点赞按钮样式 */
+.btn-action.like {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-action.like.is-liked {
+  background: linear-gradient(135deg, #ff4b4b, #ff6b6b);
+}
+
+.btn-action.like.is-liked i {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.btn-action.like:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-action.like i {
+  color: #fff;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action.like:active {
+  transform: scale(0.95);
+}
+
+/* 添加点击动画效果 */
+@keyframes likeAnimation {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.btn-action.like.is-liked i {
+  animation: likeAnimation 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 互动按钮样式 */
+.interaction-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0 24px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 管理按钮样式 */
+.management-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.management-buttons .btn-action {
+  flex: 1;
+  height: 40px;
+}
+
+.management-buttons .btn-action.edit::before {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}
+
+.management-buttons .btn-action.delete::before {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+@media (max-width: 768px) {
+  .interaction-buttons {
+    margin: 12px 0 20px;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .management-buttons {
+    margin-top: 20px;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .management-buttons .btn-action {
+    height: 36px;
+  }
+}
+
+/* PC 端样式 */
+@media (min-width: 1025px) {
+
+
+
+  .preview-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .info-section {
+    max-width: 400px;
+    height: 100%;
+    max-height: 100% !important;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+}
+
+.deleted-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,
+  rgba(28, 31, 44, 0.95) 0%,
+  rgba(45, 55, 72, 0.95) 50%,
+  rgba(74, 85, 104, 0.95) 100%
+  );
+  backdrop-filter: blur(10px);
+  z-index: 10;
 }
 
 .deleted-content {
   text-align: center;
-  animation: fadeIn 0.5s ease;
+  padding: 40px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  max-width: 400px;
+  width: 90%;
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.deleted-icon {
+.deleted-content .icon-trash {
   font-size: 48px;
-  color: #ff6b6b;
-  margin-bottom: 16px;
-  opacity: 0.5;
+  color: #ef4444;
+  margin-bottom: 24px;
+  display: block;
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .deleted-content h2 {
-  font-size: 20px;
-  color: #1a1a1a;
-  margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .deleted-content p {
-  font-size: 14px;
-  color: #64748b;
-  margin-bottom: 24px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 32px;
+  line-height: 1.6;
 }
 
-.back-button {
-  min-width: 120px;
-  height: 40px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
+.deleted-content .btn-primary {
+  padding: 12px 32px;
   border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  font-size: 16px;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
 
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+.deleted-content .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.deleted-content .btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 添加欢迎层样式 */
+.welcome-layer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,
+  rgba(28, 31, 44, 0.98) 0%,
+  rgba(45, 55, 72, 0.98) 50%,
+  rgba(74, 85, 104, 0.98) 100%
+  );
+  z-index: 4;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.is-loaded .welcome-layer {
+  opacity: 0;
+}
+
+.welcome-content {
+  text-align: center;
+  animation: welcomeFadeIn 0.8s ease-out forwards;
+}
+
+.emoji-row {
+  font-size: 28px;
+  color: #fff;
+  margin: 20px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: emojiAppear 0.5s ease-out forwards;
+}
+
+.emoji-row:nth-child(1) { animation-delay: 0.2s; }
+.emoji-row:nth-child(2) { animation-delay: 0.4s; }
+.emoji-row:nth-child(3) {
+  animation-delay: 0.6s;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
+}
+.emoji-row:nth-child(4) { animation-delay: 0.8s; }
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.35);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes emojiAppear {
   from {
     opacity: 0;
     transform: translateY(20px);

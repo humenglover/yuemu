@@ -179,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, onActivated, onDeactivated, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { SearchOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { listPostByPageUsingPost, getFollowPostsUsingPost } from '@/api/postController'
@@ -189,12 +189,12 @@ import { POST_STATUS_ENUM } from '@/constants/post'
 import { message } from 'ant-design-vue'
 import { getDeviceType } from '@/utils/device'
 import { DEVICE_TYPE_ENUM } from '@/constants/device'
-import { throttle } from 'lodash-es'
+import { throttle, debounce } from 'lodash-es'
 
 const router = useRouter()
 const activeTab = ref('all')
 const loading = ref(false)
-const posts = ref<API.Post[]>([])
+const posts = ref<Post[]>([])
 const searchText = ref('')
 const current = ref(1)
 const pageSize = ref(10)
@@ -207,6 +207,18 @@ const isRefreshing = ref(false)
 const isAtTop = ref(true)
 const pcContainer = ref(null)
 const isLoadingMore = ref(false)
+const scrollPosition = ref(0)
+
+// 添加触摸事件相关变量
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+const touchEndX = ref(0)
+const touchEndY = ref(0)
+const isSwipeLocked = ref(false)
+
+defineOptions({
+  name: 'ForumPage'
+})
 
 // 监听标签切换
 watch(activeTab, (newTab) => {
@@ -218,7 +230,7 @@ watch(activeTab, (newTab) => {
   // 重置滚动位置
   window.scrollTo({
     top: 0,
-    behavior: 'instant' // 使用 instant 避免平滑滚动
+    behavior: 'auto' // 使用 auto 替代 instant
   })
 
   // 重新获取数据
@@ -268,9 +280,6 @@ const fetchPosts = async (reset = false) => {
       searchText: searchText.value || undefined,
       category: selectedCategory.value === 'all' ? undefined : selectedCategory.value
     })
-
-
-
 
     if (res.data?.data?.records) {
       if (reset || isRefreshing.value) {
@@ -406,7 +415,7 @@ const handleCategoryChange = async (category: string) => {
   } else {
     window.scrollTo({
       top: 0,
-      behavior: 'instant'
+      behavior: 'auto'
     })
   }
 
@@ -429,24 +438,164 @@ const handleScrollForRefresh = () => {
   }
 }
 
+// 保存滚动位置
+const saveScrollPosition = () => {
+  if (device.value !== DEVICE_TYPE_ENUM.PC) {
+    scrollPosition.value = window.pageYOffset || document.documentElement.scrollTop
+  } else {
+    const pcContainer = document.querySelector('.pc-container')
+    if (pcContainer) {
+      scrollPosition.value = pcContainer.scrollTop
+    }
+  }
+}
+
+// 恢复滚动位置
+const restoreScrollPosition = () => {
+  nextTick(() => {
+    if (device.value !== DEVICE_TYPE_ENUM.PC) {
+      window.scrollTo({
+        top: scrollPosition.value,
+        behavior: 'auto'
+      })
+    } else {
+      const pcContainer = document.querySelector('.pc-container')
+      if (pcContainer) {
+        pcContainer.scrollTop = scrollPosition.value
+      }
+    }
+  })
+}
+
+// 添加触摸开始事件处理
+const handleGlobalTouchStart = (e: TouchEvent) => {
+  // 只在论坛路由下启用左右滑动
+  if (router.currentRoute.value.path !== '/forum') {
+    return
+  }
+  touchStartX.value = e.touches[0].clientX
+  touchStartY.value = e.touches[0].clientY
+}
+
+// 添加触摸结束事件处理
+const handleGlobalTouchEnd = (e: TouchEvent) => {
+  // 只在论坛路由下启用左右滑动
+  if (router.currentRoute.value.path !== '/forum') {
+    return
+  }
+
+  if (isSwipeLocked.value) return
+
+  touchEndX.value = e.changedTouches[0].clientX
+  touchEndY.value = e.changedTouches[0].clientY
+
+  const deltaX = touchEndX.value - touchStartX.value
+  const deltaY = touchEndY.value - touchStartY.value
+
+  // 如果水平滑动距离大于垂直滑动距离，且滑动距离超过50像素
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+    // 防止连续滑动
+    isSwipeLocked.value = true
+    setTimeout(() => {
+      isSwipeLocked.value = false
+    }, 500)
+
+    // 判断是否在"发现"标签下
+    if (activeTab.value === 'all') {
+      // 在"发现"标签下，切换分类（包括"全部"分类）
+      const allCategories = ['all', ...categories.value]
+      const currentIndex = allCategories.indexOf(selectedCategory.value)
+
+      if (deltaX > 0 && currentIndex > 0) {
+        // 右滑，切换到上一个分类
+        handleCategoryChange(allCategories[currentIndex - 1])
+      } else if (deltaX < 0 && currentIndex < allCategories.length - 1) {
+        // 左滑，切换到下一个分类
+        handleCategoryChange(allCategories[currentIndex + 1])
+      }
+    } else {
+      // 在"关注"标签下，切换主标签
+      const tabs = ['all', 'following']
+      const currentIndex = tabs.indexOf(activeTab.value)
+
+      if (deltaX > 0 && currentIndex > 0) {
+        // 右滑，切换到上一个标签
+        activeTab.value = tabs[currentIndex - 1]
+      } else if (deltaX < 0 && currentIndex < tabs.length - 1) {
+        // 左滑，切换到下一个标签
+        activeTab.value = tabs[currentIndex + 1]
+      }
+    }
+  }
+}
+
+// 页面加载时初始化
 onMounted(async () => {
   device.value = await getDeviceType()
   await fetchCategories()
   await fetchPosts() // 首次加载数据
 
-  // 只在移动端添加滚动监听
+  // 只在移动端添加滚动和触摸监听
   if (device.value !== DEVICE_TYPE_ENUM.PC) {
     window.addEventListener('scroll', handleScrollForRefresh)
+    window.addEventListener('touchstart', handleGlobalTouchStart)
+    window.addEventListener('touchend', handleGlobalTouchEnd)
   }
   window.addEventListener('scroll', handleScroll)
+  bindScrollListener()
 })
 
 onUnmounted(() => {
   if (device.value !== DEVICE_TYPE_ENUM.PC) {
     window.removeEventListener('scroll', handleScrollForRefresh)
+    window.removeEventListener('touchstart', handleGlobalTouchStart)
+    window.removeEventListener('touchend', handleGlobalTouchEnd)
   }
   window.removeEventListener('scroll', handleScroll)
+  if (device.value !== DEVICE_TYPE_ENUM.PC) {
+    window.onscroll = null
+  }
 })
+
+// 监听路由离开时保存位置
+onDeactivated(() => {
+  saveScrollPosition()
+  // 移除滚动和触摸监听器
+  if (device.value !== DEVICE_TYPE_ENUM.PC) {
+    window.removeEventListener('touchstart', handleGlobalTouchStart)
+    window.removeEventListener('touchend', handleGlobalTouchEnd)
+    window.onscroll = null
+  }
+})
+
+// 路由返回时恢复位置和监听器
+onActivated(() => {
+  restoreScrollPosition()
+  // 重新绑定滚动和触摸监听器
+  if (device.value !== DEVICE_TYPE_ENUM.PC) {
+    window.addEventListener('touchstart', handleGlobalTouchStart)
+    window.addEventListener('touchend', handleGlobalTouchEnd)
+    nextTick(() => {
+      bindScrollListener()
+    })
+  }
+})
+
+// 绑定滚动监听器的函数
+const bindScrollListener = () => {
+  if (device.value !== DEVICE_TYPE_ENUM.PC) {
+    window.onscroll = debounce(() => {
+      const bottomOfWindow =
+        document.documentElement.offsetHeight -
+        (document.documentElement.scrollTop || window.pageYOffset) -
+        window.innerHeight <= 100
+
+      if (bottomOfWindow && !loading.value && !hasMore.value) {
+        loadMoreData()
+      }
+    }, 100)
+  }
+}
 
 // 修改下拉刷新处理函数
 const onRefresh = async () => {
@@ -479,6 +628,28 @@ const onRefresh = async () => {
 // 添加 PC 端标签切换处理函数
 const handleTabChange = (key: string) => {
   activeTab.value = key
+}
+
+// 添加加载更多数据处理函数
+const loadMoreData = async () => {
+  if (activeTab.value === 'following') {
+    await fetchFollowPosts()
+  } else {
+    await fetchPosts()
+  }
+}
+
+// 定义 Post 类型
+interface Post {
+  id: number
+  title: string
+  content: string
+  userId: number
+  category: string
+  createTime: string
+  updateTime: string
+  status: number
+  [key: string]: any
 }
 </script>
 
@@ -633,45 +804,211 @@ const handleTabChange = (key: string) => {
 
 
 /* 分类导航样式 */
-.pc-category-nav {
-  height: 36px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  padding: 0 12px 1px;
-  overflow-x: auto;
-  border-bottom: 1px solid #f0f0f0;
-  z-index: 99;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
+.pc-container {
+  background: #f8fafc;
+  margin: 0;
+  width: 100%;
+  min-height: calc(100vh - 64px - 28px);
+  overflow: hidden;
+  padding: 12px 0;
+
+  .pc-content-wrapper {
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 16px;
+  }
+
+  .pc-nav {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 12px;
+    z-index: 100;
+
+    :deep(.ant-tabs-nav) {
+      margin: 0;
+      padding: 0;
+    }
+
+    :deep(.ant-tabs-nav-wrap) {
+      padding: 6px 16px;
+    }
+
+    :deep(.ant-tabs-tab) {
+      padding: 8px 16px;
+      font-size: 15px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin: 0 6px;
+      border-radius: 10px;
+      color: #1d1d1f;
+      opacity: 0.8;
+      position: relative;
+
+      &:first-child {
+        margin-left: 0;
+      }
+
+      &:hover {
+        color: #1d1d1f;
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      &.ant-tabs-tab-active {
+        .ant-tabs-tab-btn {
+          color: #1d1d1f;
+          font-weight: 600;
+          opacity: 1;
+        }
+        background: rgba(0, 0, 0, 0.05);
+      }
+    }
+
+    :deep(.ant-tabs-ink-bar) {
+      display: none;
+    }
+  }
+
+  .pc-content {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    min-height: calc(100vh - 64px - 28px - 48px - 32px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+
+    .post-list-container {
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  /* 分类导航样式优化 */
+  .pc-category-nav {
+    height: auto;
+    background: transparent;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 24px;
+    gap: 8px;
+    border-bottom: none;
+    margin-bottom: 16px;
+
+    .pc-category-item {
+      padding: 6px 12px;
+      font-size: 14px;
+      color: #1d1d1f;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.03);
+      font-weight: 500;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
+      }
+
+      &.active {
+        color: #ffffff;
+        background: #1d1d1f;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+
+  .empty-following {
+    padding: 80px 0;
+    text-align: center;
+
+    .empty-desc {
+      color: #86868b;
+      margin: 16px 0;
+      font-size: 17px;
+    }
+
+    .ant-btn {
+      min-width: 120px;
+      height: 44px;
+      border-radius: 22px;
+      font-size: 15px;
+      font-weight: 600;
+      background: #1d1d1f;
+      border-color: #1d1d1f;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        background: #000000;
+        border-color: #000000;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
   }
 }
 
-.pc-category-item {
-  padding: 2px 12px;
-  font-size: 13px;
-  color: #64748b;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 16px;
-  background: rgba(24, 144, 255, 0.05);
+/* 优化加载体验 */
+.post-list-container {
+  min-height: calc(100vh - 64px - 28px - 48px - 32px);
+}
+
+.post-item {
+  opacity: 0;
+  animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  padding: 24px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
 
   &:hover {
-    color: #ff8e53;
-    background: rgba(24, 144, 255, 0.08);
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
   }
 }
 
-.pc-category-item.active {
-  color: #ff8e53;
-  font-weight: 500;
-  background: linear-gradient(135deg, rgba(199, 164, 129, 0.12), rgba(207, 131, 54, 0.15));
-  box-shadow:
-    0 2px 8px rgba(192, 153, 100, 0.1),
-    0 1px 4px rgba(24, 144, 255, 0.05);
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 加载状态和无更多数据样式优化 */
+.loading-more, .no-more-data {
+  padding: 24px 0;
+  text-align: center;
+  color: #86868b;
+  font-size: 15px;
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  :deep(.ant-spin-dot) {
+    font-size: 24px;
+  }
 }
 
 /* 搜索框样式 */
@@ -923,86 +1260,87 @@ const handleTabChange = (key: string) => {
 /* PC端样式 */
 .pc-container {
   background: #f8fafc;
-  margin: 0;
+  margin-top: -12px;
+
   width: 100%;
+  min-height: calc(100vh - 64px - 28px);
+  overflow: hidden;
+  padding: 12px 0;
 
   .pc-content-wrapper {
     margin: 0 auto;
+    width: 100%;
+    max-width: 94%;
+    padding: 0 16px;
   }
 
   .pc-nav {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    max-width: 78%;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin: auto;
     margin-bottom: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 12px;
+    z-index: 100;
 
     :deep(.ant-tabs-nav) {
       margin: 0;
-      padding: 0 24px;
+      padding: 0;
+    }
+
+    :deep(.ant-tabs-nav-wrap) {
+      padding: 6px 16px;
     }
 
     :deep(.ant-tabs-tab) {
-      padding: 0 24px 6px;
-      font-size: 16px;
-      transition: all 0.3s;
-      margin: 0;
+      padding: 8px 16px;
+      font-size: 15px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin: 0 6px;
+      border-radius: 10px;
+      color: #1d1d1f;
+      opacity: 0.8;
+      position: relative;
+
+      &:first-child {
+        margin-left: 0;
+      }
 
       &:hover {
-        color: #ff8e53;
+        color: #1d1d1f;
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.03);
       }
 
       &.ant-tabs-tab-active {
         .ant-tabs-tab-btn {
-          color: #ff8e53;
-          font-weight: 500;
+          color: #1d1d1f;
+          font-weight: 600;
+          opacity: 1;
         }
+        background: rgba(0, 0, 0, 0.05);
       }
     }
 
     :deep(.ant-tabs-ink-bar) {
-      background: #ff8e53;
-    }
-  }
-
-  .pc-category {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    margin-bottom: 16px;
-
-    :deep(.ant-tabs-nav) {
-      margin: 0;
-      padding: 0 24px;
-    }
-
-    :deep(.ant-tabs-tab) {
-      padding: 12px 20px;
-      font-size: 14px;
-      transition: all 0.3s;
-      margin: 0;
-
-      &:hover {
-        color: #ff8e53;
-      }
-
-      &.ant-tabs-tab-active {
-        .ant-tabs-tab-btn {
-          color: #ff8e53;
-          font-weight: 500;
-        }
-      }
-    }
-
-    :deep(.ant-tabs-ink-bar) {
-      background: #ff8e53;
+      display: none;
     }
   }
 
   .pc-content {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     padding: 24px;
+    min-height: calc(100vh - 64px - 28px - 48px - 32px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 
     .post-list-container {
       margin: 0;
@@ -1010,36 +1348,126 @@ const handleTabChange = (key: string) => {
     }
   }
 
+  /* 分类导航样式优化 */
+  .pc-category-nav {
+    max-width: 78%;
+    margin: auto;
+    height: auto;
+    background: transparent;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 24px;
+    gap: 8px;
+    border-bottom: none;
+    margin-bottom: 8px;
+
+    .pc-category-item {
+      padding: 6px 12px;
+      font-size: 14px;
+      color: #1d1d1f;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.03);
+      font-weight: 500;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
+      }
+
+      &.active {
+        color: #ffffff;
+        background: #1d1d1f;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+
   .empty-following {
-    padding: 60px 0;
+    padding: 80px 0;
     text-align: center;
 
     .empty-desc {
-      color: #666;
+      color: #86868b;
       margin: 16px 0;
+      font-size: 17px;
     }
 
     .ant-btn {
       min-width: 120px;
-      height: 36px;
-      border-radius: 18px;
-      font-weight: 500;
-      background: #ff8e53;
-      border-color: #ff8e53;
+      height: 44px;
+      border-radius: 22px;
+      font-size: 15px;
+      font-weight: 600;
+      background: #1d1d1f;
+      border-color: #1d1d1f;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
-        background: #ff7a33;
-        border-color: #ff7a33;
+        background: #000000;
+        border-color: #000000;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 142, 83, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
 
       &:active {
-        background: #ff6b1a;
-        border-color: #ff6b1a;
         transform: translateY(0);
       }
     }
+  }
+}
+
+/* 优化加载体验 */
+.post-list-container {
+  min-height: calc(100vh - 64px - 28px - 48px - 32px);
+}
+
+.post-item {
+  opacity: 0;
+  animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  padding: 24px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 加载状态和无更多数据样式优化 */
+.loading-more, .no-more-data {
+  padding: 24px 0;
+  text-align: center;
+  color: #86868b;
+  font-size: 15px;
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  :deep(.ant-spin-dot) {
+    font-size: 24px;
   }
 }
 </style>

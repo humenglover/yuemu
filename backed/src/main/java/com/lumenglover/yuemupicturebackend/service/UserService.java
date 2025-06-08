@@ -3,6 +3,7 @@ package com.lumenglover.yuemupicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.lumenglover.yuemupicturebackend.model.dto.user.UserExportRequest;
 import com.lumenglover.yuemupicturebackend.model.dto.user.UserModifyPassWord;
 import com.lumenglover.yuemupicturebackend.model.dto.user.UserQueryRequest;
 import com.lumenglover.yuemupicturebackend.model.entity.User;
@@ -11,6 +12,8 @@ import com.lumenglover.yuemupicturebackend.model.vo.UserVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -172,4 +175,13 @@ public interface UserService extends IService<User> {
     boolean banOrUnbanUser(Long userId, Boolean isUnban, User admin);
 
     void asyncDeleteUserData(Long id);
+
+    /**
+     * 导出用户数据
+     * @param exportRequest 导出请求
+     * @param httpRequest HTTP请求
+     * @param httpResponse HTTP响应
+     */
+    void exportUserData(UserExportRequest exportRequest, HttpServletRequest httpRequest,
+                        HttpServletResponse httpResponse) throws IOException;
 }

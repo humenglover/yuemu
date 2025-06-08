@@ -1,205 +1,130 @@
 <template>
-  <div id="postDetailPage" v-show="mounted" :class="{ mounted }">
-    <a-row :gutter="[16, 16]">
-      <!-- 帖子内容 -->
-      <a-col :sm="24" :md="16" :xl="18" class="content-col">
-        <a-card class="content-card" :bordered="false">
-          <!-- 帖子标题 -->
-          <template #title>
-            <div class="post-header">
-              <h1 class="post-title">{{ post.title }}</h1>
-              <div class="post-meta">
-                <a-tag v-if="post.status === 0" color="orange">待审核</a-tag>
-                <a-tag v-else-if="post.status === 2" color="red">已拒绝</a-tag>
+  <div class="post-detail-page">
+    <div class="post-content-wrapper">
+      <!-- 主内容区 -->
+      <div class="post-main">
+        <div class="post-header">
+          <h1 class="title">{{ post.title }}</h1>
+          <div class="status-tags">
+            <span v-if="post.status === 0" class="tag pending">待审核</span>
+            <span v-else-if="post.status === 2" class="tag rejected">已拒绝</span>
+          </div>
+          <!-- 移动端作者信息 -->
+          <div class="author-card">
+            <div class="author-info" @click="handleUserClick(post.user)">
+              <div class="author-avatar">
+                <img class="avatar" :src="post.user?.userAvatar || getDefaultAvatar(post.user?.userName)" :alt="post.user?.userName">
+              </div>
+              <div class="author-details">
+                <div class="author-name-follow">
+                  <span class="name">{{ post.user?.userName }}</span>
+                  <button v-if="post.user?.id !== loginUserId" class="btn-follow" :class="{ 'is-followed': isFollowed }" @click.stop="handleFollow"  >
+                    {{ isFollowed ? '已关注' : '关注' }}
+                  </button>
+                </div>
+                <span class="time">{{ formatTime(post.createTime) }}</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="post-content">
+          <markdown-content :content="post.content" />
+        </div>
+      </div>
+
+      <!-- 侧边栏 -->
+      <div class="post-sidebar">
+        <div class="interaction-bar">
+          <div class="action-item like" :class="{ active: post.isLiked === 1 }" @click="handleLike">
+            <span class="emoji">{{ post.isLiked === 1 ? '❤️' : '🤍' }}</span>
+            <span>{{ post.likeCount || 0 }}</span>
+          </div>
+          <div class="action-item">
+            <span class="emoji">👁️</span>
+            <span>{{ post.viewCount || 0 }}</span>
+          </div>
+          <div class="action-item" @click="handleCommentClick">
+            <span class="emoji">💬</span>
+            <span>{{ post.commentCount || 0 }}</span>
+          </div>
+          <div class="action-item share" :class="{ active: post.isShared === 1 }" @click="handleShare">
+            <span class="emoji">{{ post.isShared === 1 ? '✨' : '🔗' }}</span>
+            <span>{{ post.shareCount || 0 }}</span>
+          </div>
+        </div>
+
+        <div v-if="canEdit || canDelete" class="admin-actions">
+          <button v-if="canEdit" class="edit-btn" @click="handleEdit" title="编辑">✏️</button>
+          <button v-if="canDelete" class="delete-btn" @click="showDeleteConfirm" title="删除">❌️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 评论弹框样式 -->
+    <div v-if="visible" class="comment-drawer">
+      <div class="drawer-content">
+        <div class="drawer-header">
+          <h2>评论 ({{ post.commentCount || 0 }})</h2>
+          <button class="close-btn" @click="closeModal">×</button>
+        </div>
+
+        <div class="comments-list" ref="scrollContainer" @scroll="handleScroll">
+          <div v-if="commentloading" class="loading-state">加载中...</div>
+          <template v-else>
+            <comment-list
+              :comments="comments"
+              @reply-clicked="handleReplyClick"
+              @update-comments="queryComments"
+            />
+            <div v-if="isEndOfData" class="end-message">没有更多评论了~</div>
           </template>
+        </div>
 
-          <!-- 帖子内容 -->
-          <markdown-content :content="post.content" class="post-content" />
-        </a-card>
-      </a-col>
-
-      <!-- 作者信息和互动区域 -->
-      <a-col :sm="24" :md="8" :xl="6" class="info-col">
-        <a-card class="info-card" :bordered="false">
-          <!-- 作者信息 -->
-          <a-descriptions :column="1" class="info-descriptions">
-            <a-descriptions-item label="作者" class="author-item">
-              <a-space>
-                <a-avatar
-                  :size="28"
-                  @click="handleUserClick(post.user)"
-                  :src="post.user?.userAvatar || getDefaultAvatar(post.user?.userName)"
-                />
-                <div class="author-name">{{ post.user?.userName }}</div>
-                <a-button
-                  v-if="post.user?.id !== loginUserId"
-                  :type="isFollowed ? 'default' : 'primary'"
-                  size="small"
-                  class="follow-button"
-                  @click="handleFollow"
-                  :loading="followLoading"
-                >
-                  {{ isFollowed ? '已关注' : '关注' }}
-                </a-button>
-              </a-space>
-            </a-descriptions-item>
-            <a-descriptions-item label="发布时间">
-              {{ formatTime(post.createTime) }}
-            </a-descriptions-item>
-          </a-descriptions>
-
-          <!-- 互动数据 -->
-          <div class="interaction-stats">
-            <div class="stat-item" @click="handleLike">
-              <LikeOutlined :class="{ 'active': post.isLiked === 1 }" />
-              <span class="stat-count">{{ post.likeCount || 0 }}</span>
-              <span class="stat-label">点赞</span>
-            </div>
-            <div class="stat-item">
-              <EyeOutlined />
-              <span class="stat-count">{{ post.viewCount || 0 }}</span>
-              <span class="stat-label">浏览</span>
-            </div>
-            <div class="stat-item" @click="visible = true">
-              <CommentOutlined />
-              <span class="stat-count">{{ post.commentCount || 0 }}</span>
-              <span class="stat-label">评论</span>
-            </div>
-            <div class="stat-item" @click="handleShare">
-              <ShareAltOutlined :class="{ 'active': post.isShared === 1 }" />
-              <span class="stat-count">{{ post.shareCount || 0 }}</span>
-              <span class="stat-label">分享</span>
-            </div>
+        <div class="comment-input">
+          <div v-if="replyCommentId" class="reply-bar">
+            <span>回复评论</span>
+            <button @click="cancelReply">取消</button>
           </div>
-
-          <!-- 操作按钮 -->
-          <div class="action-buttons" v-if="canEdit || canDelete">
-            <a-button type="primary" @click="handleEdit" v-if="canEdit" class="edit-button">
-              <template #icon><EditOutlined /></template>
-              编辑
-            </a-button>
-            <a-button @click="showDeleteConfirm" v-if="canDelete" class="delete-button">
-              <template #icon><DeleteOutlined /></template>
-              删除
-            </a-button>
+          <div class="input-box">
+            <button class="emoji-btn" @click.stop="toggleEmojiPicker">😊</button>
+            <textarea
+              v-model="commentContent"
+              :placeholder="replyCommentId ? '写下你的回复...' : '写下你的评论...'"
+              maxlength="200"
+              @keydown.enter.prevent="addComment"
+            ></textarea>
+            <button
+              class="send-btn"
+              :disabled="!commentContent.trim()"
+              @click="addComment"
+            >
+              {{ replyCommentId ? '回复' : '发送' }}
+            </button>
           </div>
-        </a-card>
-      </a-col>
-    </a-row>
+          <div v-if="showEmojiPicker" class="emoji-picker-wrapper" @click.stop>
+            <emoji-picker
+              @select="onEmojiSelect"
+              :i18n="emojiI18n"
+              class="custom-emoji-picker"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- 添加分享模态框 -->
-    <ShareModal
+    <share-modal
       ref="shareModalRef"
       :link="shareLink"
       :imageUrl="shareImage"
       :title="post.title"
       @share-success="handleShareSuccess"
     />
-
-    <!-- 添加评论抽屉 -->
-    <a-drawer
-      class="comments-drawer"
-      v-model:open="visible"
-      placement="bottom"
-      title="评论"
-      :footer="false"
-      @cancel="closeModal"
-      :height="'80vh'"
-    >
-      <!-- 添加宠物动画 -->
-      <div class="pet-animation">
-        <lottie-player
-          :src="currentPet.url"
-          background="transparent"
-          speed="1"
-          style="width: 120px; height: 120px;"
-          ref="petAnimation"
-          loop
-          autoplay
-        ></lottie-player>
-      </div>
-
-      <div class="drawer-content" ref="scrollContainer" @scroll="handleScroll">
-        <div class="comments-area" @click="cancelReply">
-          <!-- 加载中状态 -->
-          <div v-if="commentloading" class="loading-container">
-            <a-spin tip="加载评论中..." />
-          </div>
-
-          <!-- 评论列表 -->
-          <template v-else>
-            <CommentList
-              :comments="comments"
-              @reply-clicked="handleReplyClick"
-              @update-comments="queryComments"
-            />
-            <div v-if="isEndOfData" class="no-more-data">没有更多评论了~</div>
-          </template>
-        </div>
-      </div>
-
-      <!-- 评论输入区域 -->
-      <div class="comment-input-wrapper">
-        <!-- 回复信息提示 -->
-        <div v-if="replyCommentId" class="reply-info">
-          <div class="reply-text">
-            <span class="reply-label">回复评论</span>
-            <ArrowRightOutlined class="reply-arrow" />
-          </div>
-          <CloseCircleOutlined class="cancel-reply" @click="cancelReply" />
-        </div>
-
-        <div class="input-area" :class="{ 'is-replying': replyCommentId }">
-          <!-- 表情按钮 -->
-          <SmileOutlined
-            class="emoji-trigger"
-            :class="{ active: showEmojiPicker }"
-            @click="toggleEmojiPicker"
-          />
-
-          <a-input
-            v-model:value="commentContent"
-            :placeholder="replyCommentId ? '写下你的回复...' : '写下你的评论...'"
-            class="comment-input"
-            :maxLength="200"
-            @pressEnter="addComment"
-          >
-            <template #prefix v-if="replyCommentId">
-              <MessageOutlined class="reply-icon" />
-            </template>
-            <template #suffix>
-              <span class="word-count">{{ commentContent.length }}/200</span>
-            </template>
-          </a-input>
-
-          <a-button
-            type="primary"
-            class="send-button"
-            :class="{ 'reply-button': replyCommentId }"
-            :disabled="!commentContent.trim()"
-            @click="addComment"
-          >
-            {{ replyCommentId ? '回复' : '发送' }}
-          </a-button>
-        </div>
-
-        <!-- 表情选择器 -->
-        <div v-if="showEmojiPicker" class="emoji-picker-container">
-          <EmojiPicker
-            @select="onEmojiSelect"
-            :i18n="emojiI18n"
-            class="custom-emoji-picker"
-          />
-        </div>
-      </div>
-    </a-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, reactive, nextTick } from 'vue'
+import { ref, onMounted, computed, reactive, nextTick, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { Image } from 'ant-design-vue'
@@ -225,7 +150,7 @@ const mounted = ref(false)
 const post = ref<API.Post>({} as API.Post)
 const followLoading = ref(false)
 const isFollowed = ref(false)
-
+const isEndOfData = ref(false)
 // 添加全局预览方法
 window.$previewImage = (options: any) => {
   const { src } = options
@@ -387,7 +312,7 @@ const commentContent = ref('')
 const replyCommentId = ref('')
 const commentloading = ref(false)
 const showEmojiPicker = ref(false)
-const isEndOfData = ref(false)
+
 
 // 查询评论请求对象
 const queryRequest = reactive<API.CommentsQueryRequest>({
@@ -547,6 +472,15 @@ const toggleEmojiPicker = () => {
 
 const onEmojiSelect = (emoji: string) => {
   commentContent.value += emoji
+  showEmojiPicker.value = false
+}
+
+// 点击其他区域关闭表情选择器
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.emoji-picker') && !target.closest('.emoji-btn')) {
+    showEmojiPicker.value = false
+  }
 }
 
 // 添加评论相关方法
@@ -567,29 +501,26 @@ const cancelReply = () => {
 
 // 添加表情选择器国际化配置
 const emojiI18n = {
+  search: '搜索表情',
   categories: {
     recent: '最近使用',
-    smileys: '表情符号',
+    smileys: '表情',
     people: '人物',
-    animals: '动物与自然',
-    food: '食物与饮料',
-    activities: '活动',
-    travel: '旅行与地点',
+    nature: '自然',
+    foods: '食物',
+    activity: '活动',
+    places: '地点',
     objects: '物品',
     symbols: '符号',
     flags: '旗帜'
-  },
-  search: '搜索表情',
-  clear: '清除',
-  notFound: '未找到表情'
+  }
 }
 
 // 关闭弹窗
 const closeModal = () => {
-  replyCommentId.value = ''
   visible.value = false
   commentContent.value = ''
-  showEmojiPicker.value = false
+  replyCommentId.value = ''
 }
 
 // 添加滚动处理函数
@@ -629,6 +560,9 @@ const handleUserClick = (user) => {
   })
 }
 
+// 添加 scrollContainer ref
+const scrollContainer = ref(null)
+
 onMounted(() => {
   fetchPostDetail().then(() => {
     if (post.value.id) {
@@ -636,597 +570,873 @@ onMounted(() => {
       queryComments()
     }
   })
+  document.addEventListener('click', handleClickOutside)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+// 修改评论按钮点击处理
+const handleCommentClick = () => {
+  visible.value = true
+  queryComments()
+}
 </script>
 
 <style scoped>
-#postDetailPage {
-  min-height: calc(100vh - 50px);
-  padding: 0;
-  max-width: 1200px;
-  margin: 0 auto;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  @media screen and (min-width: 769px) {
-    padding: 20px;
-  }
-
-  &.mounted {
-    opacity: 1;
-  }
+.post-detail-page {
+  min-height: calc(100vh - 132px);
+  margin: -24px;
+  position: relative;
+  border-radius: 20px;
+  opacity: 1;
+  background: linear-gradient(135deg, #1a1f35 0%, #212b3f 100%);
+  color: #fff;
+  overflow: hidden;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
 }
 
-.content-card {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.post-content-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  position: relative;
+  height: 100%;
+  margin-bottom: 48px;
+}
 
-  @media screen and (max-width: 768px) {
-    margin: 0 -20px;
-    border-radius: 0;
-  }
+/* 主内容区样式 */
+.post-main {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  width: 100%;
+  max-width: 100%;
 }
 
 .post-header {
-  padding: 16px 20px;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-  .post-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 12px;
-  }
-
-  .post-meta {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  @media screen and (max-width: 768px) {
-    padding: 12px 16px;
-
-    .post-title {
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-  }
+.title {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+  color: #fff;
 }
 
 .post-content {
+  padding: 1rem;
   font-size: 16px;
   line-height: 1.8;
-  color: #374151;
+  color: rgba(255, 255, 255, 0.9);
+  word-wrap: break-word;
+  word-break: break-all;
   white-space: pre-wrap;
-  word-break: break-word;
-  padding: 16px 20px;
-  margin-left: -30px;
-  margin-right: -30px;
-  overflow: hidden;
-
-
-  .image-container {
-    margin: 16px auto;
-    max-width: 800px;
-    width: 100%;
-    text-align: center;
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 8px;
-  }
-
-  .content-image {
-    max-width: 100%;
-    height: auto;
-    display: inline-block;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    vertical-align: middle;
-
-    &:hover {
-      transform: scale(1.02);
-    }
-  }
-
-  :deep(p) {
-    margin: 16px 0;
-  }
-
-  @media screen and (max-width: 768px) {
-    padding: 12px 16px;
-    font-size: 15px;
-
-    .image-container {
-      margin: 12px -16px;
-      border-radius: 0;
-      background: none;
-      padding: 0;
-    }
-  }
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
-.info-card {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-
-  @media screen and (max-width: 768px) {
-    margin: 0 -20px;
-    border-radius: 0;
-  }
-}
-
-.author-item {
-  .author-name {
-    font-weight: 500;
-    color: #1a1a1a;
-  }
-
-  .follow-button {
-    border-radius: 16px;
-    height: 32px;
-    padding: 0 16px;
-  }
-}
-
-.interaction-stats {
-  display: flex;
-  justify-content: space-around;
-  padding: 24px 0;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-  margin: 16px 0;
-
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-      transform: translateY(-2px);
-    }
-
-    .anticon {
-      font-size: 24px;
-      color: #94a3b8;
-
-      &.active {
-        color: #ff4d4f;
-
-        &.anticon-share-alt {
-          color: #60c3d5;
-        }
-      }
-    }
-
-    .stat-count {
-      font-size: 16px;
-      font-weight: 500;
-      color: #1a1a1a;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: #64748b;
-    }
-  }
-}
-
-.action-buttons {
+/* 状态标签 */
+.status-tags {
   display: flex;
   gap: 12px;
-  margin-top: 20px;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-
-  .ant-btn {
-    flex: 1;
-    height: 40px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-
-    .anticon {
-      font-size: 16px;
-      margin-right: 6px;
-    }
-
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    &:active {
-      transform: translateY(1px);
-    }
-  }
-
-  .edit-button {
-    background: linear-gradient(135deg, #60c3d5 0%, #4c9aff 100%);
-    border: none;
-    color: white;
-
-    &:hover {
-      background: linear-gradient(135deg, #4c9aff 0%, #60c3d5 100%);
-    }
-  }
-
-  .delete-button {
-    background: white;
-    border: 1px solid #ff4d4f;
-    color: #ff4d4f;
-
-    &:hover {
-      background: #fff1f0;
-      color: #ff4d4f;
-      border-color: #ff4d4f;
-    }
-
-    .anticon {
-      color: #ff4d4f;
-    }
-  }
+  margin-top: 16px;
 }
 
-/* 响应式调整 */
-@media screen and (max-width: 768px) {
-  .post-header .post-title {
-    font-size: 20px;
+.tag {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tag.pending {
+  background: rgba(255, 171, 0, 0.15);
+  color: #ffab00;
+}
+
+.tag.rejected {
+  background: rgba(255, 86, 86, 0.15);
+  color: #ff5656;
+}
+
+/* 侧边栏样式 */
+.post-sidebar {
+  position: fixed;
+  right: 24px;
+  top: 100px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0;
+  width: 48px;
+  z-index: 100;
+}
+
+/* 作者卡片 */
+.author-card {
+  margin-bottom: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.author-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.author-info:hover .avatar {
+  transform: scale(1.05);
+}
+
+.author-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.author-name-follow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.time {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.btn-follow {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-follow.is-followed {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-follow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .author-card {
+    padding: 12px;
+    margin-bottom: 4px;
   }
 
-  .post-content {
+  .author-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .name {
     font-size: 15px;
   }
 
-  .interaction-stats .stat-item {
-    .anticon {
-      font-size: 20px;
-    }
-    .stat-count {
-      font-size: 14px;
-    }
+  .time {
+    font-size: 13px;
   }
 
-  .action-buttons {
-    margin: 16px -16px -16px;
-    padding: 12px 16px;
+  .btn-follow {
+    padding: 3px 10px;
+    font-size: 12px;
+  }
+}
+
+/* 交互栏 */
+.interaction-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 160px;
+  margin: 0 auto;
+}
+
+.action-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.action-item .emoji {
+  font-size: 20px;
+  line-height: 1;
+  transition: all 0.3s ease;
+}
+
+.action-item:hover .emoji {
+  transform: scale(1.2);
+}
+
+/* 点赞按钮样式 */
+.action-item.like img {
+  filter: brightness(0) invert(1);
+}
+
+.action-item.like.active img {
+  filter: invert(36%) sepia(95%) saturate(7117%) hue-rotate(353deg) brightness(98%) contrast(135%);
+}
+
+/* 分享按钮样式 */
+.action-item.share img {
+  filter: brightness(0) invert(1);
+}
+
+.action-item.share.active img {
+  filter: invert(72%) sepia(10%) saturate(5162%) hue-rotate(346deg) brightness(103%) contrast(101%);
+}
+
+/* 移动端样式 */
+@media screen and (max-width: 768px) {
+  .post-detail-page {
+    margin: -28px;
+    padding: 0;
     border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    background: #ffffff;
-
-    .ant-btn {
-      height: 36px;
-      font-size: 13px;
-
-      .anticon {
-        font-size: 15px;
-      }
-    }
+    min-height: 100vh;
+    display: block;
+    transition: none;
+    transform: none;
+    opacity: 1;
   }
-}
 
-/* 在大屏幕上限制图片容器的最大宽度 */
-@media screen and (min-width: 768px) {
-  .post-content {
-    .image-container {
-      max-width: 800px;
-    }
+  .post-content-wrapper {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0;
+    padding-bottom: 132px;
   }
-}
 
-/* 在移动设备上优化显示 */
-@media screen and (max-width: 767px) {
-  :deep(.ant-row) {
+  .post-main {
+    border-radius: 0;
+    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.03);
+    transform: none !important;
+    box-shadow: none;
+    border: none;
+  }
+
+  .post-sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    background: rgba(26, 31, 53, 0.95);
+    backdrop-filter: none;
+    padding: 12px 16px;
+    border-radius: 20px 20px 0 0;
+    z-index: 1000;
+    margin: 0;
+  }
+
+  .interaction-bar {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .action-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px;
+    padding: 8px;
+    background: none;
+    cursor: pointer;
+    width: auto !important;
     margin: 0 !important;
   }
 
-  :deep(.ant-col) {
-    padding: 0 !important;
+  .action-item img {
+    width: 20px;
+    height: 20px;
   }
 
-  .post-content {
-    .image-container {
-      margin: 12px -16px;
-    }
-
-    .content-image {
-      :deep(.ant-image-img) {
-        border-radius: 4px;
-      }
-    }
+  .action-item span {
+    font-size: 12px;
   }
 
-  .info-card {
-    :deep(.ant-card-body) {
-      padding: 16px;
-    }
+  .admin-actions {
+    display: flex;
+    gap: 12px;
   }
 
-  .interaction-stats {
-    margin: 12px -16px;
-    padding: 16px;
+  .admin-actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
   }
 
-  .action-buttons {
-    padding: 0 16px 16px;
-    margin-top: 0;
+  .author-info {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .name {
+    font-size: 15px;
+  }
+
+  .time {
+    font-size: 12px;
   }
 }
 
-/* 复制 MobilePictureList.vue 中的评论相关样式 */
-.comments-drawer {
-  :deep(.ant-drawer-content) {
-    border-radius: 16px 16px 0 0;
-    background: #f8fafc;
+/* 大屏幕优化 */
+@media screen and (min-width: 1400px) {
+  .post-sidebar {
+    right: calc((100vw - 1200px) / 2 - 80px);
   }
+}
 
-  :deep(.ant-drawer-header) {
-    padding: 16px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  :deep(.ant-drawer-body) {
-    padding: 0;
+/* PC端样式 */
+@media screen and (min-width: 769px) {
+  .interaction-bar {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    gap: 16px;
+    padding: 0;
+    background: none;
+    border: none;
   }
+
+  .action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: auto;
+  }
+
+  .action-item:hover {
+    transform: translateY(-2px);
+  }
+
+  .action-item img {
+    width: 20px;
+    height: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .action-item span {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .admin-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .admin-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 20px;
+  }
+
+  .admin-actions .edit-btn:hover {
+    color: #34d399;
+    transform: translateY(-2px);
+  }
+
+  .admin-actions .delete-btn:hover {
+    color: #ef4444;
+    transform: translateY(-2px);
+  }
+}
+
+/* 适配底部安全区域 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media screen and (max-width: 768px) {
+    .post-sidebar {
+      padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
+
+/* 评论弹框样式 */
+.comment-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
 }
 
 .drawer-content {
+  position: relative;
+  z-index: 1001;
+  width: 90%;
+  max-width: 600px;
+  height: 80vh;
+  background: linear-gradient(135deg, #1a1f35, #2d3748);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #fff;
+}
+
+/* 评论样式覆盖 */
+:deep(.ant-comment-content-author-name > *) {
+  color: #fff !important;
+}
+
+:deep(.ant-comment-content-author-name) {
+  color: #fff !important;
+}
+
+:deep(.ant-comment) {
+  background: transparent;
+  color: #fff !important;
+}
+
+:deep(.ant-comment-content-author) {
+  margin-bottom: 8px;
+}
+
+:deep(.ant-comment-content-author-time) {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:deep(.ant-comment-content-detail) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.ant-comment-actions) {
+  margin-top: 8px;
+}
+
+:deep(.ant-comment-actions > li > span) {
+  color: rgba(255, 255, 255, 0.6) !important;
+  transition: color 0.3s ease;
+}
+
+:deep(.ant-comment-actions > li > span:hover) {
+  color: #ff8e53 !important;
+}
+
+:deep(.ant-comment-nested) {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-top: 8px;
+  padding: 12px;
+}
+
+.drawer-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.drawer-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  background: linear-gradient(120deg, #63b3ed, #4299e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.comments-list {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  padding-bottom: 120px;
+  padding: 20px;
+  color: #fff;
 }
 
-.loading-container {
-  display: flex;
-  justify-content: center;
-  padding: 32px 0;
+.comments-list::-webkit-scrollbar {
+  width: 4px;
 }
 
-.no-more-data {
-  text-align: center;
-  color: #94a3b8;
-  padding: 16px 0;
-  font-size: 13px;
+.comments-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.comment-input-wrapper {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+.comments-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
 }
 
-.emoji-picker-container {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: white;
-  border-radius: 8px 8px 0 0;
-  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
-  max-height: 300px;
-  overflow-y: auto;
+.comment-input {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 20px 20px;
+  position: relative;
 }
 
-.custom-emoji-picker {
-  :deep(.emoji-picker) {
-    width: 100%;
-    border: none;
-    padding: 16px;
-    background: white;
-    border-radius: 12px 12px 0 0;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
-
-    .emoji-picker__search {
-      padding: 8px;
-      background: #f8fafc;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-
-    .emoji-picker__category-name {
-      font-size: 13px;
-      padding: 8px;
-      color: #64748b;
-      font-weight: 500;
-    }
-  }
-}
-
-.reply-info {
+.reply-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: #fff6f3;
-  border-radius: 8px 8px 0 0;
-  border-bottom: 1px solid #ffe4d9;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
-.reply-text {
+.reply-bar span {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.reply-bar button {
+  background: none;
+  border: none;
+  color: #ff8e53;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.reply-bar button:hover {
+  background: rgba(255, 142, 83, 0.1);
+}
+
+.input-box {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 8px 16px;
 }
 
-.reply-label {
-  font-size: 13px;
-  color: #ff8e53;
-  font-weight: 500;
-}
-
-.reply-arrow {
-  font-size: 12px;
-  color: #ff8e53;
-}
-
-.cancel-reply {
-  cursor: pointer;
-  padding: 4px;
-  color: #ff8e53;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.cancel-reply:hover {
-  transform: rotate(90deg);
-}
-
-.input-area {
-  display: flex;
-  gap: 8px;
-  padding: 12px;
-  background: white;
-  transition: all 0.3s ease;
-
-  .emoji-trigger {
-    font-size: 20px;
-    color: #94a3b8;
-    cursor: pointer;
-    padding: 8px;
-    transition: all 0.3s ease;
-
-    &:hover {
-      color: #ff8e53;
-    }
-
-    &.active {
-      color: #ff8e53;
-    }
-  }
-}
-
-.input-area.is-replying {
-  background: #fff6f3;
-}
-
-.reply-icon {
-  color: #ff8e53;
-  margin-right: 4px;
-}
-
-.comment-input {
-  flex: 1;
-  border-radius: 18px;
-  background: #f8fafc;
-  transition: all 0.3s ease;
-
-  :deep(.ant-input) {
-    background: transparent;
-    padding: 8px 16px;
-    font-size: 14px;
-
-    &::placeholder {
-      color: #94a3b8;
-    }
-  }
-
-  &:hover {
-    background: #f1f5f9;
-  }
-
-  &:focus-within {
-    background: white;
-    box-shadow: 0 0 0 2px rgba(255, 142, 83, 0.1);
-  }
-}
-
-.word-count {
-  font-size: 12px;
-  color: #94a3b8;
-  margin-right: 8px;
-}
-
-.send-button {
-  min-width: 64px;
-  height: 36px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ff8e53 0%, #ff6b6b 100%);
+.emoji-btn {
+  background: none;
   border: none;
-  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+}
+
+.emoji-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+textarea {
+  flex: 1;
+  height: 40px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  resize: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #ff8e53;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.send-btn {
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: none;
+  background: linear-gradient(135deg, #ff8e53, #ff6b6b);
+  color: #fff;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+}
 
-  &:not(:disabled):hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.send-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 142, 83, 0.3);
+}
+
+/* 加载状态样式 */
+.loading-state {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.end-message {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* 表情选择器样式 */
+.emoji-picker-wrapper {
+  position: absolute;
+  bottom: 100%;
+  left: 16px;
+  margin-bottom: 8px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 1050;
+  animation: fadeInUp 0.3s ease;
+}
+
+.custom-emoji-picker {
+  width: 320px;
+  max-height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-
-  &:not(:disabled):active {
-    transform: translateY(1px);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    background: #e2e8f0;
-    color: #94a3b8;
-    box-shadow: none;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.reply-button {
-  background: linear-gradient(135deg, #ff9c6e 0%, #ff8e53 100%);
-  box-shadow: 0 2px 8px rgba(255, 142, 83, 0.2);
-
-  &:not(:disabled):hover {
-    background: linear-gradient(135deg, #ff8e53 0%, #ff9c6e 100%);
-  }
-}
-
-/* 宠物动画样式 */
-.pet-animation {
-  position: fixed;
-  right: 20px;
-  bottom: 100px;
-  z-index: 1000;
-  pointer-events: none;
-  opacity: 0.9;
-  transform: scale(0.8);
+.emoji-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0.8;
   transition: all 0.3s ease;
-  animation: fadeIn 0.5s ease;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
 }
 
-/* 当评论抽屉打开时的动画效果 */
-.comments-drawer:deep(.ant-drawer-content-wrapper) {
-  .pet-animation {
-    animation: bounce 1s ease infinite;
-  }
+.emoji-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: scale(0.8) translateY(0);
-  }
-  50% {
-    transform: scale(0.8) translateY(-10px);
-  }
+.input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 8px 16px;
 }
 
+/* 动画效果 */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.6);
+    backdrop-filter: blur(0);
   }
   to {
-    opacity: 0.9;
-    transform: scale(0.8);
+    opacity: 1;
+    backdrop-filter: blur(8px);
   }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .drawer-content {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .comment-input {
+    border-radius: 0;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .interaction-bar {
+    padding: 12px;
+  }
+
+  .action-item {
+    padding: 6px 12px;
+  }
+
+  .action-item img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .action-item span {
+    font-size: 12px;
+  }
+}
+
+/* 确保图片也不会超出容器 */
+:deep(.post-content img) {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* 确保代码块也能自动换行 */
+:deep(.post-content pre),
+:deep(.post-content code) {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-width: 100%;
+  overflow-x: auto;
 }
 </style>

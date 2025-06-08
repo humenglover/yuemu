@@ -236,7 +236,7 @@ const fetchData = async () => {
   loading.value = true
   try {
     if (contentType.value === 'picture') {
-      const pictureParams = { ...searchParams, reviewStatus: searchParams.status }
+      const pictureParams = { ...searchParams }
       const res = await listPictureVoByPageUsingPost(pictureParams)
       if (res.data.code === 0 && res.data.data) {
         dataList.value = res.data.data.records ?? []
@@ -245,7 +245,7 @@ const fetchData = async () => {
         message.error('获取数据失败，' + res.data.message)
       }
     } else {
-      const postParams = { ...searchParams, status: searchParams.reviewStatus }
+      const postParams = { ...searchParams }
       const res = await listMyPostsUsingPost(postParams)
       if (res.data.code === 0 && res.data.data) {
         dataList.value = res.data.data.records ?? []
@@ -330,7 +330,7 @@ const doSearch = () => {
   margin-bottom: 16px;
   margin-left: -20px !important;
   margin-right: -20px !important;
-  margin-top: -40px!important;
+  margin-top: -20px!important;
 }
 
 /* 搜索区域样式 */

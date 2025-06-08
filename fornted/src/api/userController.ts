@@ -124,6 +124,21 @@ export async function userDestroyUsingPost(
   })
 }
 
+/** exportUsers POST /api/user/export */
+export async function exportUsersUsingPost(
+  body: API.UserExportRequest,
+  options?: { [key: string]: any }
+) {
+  return request<any>('/api/user/export', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** getUserById GET /api/user/get */
 export async function getUserByIdUsingGet(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
