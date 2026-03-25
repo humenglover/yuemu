@@ -357,6 +357,43 @@ CREATE INDEX idx_lastUpdateTime
 CREATE INDEX idx_type_count
     ON hot_search (type ASC, count DESC);
 
+CREATE TABLE knowledge_file
+(
+    id           bigint AUTO_INCREMENT COMMENT '知识库文件ID'
+        PRIMARY KEY,
+    originalName varchar(255)                       NOT NULL COMMENT '原始文件名',
+    storedName   varchar(255)                       NOT NULL COMMENT '存储文件名',
+    fileUrl      varchar(512)                       NOT NULL COMMENT '文件访问URL',
+    fileSize     bigint                             NOT NULL COMMENT '文件大小(字节)',
+    fileType     varchar(50)                        NOT NULL COMMENT '文件类型(pdf,txt,docx,md等)',
+    uploadTime   datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '上传时间',
+    userId       bigint                             NOT NULL COMMENT '上传用户ID',
+    md5Hash      varchar(32)                        NOT NULL COMMENT '文件MD5哈希值',
+    vectorCount  int      DEFAULT 0                 NOT NULL COMMENT '向量数量',
+    createTime   datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime   datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    isDelete     tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除'
+)
+    COMMENT '知识库文件表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_createTime
+    ON knowledge_file (createTime);
+
+CREATE INDEX idx_isDelete
+    ON knowledge_file (isDelete);
+
+CREATE INDEX idx_md5Hash
+    ON knowledge_file (md5Hash);
+
+CREATE INDEX idx_originalName
+    ON knowledge_file (originalName);
+
+CREATE INDEX idx_storedName
+    ON knowledge_file (storedName);
+
+CREATE INDEX idx_userId
+    ON knowledge_file (userId);
+
 CREATE TABLE like_record
 (
     id            bigint AUTO_INCREMENT COMMENT '主键 ID'
@@ -522,7 +559,8 @@ CREATE TABLE picture
     allowCollect   tinyint  DEFAULT 1                 NOT NULL COMMENT '是否允许收藏：1-允许、0-禁止',
     allowLike      tinyint  DEFAULT 1                 NOT NULL COMMENT '是否允许点赞：1-允许、0-禁止',
     allowComment   tinyint  DEFAULT 1                 NOT NULL COMMENT '是否允许评论：1-允许、0-禁止',
-    allowShare     tinyint  DEFAULT 1                 NOT NULL COMMENT '是否允许分享：1-允许、0-禁止'
+    allowShare     tinyint  DEFAULT 1                 NOT NULL COMMENT '是否允许分享：1-允许、0-禁止',
+    aiLabels       varchar(512)                       NULL COMMENT 'AI 自动识别标签'
 )
     COMMENT '图片' COLLATE = utf8mb4_unicode_ci;
 
@@ -686,6 +724,26 @@ CREATE INDEX idx_createTime
 
 CREATE INDEX idx_sessionId_isDelete
     ON rag_session_message (sessionId, isDelete);
+
+CREATE TABLE rag_session_summary
+(
+    id            bigint AUTO_INCREMENT COMMENT 'id'
+        PRIMARY KEY,
+    sessionId     bigint                             NOT NULL COMMENT '会话id',
+    userId        bigint                             NOT NULL COMMENT '用户id',
+    content       text                               NOT NULL COMMENT '摘要内容',
+    lastMessageId bigint   DEFAULT 0                 NOT NULL COMMENT '最后一次总结的消息ID (水位线)',
+    summaryLevel  tinyint  DEFAULT 0                 NOT NULL COMMENT '摘要层级：0-基础摘要(10条)，1-超级摘要(100条)',
+    createTime    datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
+    updateTime    datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+)
+    COMMENT '智能客服会话摘要表' COLLATE = utf8mb4_unicode_ci;
+
+CREATE INDEX idx_sessionId_level
+    ON rag_session_summary (sessionId, summaryLevel);
+
+CREATE INDEX idx_userId
+    ON rag_session_summary (userId);
 
 CREATE TABLE rag_user_session
 (
@@ -986,8 +1044,11 @@ CREATE TABLE user
     showFollowList        tinyint      DEFAULT 1                 NOT NULL COMMENT '是否展示关注列表：1-展示、0-隐藏',
     showFansList          tinyint      DEFAULT 1                 NOT NULL COMMENT '是否展示粉丝列表：1-展示、0-隐藏',
     allowMultiDeviceLogin tinyint      DEFAULT 1                 NOT NULL COMMENT '是否允许多设备登录：1-允许、0-禁止',
+    mpOpenId              varchar(256)                           NULL COMMENT '公众号 OpenId',
     CONSTRAINT uk_email
         UNIQUE (email),
+    CONSTRAINT uk_mpOpenId
+        UNIQUE (mpOpenId),
     CONSTRAINT uk_userAccount
         UNIQUE (userAccount)
 )
@@ -995,6 +1056,9 @@ CREATE TABLE user
 
 CREATE INDEX idx_email
     ON user (email);
+
+CREATE INDEX idx_mpOpenId
+    ON user (mpOpenId);
 
 CREATE INDEX idx_userName
     ON user (userName);
@@ -1313,47 +1377,3 @@ BEGIN
     CLOSE post_cursor;
 END;
 
-CREATE TABLE knowledge_file
-(
-    id           bigint AUTO_INCREMENT COMMENT '知识库文件ID'
-        PRIMARY KEY,
-    originalName varchar(255)                       NOT NULL COMMENT '原始文件名',
-    storedName   varchar(255)                       NOT NULL COMMENT '存储文件名',
-    fileUrl      varchar(512)                       NOT NULL COMMENT '文件访问URL',
-    fileSize     bigint                             NOT NULL COMMENT '文件大小(字节)',
-    fileType     varchar(50)                        NOT NULL COMMENT '文件类型(pdf,txt,docx,md等)',
-    uploadTime   datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '上传时间',
-    userId       bigint                             NOT NULL COMMENT '上传用户ID',
-    md5Hash      varchar(32)                        NOT NULL COMMENT '文件MD5哈希值',
-    vectorCount  int      DEFAULT 0                 NOT NULL COMMENT '向量数量',
-    createTime   datetime DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
-    updateTime   datetime DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    isDelete     tinyint  DEFAULT 0                 NOT NULL COMMENT '是否删除',
-    INDEX idx_originalName (originalName),
-    INDEX idx_storedName (storedName),
-    INDEX idx_userId (userId),
-    INDEX idx_md5Hash (md5Hash),
-    INDEX idx_createTime (createTime),
-    INDEX idx_isDelete (isDelete)
-) COMMENT = '知识库文件表' COLLATE = utf8mb4_unicode_ci;
-
-ALTER TABLE picture ADD COLUMN aiLabels VARCHAR(512) NULL COMMENT 'AI 自动识别标签';
-
--- 2026-03-05 微信登录补丁：为用户表添加公众号 OpenId 字段
-ALTER TABLE user ADD COLUMN mpOpenId VARCHAR(256) NULL COMMENT '公众号 OpenId';
-ALTER TABLE user ADD UNIQUE INDEX uk_mpOpenId (mpOpenId);
-CREATE INDEX idx_mpOpenId ON user (mpOpenId);
-
-
--- 智能客服会话摘要表
-CREATE TABLE IF NOT EXISTS rag_session_summary
-(
-    id          BIGINT AUTO_INCREMENT COMMENT 'id' PRIMARY KEY,
-    sessionId   BIGINT                             NOT NULL COMMENT '会话id',
-    userId      BIGINT                             NOT NULL COMMENT '用户id',
-    content     TEXT                               NOT NULL COMMENT '摘要内容',
-    createTime  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '创建时间',
-    updateTime  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    INDEX idx_sessionId (sessionId),
-    INDEX idx_userId (userId)
-) COMMENT '智能客服会话摘要表' COLLATE = utf8mb4_unicode_ci;
