@@ -1,180 +1,149 @@
-1. # 悦木图片分享平台
+# 悦木图库 (Yuemu Tuku) - 发现、分享、创造美好瞬间
 
-   > 本项目由程序员鱼皮的[云图库项目](https://github.com/liyupi/yu-picture)改造而来，在原有基础上进行了重构和功能扩展。特别感谢鱼皮老师的开源贡献！禁止将本项目用于任何形式的商业用途。项目体验地址：https://lumenglover.com
+<p align=center>
+  <a href="https://www.yuemutuku.com/home" style="border-radius: 50%;width: 100px;height: 100px">
+    <img src="pictures/logo.png" alt="悦木图库" width="120">
+  </a>
+</p>
 
-   ## 项目介绍
+<p align="center">
+   <a target="_blank" href="https://www.yuemutuku.com/home">
+      <img src="https://img.shields.io/badge/license-MIT-blue.svg"/>
+      <img src="https://img.shields.io/badge/JDK-11+-green.svg"/>
+      <img src="https://img.shields.io/badge/springboot-2.6.x-green"/>
+      <img src="https://img.shields.io/badge/vue-3.x-green"/>
+      <img src="https://img.shields.io/badge/mysql-8.0-green"/>
+      <img src="https://img.shields.io/badge/redis-6.x-green"/>
+      <img src="https://img.shields.io/badge/elasticsearch-7.17.x-green"/>
+   </a>
+</p>
 
-   悦木是一个面向学习和生活分享的图片社区平台，致力于为用户提供一个安全、友好的图片分享环境。
+[体验地址](#-在线地址) | [目录结构](#-目录结构) | [功能全景](#-功能全景) | [技术架构](#-技术架构) | [开发指南](#-快速启动)
 
-   ### 核心功能
+---
 
-   #### 1. 图片管理
-   - 支持公共图库和私人空间
-   - 多级分类管理
-   - 智能审核机制
-   - 基于腾讯云 COS 的对象存储
-   - AI 扩图功能
+## 🔗 在线地址
 
-   #### 2. 社交功能
-   - 用户关注系统
-   - 实时私信聊天
-   - 帖子发布与互动
-   - 评论与点赞系统
-   - 空间协作功能
+**项目官网：** [悦木 图库](https://www.yuemutuku.com)
 
-   #### 3. 安全特性
-   - 基于 Redis 的反爬虫系统
-   - 内容智能审核
-   - 邮件实时通知
-   - 用户行为监控
+**官方文档：** [悦木文档指南](https://official.yuemutuku.com/)
 
-   ### 技术架构
+**项目源码：** [GitHub 仓库](https://github.com/humenglover/yuemu) | [Gitee 仓库](https://gitee.com/lumenglover/yuemu)
 
-   #### 前端技术栈
-   - **核心框架**: Vue 3
-   - **开发语言**: TypeScript
-   - **状态管理**: Pinia
-   - **UI 框架**:
-     - Ant Design Vue (PC端)
-     - Vant (移动端)
-   - **路由**: Vue Router
-   - **HTTP 请求**: Axios
-   - **构建工具**: Vite
-   - **代码规范**: ESLint + Prettier
-   - **CSS 预处理器**: SCSS/LESS
+> 您的 Star 是我坚持的动力，感谢支持，欢迎提交 PR 共同改进。
 
-   #### 后端技术栈
-   - Spring Boot 2.7.x
-   - MySQL 8.0 + MyBatis Plus
-   - Redis 6.x
-   - ElasticSearch 7.17.x
-   - WebSocket
-   - Sa-Token 认证
-   - Disruptor 高性能队列
+---
 
-   #### 存储方案
-   - MySQL：业务数据存储
-   - Redis：缓存、计数器、限流
-   - ElasticSearch：全文检索
-   - 腾讯云 COS：图片存储
+## 📂 目录结构
 
-   ### 主要功能
+本项目采用微服务化思想，实现了业务逻辑与 AI 的深度解耦：
 
-   #### 用户系统
-   - 登录/注册
-   - 邮箱验证
-   - 个人信息管理
-   - 用户关注
+```bash
+yuemu
+├── backend-java        # 基于 Spring Boot 的核心业务中台 (鉴权、空间、图库管理)
+├── backend-python      # 基于 FastAPI 的 AI 服务 (RAG 问答、YOLO 检测、图像处理)
+├── frontend-vue        # Vue 3 + Vite 驱动的高清多端适配前端
+├── deploy-docker       # Docker 容器化全栈部署脚本
+├── pictures            # 项目说明文档静态素材
+└── tools               # 包含数据抓取与自动化脚本（如 Pexels 抓取等）
+```
 
-   #### 图片管理
-   - 图片上传
-   - 图片编辑
-   - 图片分类
-   - 图片搜索
+---
 
-   #### 空间系统
-   - 空间创建
-   - 成员管理
-   - 空间分析
+## 🌟 项目简介
 
-   #### 社交功能
-   - 评论互动
-   - 点赞分享
-   - 私信聊天
+**悦木图库 (Yuemu Tuku)** 是一个汇聚海量素材、注重创意分享的综合性社区平台。它不仅提供**专业级的图片生命周期管理**与**深度协作空间**，更集成了**动态交流广场**、**实用工具箱**以及**内置小游戏中心**。通过 Java 异步并发架构与 Python AI 智能引擎的深度融合，为创作者提供发现、分享与创造美好瞬间的极致体验。
 
-   #### 内容发现
-   - 个性化推荐
-   - 热门排行
-   - 关注动态
+---
 
-   #### 消息通知
-   - 互动提醒
-   - 系统通知
-   - 未读消息
+## 🚀 功能全景
 
-   ### 项目特点
-   1. 分布式架构设计
-      - 服务模块化
-      - 接口标准化
-      - 配置中心化
-      
-   2. 高性能实现
-      - Redis 多级缓存
-      - 异步处理机制
-      - 实时消息推送
+### 1. 🖼️ 专业图库系统
+*   **多源上传**: 支持本地单图/批量上传、URL 远程抓取及自动化资源采集。
+*   **多维极速检索**: 支持关键词、分类、标签的组合检索；支持**以图搜图**与**色相检索**。
+*   **智能管理**: 具备 AI 自动打标、色彩分析、图片级权限管控及闭环的草稿协作流程。
 
-   3. 安全机制
-      - 防爬虫策略
-      - 内容审核
-      - 用户行为分析
+### 2. 👥 深度协作空间
+*   **双模式空间体系**: 个人私有空间与团队协作空间（成员权限、操作审计）。
+*   **资源配额管控**: 动态分配存储配额与数量限制，支持精细化的空间分析看板。
 
-   4. 可扩展性
-      - 模块化设计
-      - 插件化架构
-      - 第三方服务集成
+### 3. 📜 动态社区广场
+*   **互动社区**: 完整的帖子发布系统、多级反馈、关注/粉丝动态及消息中心。
+*   **趣味互动**: 拥有 **表白墙 (Love Board)**、**弹幕互动** 及 **树洞系统**。
 
-   ## 项目结构
+### 4. 🛠️ 实用工具箱 (8+ Tools)
+*   **效率增强**: 计算器、计时器、番茄钟、便签墙。
+*   **趣味辅助**: 今天吃什么（食谱转盘）、随机数生成、进位制转换。
 
-   ![项目结构](public/img_6.png)
+### 5. 🎮 趣味娱乐中心 (10+ Games)
+*   内置经典：贪吃蛇、2048、俄罗斯方块、扫雷、八皇后、记忆翻牌、打砖块、恐龙快跑等。
 
-   ## 环境要求
+### 6. 🤖 AI 智能引擎 (AI Booster)
+*   **RAG 助手**: 挂载专业知识库，支持 SSE 流式响应与 DeepSeek AI 对话。
+*   **视觉黑科技**: YOLOv8 目标探测、AI 去背景、人脸打码、AI 扩图及人像抠图。
 
-   ### 后端环境
-   - JDK 1.8+
-   - MySQL 8.0+
-   - Redis 6.x+
-   - ElasticSearch 7.17.x
-   - Maven 3.6+
+### 7. 🔐 生产级运营后台
+*   涵盖用户、图片、帖子、评论、举报、Redis 监控等 20+ 个管理子系统。
 
-   ### 前端环境
-   - Node.js 16+
-   - npm 8+
+---
 
-   ## 快速开始
+## 🏗️ 技术架构
 
-   ### 后端启动
-   1. 配置数据库和中间件
-   2. 修改配置文件
-   3. 运行 `mvn spring-boot:run`
+悦木采用 **"Front-Biz-AI"** 三维分层架构：
 
-   ### 前端启动
-   1. 安装依赖：`npm install`
-   2. 开发环境：`npm run dev`
-   3. 生产构建：`npm run build`
+- **🎨 全栈前端**: Vue 3 + Vite 5 + Ant Design Vue / Vant UI，支持多端自适应。
+- **⚙️ 业务中台**: Spring Boot 2.6 + Sa-Token + Disruptor + ShardingSphere。
+- **🧠 AI 智能集群**: FastAPI + LangChain Agent + YOLOv8 + MODNet。
+- **💾 存储层**: MySQL 8.0 (分表) + Redis 6 + ElasticSearch 7.17 + 腾讯云 COS。
 
-   ## 开发者
+---
 
-   - 作者：鹿梦
-   - 邮箱：109484028@qq.com
+## 📸 站点演示
 
-   ## 致谢
+### 💻 PC 端全景展示
 
-   特别感谢程序员鱼皮的[云图库项目](https://github.com/liyupi/yu-auto-reply)，为本项目提供了重要的基础架构参考。
+| 🎨 首页大厅 | 🏛️ 发现广场 |
+| :---: | :---: |
+| ![home](pictures/pc/home.png) | ![discovery](pictures/pc/discovery.png) |
 
-   ## 许可证
+| 📜 动态论坛 | 👥 团队协作 |
+| :---: | :---: |
+| ![forum](pictures/pc/forum.png) | ![teams](pictures/pc/teams.png) |
 
-   本项目使用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件 
+| 🔍 智能搜索 | 💬 实时聊天 |
+| :---: | :---: |
+| ![search](pictures/pc/search.png) | ![chat](pictures/pc/chat.png) |
 
-# 更新日志
+| 🔔 消息中心 | 🔐 后台管理 |
+| :---: | :---: |
+| ![message](pictures/pc/message.png) | ![manage](pictures/pc/manage.png) |
 
-### v1.2.0 (2025-06-08)
+---
 
-![](pictures\Snipaste_2025-06-08_17-23-14.png)
+### 📱 移动端自适应
 
-![Snipaste_2025-06-08_17-23-38](pictures\Snipaste_2025-06-08_17-23-38.png)
+| 🎨 首页大厅 | 📸 详情解析 |
+| :---: | :---: |
+| <img src="pictures/moible/home.png" height="500"> | <img src="pictures/moible/mobile.jpg" height="500"> |
 
-![Snipaste_2025-06-08_17-23-49](pictures\Snipaste_2025-06-08_17-23-49.png)
+---
 
-![Snipaste_2025-06-08_17-25-03](pictures\Snipaste_2025-06-08_17-25-03.png)
+## 🛠️ 快速启动
 
-![](pictures\Snipaste_2025-06-08_17-29-44.png)
+1.  **环境准备**: JDK 11+, Node 18+, Python 3.10+, Redis 6, MySQL 8.0, ES 7.17。
+2.  **配置**: 修改 `backend-java` 与 `backend-python` 中的配置文件。
+3.  **运行**:
+    *   **Java**: 启动 `yuemu-picture-backend`。
+    *   **Python**: `cd backend-python && python main.py`。
+    *   **Vue**: `cd frontend-vue && npm run dev`。
 
-- 新增小游戏功能
-- 新增实用工具功能
-- 新增DeepSeek AI对话功能
-- 新增恋爱画板功能
-- 新增推荐算法
-- 新增树洞功能
-- 优化系统性能
-- 修复已知问题
-- 本次提交并未注重代码规范，有能力的开发者可以进一步组件化前端，用户后端代码。
+---
+
+## 🛡️ 联系与交流
+
+如果您发现 Bug 或有建议，欢迎提交 Issue。
+- **官方网站**: [www.yuemutuku.com](https://www.yuemutuku.com)
+- **联系邮箱**: 109484028@qq.com
+
+---
+**悦木图库 - 致力于创造极致的视觉分享体验。**
