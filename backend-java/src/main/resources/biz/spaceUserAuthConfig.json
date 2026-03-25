@@ -1,0 +1,77 @@
+{
+  "permissions": [
+    {
+      "key": "spaceUser:manage",
+      "name": "成员管理",
+      "description": "管理空间成员，添加或移除成员"
+    },
+    {
+      "key": "picture:view",
+      "name": "查看图片",
+      "description": "查看空间中的图片内容"
+    },
+    {
+      "key": "picture:upload",
+      "name": "上传图片",
+      "description": "上传图片到空间中"
+    },
+    {
+      "key": "picture:edit",
+      "name": "修改图片",
+      "description": "编辑已上传的图片信息"
+    },
+    {
+      "key": "picture:delete",
+      "name": "删除图片",
+      "description": "删除空间中的图片"
+    },
+    {
+      "key": "activity:view",
+      "name": "查看活动",
+      "description": "查看空间中的活动"
+    },
+    {
+      "key": "activity:manage",
+      "name": "管理活动",
+      "description": "创建、编辑、删除空间活动"
+    }
+  ],
+  "roles": [
+    {
+      "key": "viewer",
+      "name": "浏览者",
+      "permissions": [
+        "picture:view",
+        "activity:view"
+      ],
+      "description": "查看图片、查看活动"
+    },
+    {
+      "key": "editor",
+      "name": "编辑者",
+      "permissions": [
+        "picture:view",
+        "picture:upload",
+        "picture:edit",
+        "picture:delete",
+        "activity:view",
+        "activity:manage"
+      ],
+      "description": "查看图片、上传图片、修改图片、删除图片、查看活动、管理活动"
+    },
+    {
+      "key": "admin",
+      "name": "管理员",
+      "permissions": [
+        "spaceUser:manage",
+        "picture:view",
+        "picture:upload",
+        "picture:edit",
+        "picture:delete",
+        "activity:view",
+        "activity:manage"
+      ],
+      "description": "成员管理、查看图片、上传图片、修改图片、删除图片、查看活动、管理活动"
+    }
+  ]
+}

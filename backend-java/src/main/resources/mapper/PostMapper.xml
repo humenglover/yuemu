@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.PostMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.Post">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="category" column="category" jdbcType="VARCHAR"/>
+        <result property="tags" column="tags" jdbcType="VARCHAR"/>
+        <result property="viewCount" column="viewCount" jdbcType="BIGINT"/>
+        <result property="likeCount" column="likeCount" jdbcType="BIGINT"/>
+        <result property="commentCount" column="commentCount" jdbcType="BIGINT"/>
+        <result property="shareCount" column="shareCount" jdbcType="BIGINT"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="reviewMessage" column="reviewMessage" jdbcType="VARCHAR"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+        <result property="favoriteCount" column="favoriteCount" jdbcType="BIGINT"/>
+        <result property="hotScore" column="hotScore" jdbcType="DOUBLE"/>
+        <result property="coverUrl" column="coverUrl" jdbcType="VARCHAR"/>
+        <result property="isDraft" column="isDraft" jdbcType="TINYINT"/>
+        <result property="allowCollect" column="allowCollect" jdbcType="TINYINT"/>
+        <result property="allowLike" column="allowLike" jdbcType="TINYINT"/>
+        <result property="allowComment" column="allowComment" jdbcType="TINYINT"/>
+        <result property="allowShare" column="allowShare" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,title,
+        content,category,tags,
+        viewCount,likeCount,commentCount,
+        shareCount,status,reviewMessage,
+        createTime,updateTime,isDelete,
+        favoriteCount,hotScore,coverUrl,isDraft,
+        allowCollect,allowLike,allowComment,allowShare
+    </sql>
+
+    <!-- 查询已删除的帖子（绕过逻辑删除） -->
+    <select id="selectDeletedPostsByUpdateTime" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM post
+        WHERE isDelete = 1
+        AND updateTime >= #{updateTime}
+    </select>
+
+    <!-- 查询所有已删除的帖子（绕过逻辑删除） -->
+    <select id="selectAllDeletedPosts" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM post
+        WHERE isDelete = 1
+    </select>
+
+    <!-- 根据ID列表查询有效的帖子（status=1, isDelete=0） -->
+    <select id="selectValidPostsByIds" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM post
+        WHERE id IN
+        <foreach collection="postIds" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        AND status = 1
+        AND isDelete = 0
+    </select>
+
+    <!-- 查询热门帖子ID -->
+    <select id="selectHotPosts" resultType="java.lang.Long">
+        SELECT id
+        FROM post
+        WHERE status = 1
+          AND isDelete = 0
+        ORDER BY (likeCount * 2 + shareCount * 3 + commentCount * 1) DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询用户的草稿列表 -->
+    <select id="selectDraftPostsByUserId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM post
+        WHERE userId = #{userId}
+        AND isDraft = 1
+        AND isDelete = 0
+        ORDER BY updateTime DESC
+    </select>
+
+</mapper>

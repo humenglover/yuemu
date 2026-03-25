@@ -1,0 +1,15 @@
+# Tavily搜索工具配置
+tavily:
+  api_key: your_tavily_api_key  # Tavily API密钥 请自行申请填写
+  search_depth: advanced
+  max_results_default: 5
+
+# 百度搜索工具配置
+baidu_search:
+  api_key: your_baidu_search_api_key  # 百度搜索API密钥 请自行申请填写
+  base_url: "https://qianfan.baidubce.com/v2/ai_search/chat/completions"
+  model: "ernie-3.5-8k"
+  max_results_default: 5
+
+# 可以在这里添加其他工具的配置
+# 例如：智谱AI、其他API等

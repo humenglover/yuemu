@@ -1,0 +1,1066 @@
+<!-- 聊天管理页面 -->
+<template>
+  <div id="chatManagePage">
+    <!-- PC端展示 -->
+    <template v-if="device === DEVICE_TYPE_ENUM.PC">
+      <div class="pc-container">
+        <!-- 搜索表单 -->
+        <div class="search-and-button-container">
+          <a-form layout="inline" :model="searchParams" @finish="doSearch">
+            <a-form-item label="消息内容">
+              <a-input
+                v-model:value="searchParams.content"
+                placeholder="输入消息内容"
+                allow-clear
+              />
+            </a-form-item>
+            <a-form-item label="消息类型">
+              <a-select v-model:value="searchParams.type" placeholder="选择消息类型">
+                <a-select-option :value="1">私聊消息</a-select-option>
+                <a-select-option :value="2">图片评论</a-select-option>
+                <a-select-option :value="3">空间消息</a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-form-item label="消息状态">
+              <a-select v-model:value="searchParams.isDelete" placeholder="选择消息状态">
+                <a-select-option :value="0">正常</a-select-option>
+                <a-select-option :value="1">已删除</a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-form-item>
+              <a-button type="primary" html-type="submit" class="action-button">
+                <SearchOutlined />
+                搜索
+              </a-button>
+            </a-form-item>
+          </a-form>
+          <div style="display: flex; align-items: center">
+            <a-button type="dashed" class="sort-button" @click="toggleSortOrder">
+              <span class="button-content">
+                <SortAscendingOutlined v-if="sortOrder === 'ascend'" />
+                <SortDescendingOutlined v-else />
+                <span class="button-text">{{ sortOrder === 'ascend' ? '升序' : '降序' }}</span>
+              </span>
+            </a-button>
+            <a-button
+              style="margin-left: 20px"
+              type="primary"
+              danger
+              :disabled="!hasSelected"
+              @click="batchDeleteSelectedMessages"
+              class="action-button"
+            >
+              <DeleteOutlined />批量删除
+            </a-button>
+            <a-button
+              style="margin-left: 20px"
+              type="primary"
+              :disabled="!hasSelected"
+              @click="batchRestoreSelectedMessages"
+              class="action-button"
+            >
+              <UndoOutlined />批量恢复
+            </a-button>
+          </div>
+        </div>
+
+        <!-- 表格部分 -->
+        <div class="table-section">
+          <a-spin tip="正在加载中..." :spinning="loading">
+            <a-table
+              :row-selection="rowSelection"
+              rowKey="id"
+              :columns="columns"
+              :data-source="dataList"
+              :pagination="false"
+              @change="doTableChange"
+              class="custom-table"
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'content'">
+                  <a-tooltip :title="record.content">
+                    <div class="ellipsis-text">
+                      <!-- 根据消息类型显示不同的内容 -->
+                      <template v-if="record.messageType === 'audio'">
+                        <AudioBubble :url="record.messageUrl" :is-self="false" />
+                      </template>
+                      <template v-else-if="record.messageType === 'image'">
+                        <Image
+                          :src="record.messageUrl"
+                          :alt="record.content"
+                          class="message-image"
+                          :preview="{
+                            src: record.messageUrl,
+                            maskClassName: 'custom-mask'
+                          }"
+                        />
+                      </template>
+                      <template v-else>
+                        {{ record.content }}
+                      </template>
+                    </div>
+                  </a-tooltip>
+                </template>
+                <template v-if="column.dataIndex === 'createTime'">
+                  <div class="ellipsis-text">
+                    {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
+                  </div>
+                </template>
+                <template v-else-if="column.dataIndex === 'type'">
+                  <a-tag :color="getTypeColor(record.type)">
+                    {{ getTypeText(record.type) }}
+                  </a-tag>
+                </template>
+                <template v-else-if="column.dataIndex === 'status'">
+                  <a-tag :color="record.status === 0 ? 'orange' : 'green'">
+                    {{ record.status === 0 ? '未读' : '已读' }}
+                  </a-tag>
+                </template>
+                <template v-else-if="column.dataIndex === 'isDelete'">
+                  <a-tag :color="record.isDelete === 0 ? 'green' : 'red'">
+                    {{ record.isDelete === 0 ? '正常' : '已删除' }}
+                  </a-tag>
+                </template>
+                <template v-else-if="column.key === 'action'">
+                  <div class="action-buttons">
+                    <a-button
+                      v-if="record.isDelete === 0"
+                      danger
+                      class="delete-button"
+                      @click="showDeleteConfirm(record)"
+                    >
+                      <DeleteOutlined />
+                      删除
+                    </a-button>
+                    <a-button
+                      v-else
+                      type="primary"
+                      class="restore-button"
+                      @click="handleRestore(record)"
+                    >
+                      <UndoOutlined />
+                      恢复
+                    </a-button>
+                  </div>
+                </template>
+              </template>
+            </a-table>
+          </a-spin>
+        </div>
+
+        <!-- 分页组件 -->
+        <div class="mz-antd-pagination">
+          <a-pagination
+            v-model:current="searchParams.current"
+            :page-size-options="pcPageSizeOptions"
+            :total="total"
+            :show-total="(total) => `共 ${total} 条`"
+            show-size-changer
+            :page-size="searchParams.pageSize"
+            @change="onPageChange"
+            @showSizeChange="onShowSizeChange"
+          >
+          </a-pagination>
+        </div>
+      </div>
+    </template>
+
+    <!-- 移动端展示 -->
+    <template v-else>
+      <div class="mobile-container">
+        <div class="mobile-content">
+          <!-- 搜索区域 -->
+          <div class="search-section">
+            <van-search
+              v-model="searchParams.content"
+              placeholder="搜索消息内容"
+              @search="doSearch"
+            />
+          </div>
+
+          <!-- 操作按钮区 -->
+          <div class="action-bar">
+            <a-button type="dashed" class="sort-button" @click="toggleSortOrder">
+              <span class="button-content">
+                <span class="button-text">{{ sortOrder === 'ascend' ? '升序' : '降序' }}</span>
+              </span>
+            </a-button>
+            <van-button
+              type="danger"
+              size="small"
+              icon="delete-o"
+              :disabled="!hasSelected"
+              @click="batchDeleteSelectedMessages"
+            >批量删除</van-button>
+            <van-button
+              type="primary"
+              size="small"
+              icon="replay"
+              :disabled="!hasSelected"
+              @click="batchRestoreSelectedMessages"
+            >批量恢复</van-button>
+          </div>
+
+          <!-- 消息列表 -->
+          <div class="message-list">
+            <van-checkbox-group v-model="state.selectedRowKeys">
+              <van-cell-group inset v-for="message in dataList" :key="message.id">
+                <van-card class="message-card">
+                  <template #title>
+                    <div class="message-info">
+                      <div class="message-content">
+                        <!-- 根据消息类型显示不同的内容 -->
+                        <template v-if="message.messageType === 'audio'">
+                          <AudioBubble :url="message.messageUrl" :is-self="false" />
+                        </template>
+                        <template v-else-if="message.messageType === 'image'">
+                          <Image
+                            :src="message.messageUrl"
+                            :alt="message.content"
+                            class="message-image"
+                            :preview="{
+                            src: message.messageUrl,
+                            maskClassName: 'custom-mask'
+                          }"
+                          />
+                        </template>
+                        <template v-else>
+                          {{ message.content }}
+                        </template>
+                      </div>
+                      <div class="message-meta">
+                        <div class="meta-item">
+                          <span class="meta-label">消息ID：</span>
+                          <span class="meta-value">{{ message.id }}</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-label">发送者ID：</span>
+                          <span class="meta-value">{{ message.senderId }}</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-label">接收者ID：</span>
+                          <span class="meta-value">{{ message.receiverId }}</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-label">消息类型：</span>
+                          <span class="meta-value">{{ getTypeText(message.type) }}</span>
+                        </div>
+                        <div class="meta-item">
+                          <span class="meta-label">创建时间：</span>
+                          <span class="meta-value">{{ dayjs(message.createTime).format('YYYY-MM-DD HH:mm:ss') }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <template #tags>
+                    <van-tag
+                      :type="message.isDelete === 0 ? 'success' : 'danger'"
+                      round
+                      size="small"
+                      style="margin-right: 4px; padding: 0 8px"
+                    >
+                      {{ message.isDelete === 0 ? '正常' : '已删除' }}
+                    </van-tag>
+                  </template>
+
+                  <template #footer>
+                    <div class="card-footer">
+                      <van-checkbox
+                        :name="message.id"
+                        class="card-checkbox"
+                      />
+                      <div class="card-actions">
+                        <template v-if="message.isDelete === 0">
+                          <van-button
+                            size="small"
+                            type="danger"
+                            @click="showDeleteConfirm(message)"
+                            class="action-btn delete-btn"
+                          >删除</van-button>
+                        </template>
+                        <template v-else>
+                          <van-button
+                            size="small"
+                            type="primary"
+                            @click="handleRestore(message)"
+                            class="action-btn restore-btn"
+                          >恢复</van-button>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                </van-card>
+              </van-cell-group>
+            </van-checkbox-group>
+          </div>
+
+          <!-- 移动端分页 -->
+          <div class="mobile-pagination">
+            <div class="pagination-info">
+              <span>共 {{ total }} 条</span>
+              <div class="page-size-selector" @click="showPageSizeSheet = true">
+                <span>{{ searchParams.pageSize }}条/页</span>
+                <van-icon name="arrow-down" />
+              </div>
+            </div>
+            <div class="pagination-controls">
+              <van-button
+                :disabled="searchParams.current <= 1"
+                @click="onMobilePageChange(searchParams.current - 1)"
+                size="small"
+              >上一页</van-button>
+              <span class="page-info">{{ searchParams.current }} / {{ Math.ceil(total / searchParams.pageSize) }}</span>
+              <van-button
+                :disabled="searchParams.current >= Math.ceil(total / searchParams.pageSize)"
+                @click="onMobilePageChange(searchParams.current + 1)"
+                size="small"
+              >下一页</van-button>
+            </div>
+          </div>
+
+          <!-- 每页条数选择器抽屉 -->
+          <van-action-sheet
+            v-model:show="showPageSizeSheet"
+            :actions="mobilePageSizeOptions"
+            cancel-text="取消"
+            close-on-click-action
+            @select="handlePageSizeChange"
+          />
+        </div>
+      </div>
+    </template>
+
+    <!-- 删除确认弹框 -->
+    <a-modal
+      v-model:open="deleteConfirmVisible"
+      :title="null"
+      :footer="null"
+      :width="400"
+      class="delete-confirm-modal"
+    >
+      <div class="delete-confirm-content">
+        <div class="warning-icon">
+          <ExclamationCircleFilled style="color: #ff6b6b;" />
+        </div>
+        <h3 class="confirm-title">确认删除该消息？</h3>
+        <p class="confirm-desc">
+          消息内容：{{ selectedMessage?.content || '无内容' }}<br>
+          创建时间：{{ selectedMessage ? dayjs(selectedMessage.createTime).format('YYYY-MM-DD HH:mm:ss') : '未知' }}
+        </p>
+        <div class="confirm-actions">
+          <a-button class="cancel-button" @click="deleteConfirmVisible = false">取消</a-button>
+          <a-button class="confirm-button" danger @click="confirmDelete">
+            确认删除
+          </a-button>
+        </div>
+      </div>
+    </a-modal>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { onMounted, reactive, ref, computed } from 'vue'
+import {
+  listMessagesByPageUsingPost,
+  batchOperationMessagesUsingPost,
+} from '@/api/chatMessageController'
+import { message } from 'ant-design-vue'
+import dayjs from 'dayjs'
+import { getDeviceType } from '@/utils/device'
+import { DEVICE_TYPE_ENUM } from '@/constants/device'
+import {
+  DeleteOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  SearchOutlined,
+  ExclamationCircleFilled,
+  UndoOutlined,
+} from '@ant-design/icons-vue'
+import AudioBubble from '@/components/AudioBubble.vue'
+import { Image } from 'ant-design-vue'
+
+// 定义用于存储设备类型的响应式变量
+const device = ref<string>('')
+// 页面加载时获取设备类型并获取数据
+onMounted(async () => {
+  device.value = await getDeviceType()
+})
+
+// 表格列定义
+const columns = [
+  {
+    title: '消息内容',
+    dataIndex: 'content',
+    width: 300,
+    ellipsis: true,
+  },
+  {
+    title: '消息ID',
+    dataIndex: 'id',
+    width: 100,
+  },
+  {
+    title: '发送者ID',
+    dataIndex: 'senderId',
+    width: 100,
+  },
+  {
+    title: '接收者ID',
+    dataIndex: 'receiverId',
+    width: 100,
+  },
+  {
+    title: '消息类型',
+    dataIndex: 'type',
+    width: 100,
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    width: 100,
+  },
+  {
+    title: '是否删除',
+    dataIndex: 'isDelete',
+    width: 100,
+  },
+  {
+    title: '创建时间',
+    dataIndex: 'createTime',
+    width: 200,
+  },
+  {
+    title: '操作',
+    key: 'action',
+    width: 200,
+  },
+]
+
+// 定义数据
+const dataList = ref<API.ChatMessage[]>([])
+const total = ref(0)
+const loading = ref(false)
+const showPageSizeSheet = ref(false)
+const jumpPage = ref('')
+// PC端分页选项
+const pcPageSizeOptions = ['5', '8', '10', '20', '50']
+// 移动端分页选项
+const mobilePageSizeOptions = [
+  { name: '10条/页', value: 10 },
+  { name: '20条/页', value: 20 },
+  { name: '30条/页', value: 30 },
+  { name: '50条/页', value: 50 },
+] as const
+
+// 搜索条件
+const searchParams = reactive<API.ChatMessageAdminRequest>({
+  current: 1,
+  pageSize: 8,
+  sortField: 'createTime',
+  sortOrder: 'descend',
+  content: '',
+  type: undefined,
+  status: undefined,
+  isDelete: undefined,
+})
+
+const sortOrder = computed(() => searchParams.sortOrder)
+
+// 获取数据
+const fetchData = async () => {
+  if (device.value === DEVICE_TYPE_ENUM.PC) {
+    loading.value = true
+  }
+
+  try {
+    const res = await listMessagesByPageUsingPost(searchParams)
+    if (res.data?.code === 0) {
+      dataList.value = res.data.data.records
+      total.value = res.data.data.total
+    }
+  } catch (error) {
+    console.error('获取数据失败:', error)
+    message.error('获取数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 处理分页尺寸改变
+const onShowSizeChange = (current: number, pageSize: number) => {
+  searchParams.current = 1
+  searchParams.pageSize = pageSize
+  fetchData()
+}
+
+// 处理页码改变
+const onPageChange = (page: number, pageSize: number) => {
+  searchParams.current = page
+  searchParams.pageSize = pageSize
+  fetchData()
+}
+
+// 表格变化处理
+const doTableChange = () => {
+  fetchData()
+}
+
+// 搜索数据
+const doSearch = async () => {
+  searchParams.current = 1
+  await fetchData()
+}
+
+// 组件挂载时获取数据
+onMounted(async () => {
+  try {
+    await doSearch()
+  } catch (error) {
+    console.error('初始化加载数据失败：', error)
+  }
+})
+
+// 删除确认相关的状态
+const deleteConfirmVisible = ref(false)
+const selectedMessage = ref<API.ChatMessage | null>(null)
+
+// 显示删除确认框
+const showDeleteConfirm = (message: API.ChatMessage) => {
+  selectedMessage.value = message
+  deleteConfirmVisible.value = true
+}
+
+// 确认删除
+const confirmDelete = async () => {
+  if (!selectedMessage.value?.id) return
+
+  try {
+    const res = await batchOperationMessagesUsingPost({
+      ids: [selectedMessage.value.id],
+      operation: 'delete'
+    })
+    if (res.data?.code === 0) {
+      message.success('删除成功')
+      deleteConfirmVisible.value = false
+      fetchData()
+    } else {
+      message.error('删除失败：' + res.data?.message)
+    }
+  } catch (error) {
+    message.error('删除失败，请稍后重试')
+  }
+}
+
+// 处理恢复消息
+const handleRestore = async (message: API.ChatMessage) => {
+  try {
+    const res = await batchOperationMessagesUsingPost({
+      ids: [message.id],
+      operation: 'restore'
+    })
+    if (res.data?.code === 0) {
+      message.success('恢复成功')
+      fetchData()
+    } else {
+      message.error('恢复失败：' + res.data?.message)
+    }
+  } catch (error) {
+    message.error('恢复失败，请稍后重试')
+  }
+}
+
+// 切换排序顺序
+const toggleSortOrder = () => {
+  searchParams.sortOrder = searchParams.sortOrder === 'ascend' ? 'descend' : 'ascend'
+  fetchData()
+}
+
+// 用于存储表格行选择状态的响应式对象
+const state = reactive({
+  selectedRowKeys: [] as number[],
+  loading: false,
+})
+
+const onSelectChange = (selectedRowKeys: number[]) => {
+  state.selectedRowKeys = selectedRowKeys
+}
+
+// 计算属性，判断是否有选中的行
+const hasSelected = computed(() => state.selectedRowKeys.length > 0)
+
+// 批量删除选中消息
+const batchDeleteSelectedMessages = async () => {
+  if (state.selectedRowKeys.length === 0) {
+    message.warning('请先选择要删除的消息')
+    return
+  }
+
+  try {
+    const res = await batchOperationMessagesUsingPost({
+      ids: state.selectedRowKeys,
+      operation: 'delete'
+    })
+    if (res.data?.code === 0) {
+      message.success('批量删除成功')
+      state.selectedRowKeys = []
+      fetchData()
+    } else {
+      message.error('批量删除失败')
+    }
+  } catch (error) {
+    message.error('批量删除出现异常，请稍后再试')
+  }
+}
+
+// 批量恢复选中消息
+const batchRestoreSelectedMessages = async () => {
+  if (state.selectedRowKeys.length === 0) {
+    message.warning('请先选择要恢复的消息')
+    return
+  }
+
+  try {
+    const res = await batchOperationMessagesUsingPost({
+      ids: state.selectedRowKeys,
+      operation: 'restore'
+    })
+    if (res.data?.code === 0) {
+      message.success('批量恢复成功')
+      state.selectedRowKeys = []
+      fetchData()
+    } else {
+      message.error('批量恢复失败')
+    }
+  } catch (error) {
+    message.error('批量恢复出现异常，请稍后再试')
+  }
+}
+
+const rowSelection = computed(() => {
+  return {
+    selectedRowKeys: state.selectedRowKeys,
+    onChange: onSelectChange,
+  }
+})
+
+// 移动端分页处理方法
+const onMobilePageChange = async (page: number) => {
+  if (page < 1 || page > Math.ceil(total.value / searchParams.pageSize)) {
+    return
+  }
+  searchParams.current = page
+  await fetchData()
+}
+
+// 处理每页条数改变
+const handlePageSizeChange = async (action: { value: number }) => {
+  searchParams.current = 1
+  searchParams.pageSize = action.value
+  showPageSizeSheet.value = false // 关闭选择器
+  await fetchData()
+}
+
+// 获取消息类型文本
+const getTypeText = (type: number) => {
+  switch (type) {
+    case 1:
+      return '私聊消息'
+    case 2:
+      return '图片评论'
+    case 3:
+      return '空间消息'
+    default:
+      return '未知类型'
+  }
+}
+
+// 获取消息类型颜色
+const getTypeColor = (type: number) => {
+  switch (type) {
+    case 1:
+      return 'blue'
+    case 2:
+      return 'green'
+    case 3:
+      return 'purple'
+    default:
+      return 'default'
+  }
+}
+</script>
+
+<style scoped>
+/* 复用 CommentManagePage.vue 的样式 */
+#chatManagePage {
+  background: var(--header-background);
+  color: var(--text-primary)!important;
+}
+
+.mz-antd-pagination {
+  text-align: right;
+  margin-top: 20px;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+}
+
+.search-and-button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.loading-spin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 移动端样式 */
+.mobile-container {
+  background: var(--header-background);
+  color: var(--text-primary);
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding-bottom: 50px;
+}
+
+.mobile-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 12px;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 80px;
+}
+
+.action-bar {
+  padding: 0 12px 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.message-card {
+  background: var(--header-background);
+  color: var(--text-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.card-checkbox {
+  transform: scale(0.9);
+  margin-right: auto;
+}
+
+/* PC端样式 */
+.pc-container {
+  background: var(--header-background);
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.table-section {
+  background: var(--header-background);
+  color: var(--text-primary);
+  border-radius: 8px;
+}
+
+/* 删除确认弹框样式 */
+.delete-confirm-modal {
+  :deep(.ant-modal-content) {
+    padding: 0;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  :deep(.ant-modal-body) {
+    padding: 0;
+  }
+}
+
+.delete-confirm-content {
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.warning-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.confirm-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.confirm-desc {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* 响应式样式 */
+@media screen and (max-width: 768px) {
+  .delete-confirm-content {
+    padding: 24px 16px;
+  }
+
+  .warning-icon {
+    font-size: 40px;
+  }
+
+  .confirm-title {
+    font-size: 16px;
+  }
+
+  .confirm-desc {
+    font-size: 13px;
+  }
+
+  .confirm-actions {
+    gap: 8px;
+  }
+}
+
+/* 移动端消息卡片样式 */
+.message-card {
+  background: var(--header-background);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.message-info {
+  width: 100%;
+}
+
+.message-content {
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.message-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+.meta-label {
+  min-width: 70px;
+  color: var(--text-secondary);
+}
+
+.meta-value {
+  color: var(--text-primary);
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 0 12px;
+  border-radius: 4px;
+}
+
+.delete-btn {
+  color: #fff;
+  background: #ef4444;
+  border: none;
+}
+
+.restore-btn {
+  color: #fff;
+  background: #10b981;
+  border: none;
+}
+
+/* 移动端分页样式优化 */
+.mobile-pagination {
+  background: var(--header-background);
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.page-info {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+/* 适配深色模式 */
+:deep(.van-card) {
+  background: var(--header-background);
+  color: var(--text-primary);
+}
+
+:deep(.van-cell-group) {
+  background: var(--header-background);
+}
+
+:deep(.van-button) {
+  background: var(--header-background);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* 文本省略样式 */
+.ellipsis-text {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 移动端按钮样式 */
+:deep(.van-button--danger) {
+  color: #fff !important;
+  background: #ef4444 !important;
+  border: none !important;
+}
+
+:deep(.van-button--primary) {
+  color: #fff !important;
+  background: #10b981 !important;
+  border: none !important;
+}
+
+:deep(.van-button--default) {
+  color: var(--text-primary) !important;
+  background: var(--header-background) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* 移动端分页按钮样式 */
+.pagination-controls {
+  .van-button {
+    min-width: 80px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 14px;
+
+    &:not(:disabled) {
+      color: var(--text-primary) !important;
+      background: var(--header-background) !important;
+      border: 1px solid var(--border-color) !important;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      background: var(--header-background) !important;
+      border: 1px solid var(--border-color) !important;
+    }
+  }
+}
+
+/* 修复深色模式按钮样式 */
+:deep(.van-button) {
+  &--default {
+    background: var(--header-background);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+
+  &--primary {
+    background: #10b981;
+    border-color: #10b981;
+    color: #fff;
+  }
+
+  &--danger {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+  }
+}
+
+.message-image {
+  max-width: 120px;
+  max-height: 120px;
+  object-fit: contain;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+</style>

@@ -1,0 +1,169 @@
+server:
+  port: 8123
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        max-age: 2592000
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 10
+    max-connections: 1000
+    accept-count: 100
+    connection-timeout: 20000
+
+spring:
+  ai:
+    deepseek:
+      apiKey: your_deepseek_api_key
+      apiUrl: https://api.deepseek.com/v1/chat/completions
+      model: deepseek-chat
+      temperature: 0.3
+      maxTokens: 500
+  servlet:
+    multipart:
+      max-file-size: 10MB
+
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/yuemu_picture?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: your_mysql_password
+
+  # Redis 配置
+  redis:
+    database: 10
+    host: 127.0.0.1
+    port: 6379
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 8
+        min-idle: 2
+        max-wait: 1000
+      shutdown-timeout: 100ms
+
+  elasticsearch:
+    connection-timeout: 5000
+    uris: http://localhost:9201
+    socket-timeout: 60000
+    sync:
+      batch:
+        size: 1000
+      alert:
+        interval: 1800000
+      retry:
+        times: 3
+        interval: 5000
+      picture:
+        enable: true
+      user:
+        enable: true
+      post:
+        enable: true
+      space:
+        enable: true
+      incremental:
+        random:
+          delay:
+            max: 30
+
+  # Session 配置
+  session:
+    store-type: redis
+    timeout: 2592000
+
+  # 邮箱配置
+  mail:
+    from: your_email@qq.com
+    password: your_email_auth_code
+    host: smtp.qq.com
+    port: 465
+    admin: your_admin_email@qq.com
+
+  # 分表配置
+  shardingsphere:
+    datasource:
+      names: yuemu_picture
+      yuemu_picture:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/yuemu_picture
+        username: root
+        password: your_mysql_password
+    rules:
+      sharding:
+        tables:
+          picture:
+            actual-data-nodes: yuemu_picture.picture
+            table-strategy:
+              standard:
+                sharding-column: spaceId
+                sharding-algorithm-name: picture_sharding_algorithm
+        sharding-algorithms:
+          picture_sharding_algorithm:
+            type: CLASS_BASED
+            props:
+              strategy: standard
+              algorithmClassName: com.lumenglover.yuemupicturebackend.manager.sharding.PictureShardingAlgorithm
+    props:
+      sql-show: true
+
+  data:
+    redis:
+      timeout: 5000
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    enable-sql-runner: true
+    db-config:
+      logic-delete-field: isDelete
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# 接口文档
+knife4j:
+  enable: true
+  production: false
+  openapi:
+    title: 悦木图片管理系统 - API接口文档
+    description: 基于SpringBoot + Vue3开发的图片管理系统，提供图片上传、管理、分享、搜索等完整功能
+    version: v1.0.0
+    group:
+      default:
+        api-rule: package
+        api-rule-resources:
+          - com.lumenglover.yuemupicturebackend.controller
+
+## 对象存储 COS（腾讯云）
+cos:
+  client:
+    enable: true
+    duration: 1800
+    host: your_cos_host
+    secretId: your_cos_secret_id
+    secretKey: your_cos_secret_key
+    region: ap-chongqing
+    bucket: your_cos_bucket
+    admin-email: your_admin_email@qq.com
+    audit-biz-type: ""
+    text-audit-biz-type: ""
+    custom-domain: your_custom_domain
+
+# 阿里云 AI
+aliYunAi:
+  apiKey: your_aliyun_ai_api_key
+
+# 微信
+wx:
+  mp:
+    token: your_wx_mp_token
+
+# RAG
+rag:
+  python-service:
+    base-url: "http://127.0.0.1:8001"

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/src/assets/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/src/assets/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="/src/assets/logo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- 基础 SEO 标签 -->
+  <title>悦木图库 - 发现、分享、创造美好瞬间</title>
+  <meta name="description" content="悦木图库是一个汇聚海量素材的创意社区平台，在这里你可以发现美好瞬间，分享生活点滴，与志同道合的创作者交流互动。加入悦木图库，让我们一起分享、创造美好瞬间。">
+  <meta name="keywords" content="悦木图库,创意社区,素材分享,生活记录,艺术灵感,创作者社区,图片分享,设计素材">
+  <meta name="author" content="悦木团队">
+
+  <!-- Open Graph / 社交媒体分享标签 -->
+  <meta property="og:title" content="悦木图库 - 发现、分享、创造美好瞬间">
+  <meta property="og:description" content="在悦木图库，发现美好瞬间，分享生活点滴，与创作者一起创造美好。">
+  <meta property="og:image" content="/src/assets/logo.png">
+  <meta property="og:url" content="https://www.yuemutuku.com">
+  <meta property="og:type" content="website">
+
+  <!-- 微信分享配置 -->
+  <meta property="wx:title" content="悦木图库 - 发现、分享、创造美好瞬间">
+  <meta property="wx:description" content="在悦木图库，发现美好瞬间，分享生活点滴，与创作者一起创造美好。">
+  <meta property="wx:image" content="/src/assets/logo.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#2563eb">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- 搜索引擎优化 -->
+  <meta name="robots" content="index,follow">
+  <meta name="googlebot" content="index,follow">
+  <meta name="revisit-after" content="7 days">
+  <meta name="theme-color" content="#2563eb">
+
+  <style>
+      /* 仅保留全局加载层（蓝色调） */
+      #app-loading {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          min-height: 100vh;
+          box-sizing: border-box;
+      }
+
+      /* 所有加载提示文本/动画全部隐藏 */
+      .loading-title, .loading-subtitle, .loading-tips, .loading-progress,
+      .loading, .loading span {
+          display: none !important;
+      }
+      @keyframes scale {
+          0% { opacity: 0; }
+          100% { opacity: 0; }
+      }
+  </style>
+</head>
+
+<body>
+<!-- 结构化数据 - 网站信息 -->
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "悦木",
+    "description": "发现、分享、创造美好瞬间",
+    "url": "https://www.yuemutuku.com",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "query-input": "required name=search_term_string"
+    }
+  }
+</script>
+
+<!-- 结构化数据 - 组织信息 -->
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "Organization",
+    "name": "悦木",
+    "logo": "./src/assets/logo.png",
+    "url": "https://www.yuemutuku.com"
+  }
+</script>
+
+<!-- 仅保留全局加载层容器（无任何提示内容） -->
+<div id="app-loading"></div>
+
+<div id="app"></div>
+
+<!-- 核心脚本 -->
+<script type="module" src="/src/main.ts"></script>
+
+<script>
+  window.addEventListener('load', function() {
+    const loading = document.getElementById('app-loading');
+    if (loading) {
+      loading.style.transition = 'opacity 0.5s ease';
+      loading.style.opacity = '0';
+      setTimeout(() => loading.remove(), 500);
+    }
+  });
+
+  // 根据域名动态设置网站标题和描述
+  (function() {
+    const domain = window.location.hostname;
+    let siteInfo = {
+      title: '悦木图库 - 发现、分享、创造美好瞬间',
+      description: '悦木图库是一个汇聚海量素材的创意社区平台，在这里你可以发现美好瞬间，分享生活点滴，与志同道合的创作者交流互动。加入悦木图库，让我们一起分享、创造美好瞬间。',
+      keywords: '悦木图库,创意社区,素材分享,生活记录,艺术灵感,创作者社区,图片分享,设计素材'
+    };
+
+    if (domain.includes('lumenglover.com')) {
+      siteInfo.title = '悦木图库测试站 - 发现、分享、创造美好瞬间 [测试环境]';
+      siteInfo.description = '悦木图库测试环境 - 在这里你可以发现美好瞬间，分享生活点滴，与创作者一起创造美好。这是一个测试站点。';
+      document.body.insertAdjacentHTML('afterbegin', '<div id="test-site-banner" style="position: fixed; top: 50%; right: 0; transform: translateY(-50%); background: #ff6b6b; color: white; text-align: center; padding: 6px 4px; font-size: 11px; z-index: 9999; font-weight: bold; border-radius: 4px 0 0 4px; writing-mode: vertical-lr; letter-spacing: 1px; cursor: pointer;" onclick="showCustomAlert();">测试环境</div>');
+    } else if (domain.includes('localhost')) {
+      siteInfo.title = '悦木图库 - 发现、分享、创造美好瞬间 [开发环境]';
+      siteInfo.description = '悦木图库开发环境 - 在这里你可以发现美好瞬间，分享生活点滴，与创作者一起创造美好。这是一个开发站点。';
+      document.body.insertAdjacentHTML('afterbegin', '<div id="dev-site-banner" style="position: fixed; top: 50%; right: 0; transform: translateY(-50%); background: #4ecdc4; color: white; text-align: center; padding: 6px 4px; font-size: 11px; z-index: 9999; font-weight: bold; border-radius: 4px 0 0 4px; writing-mode: vertical-lr; letter-spacing: 1px;">开发环境</div>');
+    }
+
+    // 更新页面标题和描述
+    document.title = siteInfo.title;
+    document.querySelector('meta[name="description"]').setAttribute('content', siteInfo.description);
+    document.querySelector('meta[name="keywords"]').setAttribute('content', siteInfo.keywords);
+
+    // 更新OG标签
+    document.querySelector('meta[property="og:title"]').setAttribute('content', siteInfo.title);
+    document.querySelector('meta[property="og:description"]').setAttribute('content', siteInfo.description);
+    document.querySelector('meta[property="og:url"]').setAttribute('content', window.location.origin);
+
+    // 更新结构化数据
+    const websiteSchema = document.querySelectorAll('script[type="application/ld+json"]')[0];
+    if (websiteSchema) {
+      const schemaObj = JSON.parse(websiteSchema.textContent);
+      schemaObj.url = window.location.origin;
+      websiteSchema.textContent = JSON.stringify(schemaObj);
+    }
+
+    // 更新组织信息结构化数据
+    const orgSchema = document.querySelectorAll('script[type="application/ld+json"]')[1];
+    if (orgSchema) {
+      const orgSchemaObj = JSON.parse(orgSchema.textContent);
+      orgSchemaObj.url = window.location.origin;
+      orgSchema.textContent = JSON.stringify(orgSchemaObj);
+    }
+  })();
+
+  // 显示自定义美观弹窗
+  function showCustomAlert() {
+    // 检查是否已有弹窗存在
+    let alertBox = document.getElementById('custom-alert-overlay');
+    if (alertBox) {
+      alertBox.style.display = 'flex';
+      return;
+    }
+
+    // 创建遮罩层
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-alert-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    `;
+
+    // 创建弹窗主体
+    const alertContainer = document.createElement('div');
+    alertContainer.style.cssText = `
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 80%;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      position: relative;
+      transform: scale(0.9);
+      animation: scaleIn 0.3s forwards;
+    `;
+
+    // 添加动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes scaleIn {
+        to { transform: scale(1); }
+      }
+      .alert-close-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        font-size: 20px;
+        cursor: pointer;
+        color: #999;
+        background: none;
+        border: none;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .alert-close-btn:hover {
+        background: #f0f0f0;
+        color: #333;
+      }
+      .alert-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin: 0 0 12px 0;
+      }
+      .alert-message {
+        font-size: 14px;
+        color: #666;
+        margin: 0 0 20px 0;
+        line-height: 1.5;
+      }
+      .alert-button {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s;
+      }
+      .alert-button:hover {
+        background: #1d4ed8;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // 弹窗内容
+    alertContainer.innerHTML = `
+      <button class="alert-close-btn" onclick="closeCustomAlert()">×</button>
+      <div class="alert-title">⚠️ 测试环境提醒</div>
+      <div class="alert-message">您正在访问测试环境<br>正式网站请访问：<br><strong>https://www.yuemutuku.com</strong></div>
+      <button class="alert-button" onclick="window.open('https://www.yuemutuku.com', '_blank'); closeCustomAlert();">前往正式网站</button>
+    `;
+
+    overlay.appendChild(alertContainer);
+    document.body.appendChild(overlay);
+  }
+
+  // 关闭自定义弹窗
+  function closeCustomAlert() {
+    const overlay = document.getElementById('custom-alert-overlay');
+    if (overlay) {
+      overlay.style.display = 'none';
+      // 移除dom元素
+      document.body.removeChild(overlay);
+    }
+  }
+
+  // 点击遮罩关闭弹窗
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'custom-alert-overlay') {
+      closeCustomAlert();
+    }
+  });
+</script>
+
+
+</body>
+
+</html>

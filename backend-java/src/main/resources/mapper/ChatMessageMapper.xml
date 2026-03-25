@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.ChatMessageMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.ChatMessage">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="senderId" column="senderId" jdbcType="BIGINT"/>
+        <result property="receiverId" column="receiverId" jdbcType="BIGINT"/>
+        <result property="pictureId" column="pictureId" jdbcType="BIGINT"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="type" column="type" jdbcType="TINYINT"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="replyId" column="replyId" jdbcType="BIGINT"/>
+        <result property="rootId" column="rootId" jdbcType="BIGINT"/>
+        <result property="spaceId" column="spaceId" jdbcType="BIGINT"/>
+        <result property="privateChatId" column="privateChatId" jdbcType="BIGINT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,senderId,receiverId,
+        pictureId,content,type,
+        status,replyId,rootId,
+        spaceId,privateChatId,createTime,updateTime,isDelete
+    </sql>
+</mapper>

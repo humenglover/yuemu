@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.AppVersionMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.AppVersion">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="version" column="version" jdbcType="VARCHAR"/>
+        <result property="versionCode" column="versionCode" jdbcType="INTEGER"/>
+        <result property="apkPath" column="apkPath" jdbcType="VARCHAR"/>
+        <result property="apkSize" column="apkSize" jdbcType="BIGINT"/>
+        <result property="description" column="description" jdbcType="VARCHAR"/>
+        <result property="isForce" column="isForce" jdbcType="TINYINT"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,version,versionCode,
+        apkPath,apkSize,description,
+        isForce,status,createTime,
+        updateTime,isDelete
+    </sql>
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.ReportMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.Report">
+        <id column="id" property="id" />
+        <result column="userId" property="userId" />
+        <result column="targetId" property="targetId" />
+        <result column="targetType" property="targetType" />
+        <result column="reportType" property="reportType" />
+        <result column="reason" property="reason" />
+        <result column="screenshotUrls" property="screenshotUrls" />
+        <result column="status" property="status" />
+        <result column="handlerId" property="handlerId" />
+        <result column="handleResult" property="handleResult" />
+        <result column="handleTime" property="handleTime" />
+        <result column="createTime" property="createTime" />
+        <result column="updateTime" property="updateTime" />
+        <result column="isDelete" property="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,targetId,targetType,reportType,reason,
+        screenshotUrls,status,handlerId,handleResult,handleTime,
+        createTime,updateTime,isDelete
+    </sql>
+
+</mapper>

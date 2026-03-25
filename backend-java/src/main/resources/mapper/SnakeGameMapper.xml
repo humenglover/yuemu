@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.SnakeGameMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.SnakeGameRecord">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="score" column="score" jdbcType="INTEGER"/>
+        <result property="foodCount" column="foodCount" jdbcType="INTEGER"/>
+        <result property="gameTime" column="gameTime" jdbcType="INTEGER"/>
+        <result property="snakeLength" column="snakeLength" jdbcType="INTEGER"/>
+        <result property="gameMode" column="gameMode" jdbcType="TINYINT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,score,foodCount,
+        gameTime,snakeLength,gameMode,
+        createTime,updateTime,isDelete
+    </sql>
+
+    <!-- 获取用户最高分 -->
+    <select id="getUserHighestScore" resultType="java.lang.Integer">
+        SELECT MAX(score)
+        FROM snake_game_record
+        WHERE userId = #{userId} 
+        AND gameMode = #{gameMode}
+        AND isDelete = 0
+    </select>
+
+    <!-- 获取排行榜 -->
+    <select id="getRankingList" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM snake_game_record
+        WHERE gameMode = #{gameMode}
+        AND isDelete = 0
+        ORDER BY score DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 保存游戏记录 -->
+    <insert id="saveGameRecord" parameterType="com.lumenglover.yuemupicturebackend.model.entity.SnakeGameRecord">
+        INSERT INTO snake_game_record
+        (userId, score, foodCount, gameTime, snakeLength, gameMode)
+        VALUES
+        (#{userId}, #{score}, #{foodCount}, #{gameTime}, #{snakeLength}, #{gameMode})
+    </insert>
+
+</mapper> 

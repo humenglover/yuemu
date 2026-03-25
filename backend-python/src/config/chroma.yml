@@ -1,0 +1,18 @@
+# 向量库配置（默认无需修改）
+collection_name: yuemu_platform_knowledge
+persist_directory: ./chroma_data
+md5_hex_store: ./md5/md5_record.txt
+
+# 分块配置（适配PDF知识库）
+chunk_size: 1000
+chunk_overlap: 200
+separators: ["\n\n", "\n", "。", "！", "？", "；", "，", " "]
+
+# 检索配置（默认无需修改）
+k: 8
+score_threshold: 0.3
+
+# 知识库配置（默认无需修改）
+data_path: ./knowledge
+allow_knowledge_file_type: [".pdf", ".txt", ".docx", ".md"]
+# 备注：仅配置向量库和知识库，不涉及会话上下文，适配Python 3.10

@@ -1,0 +1,32 @@
+/**
+ * 默认头像URL列表
+ */
+export const DEFAULT_AVATAR_URLS = [
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-11-35.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-11-58.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-04.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-09.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-13.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-19.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-23.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-28.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-32.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-42.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-52.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-12-58.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-07.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-11.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-16.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-20.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-25.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-29.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-41.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-46.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-13-53.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-14-04.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-14-08.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-14-14.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-14-24.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-14-35.png',
+  'https://static.yuemutuku.com/avatar%2FSnipaste_2025-05-04_22-14-44.png'
+]

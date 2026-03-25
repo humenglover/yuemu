@@ -1,0 +1,15 @@
+# 并发配置
+concurrency:
+  # 线程池配置
+  thread_pool:
+    max_workers: 20  # 最大线程数
+    
+  # 请求处理配置
+  request_processing:
+    max_concurrent_requests: 50  # 最大并发请求数
+    timeout_seconds: 300  # 请求超时时间（秒）
+    
+  # Agent并发配置
+  agent:
+    max_concurrent_agents: 10  # 最大并发Agent数
+    agent_timeout_seconds: 120  # Agent处理超时时间（秒）

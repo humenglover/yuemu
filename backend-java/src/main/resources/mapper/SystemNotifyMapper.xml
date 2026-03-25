@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.SystemNotifyMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.SystemNotify">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="operatorId" column="operatorId" jdbcType="VARCHAR"/>
+        <result property="operatorType" column="operatorType" jdbcType="VARCHAR"/>
+        <result property="notifyType" column="notifyType" jdbcType="VARCHAR"/>
+        <result property="senderType" column="senderType" jdbcType="VARCHAR"/>
+        <result property="senderId" column="senderId" jdbcType="VARCHAR"/>
+        <result property="receiverType" column="receiverType" jdbcType="VARCHAR"/>
+        <result property="receiverId" column="receiverId" jdbcType="VARCHAR"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="LONGVARCHAR"/>
+        <result property="notifyIcon" column="notifyIcon" jdbcType="VARCHAR"/>
+        <result property="relatedBizType" column="relatedBizType" jdbcType="VARCHAR"/>
+        <result property="relatedBizId" column="relatedBizId" jdbcType="VARCHAR"/>
+        <result property="readStatus" column="readStatus" jdbcType="TINYINT"/>
+        <result property="readTime" column="readTime" jdbcType="TIMESTAMP"/>
+        <result property="isGlobal" column="isGlobal" jdbcType="TINYINT"/>
+        <result property="expireTime" column="expireTime" jdbcType="TIMESTAMP"/>
+        <result property="isEnabled" column="isEnabled" jdbcType="TINYINT"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,createTime,updateTime,
+        operatorId,operatorType,notifyType,
+        senderType,senderId,receiverType,
+        receiverId,title,content,
+        notifyIcon,relatedBizType,relatedBizId,
+        readStatus,readTime,isGlobal,
+        expireTime,isEnabled,isDelete
+    </sql>
+</mapper>

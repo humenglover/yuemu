@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.HotSearchMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.HotSearch">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="keyword" column="keyword" jdbcType="VARCHAR"/>
+        <result property="type" column="type" jdbcType="VARCHAR"/>
+        <result property="count" column="count" jdbcType="BIGINT"/>
+        <result property="realTimeCount" column="realTimeCount" jdbcType="BIGINT"/>
+        <result property="trend" column="trend" jdbcType="DOUBLE"/>
+        <result property="lastUpdateTime" column="lastUpdateTime" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <insert id="batchInsertOrUpdate">
+        INSERT INTO hot_search (keyword, type, count, realTimeCount, trend, lastUpdateTime)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.keyword}, #{item.type}, #{item.count}, #{item.realTimeCount}, #{item.trend}, #{item.lastUpdateTime})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        count = VALUES(count),
+        realTimeCount = VALUES(realTimeCount),
+        trend = VALUES(trend),
+        lastUpdateTime = VALUES(lastUpdateTime)
+    </insert>
+
+    <select id="getHotSearchAfter" resultMap="BaseResultMap">
+        SELECT *
+        FROM hot_search
+        WHERE type = #{type}
+          AND lastUpdateTime >= #{startTime}
+          AND isDelete = 0
+        ORDER BY (COALESCE(realTimeCount,0) * 0.7 + COALESCE(count,0) * 0.3) DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

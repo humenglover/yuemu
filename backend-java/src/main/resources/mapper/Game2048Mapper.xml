@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.Game2048Mapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.Game2048Record">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="score" column="score" jdbcType="INTEGER"/>
+        <result property="maxTile" column="maxTile" jdbcType="INTEGER"/>
+        <result property="gameTime" column="gameTime" jdbcType="INTEGER"/>
+        <result property="moveCount" column="moveCount" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <resultMap id="RankingResultMap" type="com.lumenglover.yuemupicturebackend.model.vo.Game2048RecordVO">
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="userName" column="userName" jdbcType="VARCHAR"/>
+        <result property="userAvatar" column="userAvatar" jdbcType="VARCHAR"/>
+        <result property="score" column="score" jdbcType="INTEGER"/>
+        <result property="maxTile" column="maxTile" jdbcType="INTEGER"/>
+        <result property="gameTime" column="gameTime" jdbcType="INTEGER"/>
+        <result property="moveCount" column="moveCount" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="getUserHighestScore" resultType="java.lang.Integer">
+        SELECT MAX(score)
+        FROM game_2048_record
+        WHERE userId = #{userId}
+          AND isDelete = 0
+    </select>
+
+    <select id="getRankingList" resultMap="RankingResultMap">
+        SELECT r.*, u.userName, u.userAvatar
+        FROM game_2048_record r
+                 LEFT JOIN user u ON r.userId = u.id
+        WHERE r.isDelete = 0
+          AND u.isDelete = 0
+        ORDER BY r.score DESC
+            LIMIT #{limit}
+    </select>
+
+    <insert id="saveGameRecord" parameterType="com.lumenglover.yuemupicturebackend.model.entity.Game2048Record">
+        INSERT INTO game_2048_record (userId, score, maxTile, gameTime, moveCount)
+        VALUES (#{userId}, #{score}, #{maxTile}, #{gameTime}, #{moveCount})
+    </insert>
+</mapper> 

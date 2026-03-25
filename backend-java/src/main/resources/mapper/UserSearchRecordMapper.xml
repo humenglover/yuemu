@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.UserSearchRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.UserSearchRecord">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="keyword" column="keyword" jdbcType="VARCHAR"/>
+        <result property="type" column="type" jdbcType="VARCHAR"/>
+        <result property="searchTime" column="searchTime" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <select id="listRecentByUser" resultMap="BaseResultMap">
+        SELECT *
+        FROM user_search_record
+        WHERE userId = #{userId}
+          AND isDelete = 0
+        ORDER BY searchTime DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="listRecentByUserAndType" resultMap="BaseResultMap">
+        SELECT *
+        FROM user_search_record
+        WHERE userId = #{userId}
+          AND type = #{type}
+          AND isDelete = 0
+        ORDER BY searchTime DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insertRecord">
+        INSERT INTO user_search_record (userId, keyword, type, searchTime)
+        VALUES (#{record.userId}, #{record.keyword}, #{record.type}, #{record.searchTime})
+    </insert>
+
+    <insert id="batchInsertRecords">
+        INSERT INTO user_search_record (userId, keyword, type, searchTime, createTime, updateTime)
+        VALUES
+        <foreach collection="records" item="record" separator=",">
+            (#{record.userId}, #{record.keyword}, #{record.type}, #{record.searchTime}, #{record.createTime}, #{record.updateTime})
+        </foreach>
+    </insert>
+
+    <update id="deleteUserSearchHistoryByType">
+        UPDATE user_search_record
+        SET isDelete = 1
+        WHERE userId = #{userId}
+          AND type = #{type}
+          AND isDelete = 0
+    </update>
+
+    <update id="deleteUserSearchHistory">
+        UPDATE user_search_record
+        SET isDelete = 1
+        WHERE userId = #{userId}
+          AND isDelete = 0
+    </update>
+
+</mapper>

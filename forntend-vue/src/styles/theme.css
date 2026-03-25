@@ -1,0 +1,654 @@
+/* 系统默认字体 */
+:root {
+  --font-family-base: "Muyao-Softbrush", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-custom: var(--font-family-base);
+  --background: #ffffff;
+  --text-primary: #3e3f3f;
+  --text-secondary: #666666;
+  --border-color: rgba(200, 190, 180, 0.22);
+  --card-background: #ffffff;
+  --hover-background: #f5f7fa;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --theme-transition: all 0.3s ease;
+
+  --header-background: rgba(255, 255, 255, 0.5);
+  --header-text: #333333;
+  --header-border: rgba(255, 255, 255, 0.3);
+  --header-shadow: rgba(0, 0, 0, 0.05);
+  --nav-item-hover: rgba(255, 255, 255, 0.3);
+  --nav-item-active: rgba(59, 130, 246, 0.1);
+  --nav-item-active-text: #3b82f6;
+  --search-btn-bg: rgba(255, 255, 255, 0.5);
+  --search-btn-border: rgba(255, 255, 255, 0.2);
+  --user-menu-bg: rgba(255, 255, 255, 0.95);
+  --user-menu-shadow: rgba(0, 0, 0, 0.1);
+  --user-menu-hover: rgba(59, 130, 246, 0.1);
+  --user-menu-text: #333;
+  --user-menu-hover-text: #3b82f6;
+
+  --post-background: #ffffff;
+  --post-content-background: #ffffff;
+  --post-title-color: #4a4543;
+  --post-text-color: #4a4a4a;
+  --author-card-background: linear-gradient(145deg, #fbf9f7, #f4f1ee);
+  --author-name-color: #6b635d;
+  --author-time-color: #998d85;
+  --code-background: #f8f9fa;
+  --blockquote-background: #f8f9fa;
+  --blockquote-border: #e9ecef;
+  --link-color: #3b82f6;
+  --link-hover-color: #2563eb;
+  --table-border: #e9ecef;
+  --table-header-background: #f8f9fa;
+  --table-row-even-background: #f8f9fa;
+
+  --text-other: #ffffff;
+
+  --markdown-bg: #ffffff;
+  --markdown-text: #1f2937;
+  --markdown-border: #e5e7eb;
+  --markdown-heading-text: #111827;
+  --markdown-heading-green-bg: #f0fdf4;
+  --markdown-heading-green-border: #22c55e;
+  --markdown-heading-pink-bg: #fdf2f8;
+  --markdown-heading-pink-border: #ec4899;
+  --markdown-heading-yellow-bg: #fefce8;
+  --markdown-heading-yellow-border: #eab308;
+  --markdown-heading-blue-bg: #eff6ff;
+  --markdown-heading-blue-border: #3b82f6;
+  --markdown-code-bg: #f3f4f6;
+  --markdown-code-text: #2563eb;
+  --markdown-blockquote-bg: #f3f4f6;
+  --markdown-blockquote-text: #8299bd;
+  --markdown-blockquote-border: #3b82f6;
+  --markdown-link-text: #2563eb;
+  --markdown-table-bg: #ffffff;
+  --markdown-table-border: #e5e7eb;
+  --markdown-table-header-bg: #f3f4f6;
+  --markdown-shadow: rgba(0, 0, 0, 0.1);
+
+  --comment-background: #ffffff;
+  --comment-hover-background: #f5f7fa;
+  --comment-text-color: #333333;
+  --comment-username-color: #1a1a1a;
+  --comment-time-color: #666666;
+  --comment-action-color: #666666;
+  --comment-action-hover-color: #00aeec;
+  --comment-delete-hover-color: #fb7299;
+  --comment-reply-color: #666666;
+  --comment-reply-username-color: #00aeec;
+  --comment-reply-hover-color: #00aeec;
+  --comment-divider-color: #f1f2f3;
+  --comment-avatar-border: #e0e0e0;
+
+  --comment-drawer-background: rgba(255, 255, 255, 0.98);
+  --comment-drawer-backdrop: rgba(0, 0, 0, 0.4);
+  --comment-drawer-border: rgba(0, 0, 0, 0.1);
+  --comment-drawer-shadow: rgba(0, 0, 0, 0.1);
+
+  --comment-header-background: rgba(255, 255, 255, 0.95);
+  --comment-header-border: #f0f0f0;
+  --comment-header-text: #1a1a1a;
+
+  --comment-list-background: #ffffff;
+  --comment-item-background: #ffffff;
+  --comment-item-hover: #f5f7fa;
+
+  --comment-input-background: rgba(255, 255, 255, 0.95);
+  --comment-input-border: #f0f0f0;
+  --comment-input-text: #1a1a1a;
+  --comment-input-placeholder: #999999;
+
+  --emoji-picker-background: #ffffff;
+  --emoji-picker-border: #f0f0f0;
+  --emoji-picker-shadow: rgba(0, 0, 0, 0.1);
+
+  --chat-background: #ffffff;
+  --chat-header-background: rgba(255, 255, 255, 0.95);
+  --chat-header-border: #f0f0f0;
+  --chat-header-text: #1a1a1a;
+
+  --chat-message-background: #f5f7fa;
+  --chat-message-text: #333333;
+  --chat-message-time: #999999;
+  --chat-message-sender-background: #e3f2fd;
+  --chat-message-sender-text: #1a1a1a;
+  --ai-avatar-background: #52c41a;
+  --ai-avatar-text: #ffffff;
+
+  --chat-input-background: #ffffff;
+  --chat-input-border: #f0f0f0;
+  --chat-input-text: #333333;
+  --chat-input-placeholder: #999999;
+
+  --chat-toolbar-background: rgba(255, 255, 255, 0.95);
+  --chat-toolbar-border: #f0f0f0;
+  --chat-toolbar-icon: #666666;
+  --chat-toolbar-icon-hover: #333333;
+
+  --like-button-color: #9ca3af;
+  --like-button-active-color: #ef4444;
+  --like-button-hover-color: #f87171;
+  --interaction-button-color: #9ca3af;
+  --interaction-button-hover-color: #cbd5e1;
+  --interaction-button-active-color: #f1f5f9;
+  --interaction-button-size: 44px;
+  --interaction-button-icon-size: 24px;
+  --interaction-button-font-size: 12px;
+
+  /* 新增帖子编辑页牛皮纸配色（仅作用于.box） */
+  --edit-box-kraft-bg: #f5f0e8;
+  /* 亮色牛皮纸背景 */
+  --edit-box-kraft-dark: #e8d9c4;
+  /* 牛皮纸深色调 */
+  --edit-box-kraft-text: #5d4037;
+  /* 牛皮纸文字色 */
+  --edit-box-kraft-border: rgba(187, 146, 94, 0.2);
+  /* 牛皮纸边框色 */
+  /* 暗色主题牛皮纸配色 */
+  --edit-box-kraft-bg-dark: #3d2b1f;
+  --edit-box-kraft-dark-dark: #5c4033;
+  --edit-box-kraft-text-dark: #e8d9c4;
+  --edit-box-kraft-border-dark: rgba(187, 146, 94, 0.3);
+
+  /* Apple-inspired iOS Components */
+  --ios-bg-blur: rgba(255, 255, 255, 0.85);
+  --ios-header-border: rgba(0, 0, 0, 0.1);
+  --ios-tab-bg: #f2f2f7;
+  --ios-tab-text: #8e8e93;
+  --ios-search-bg: #e3e3e8;
+  --ios-search-focus-bg: #d1d1d6;
+  --ios-modal-bg: rgba(255, 255, 255, 0.9);
+  --ios-modal-divider: rgba(60, 60, 67, 0.2);
+  --ios-card-bg: #ffffff;
+  --ios-card-shadow: rgba(0, 0, 0, 0.05);
+}
+
+.dark-theme {
+  --background: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --card-background: #2d2d2d;
+  --hover-background: #404040;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+
+  --comment-drawer-background: rgba(29, 29, 31, 0.95);
+  --comment-drawer-backdrop: rgba(0, 0, 0, 0.8);
+  --comment-drawer-border: rgba(255, 255, 255, 0.1);
+  --comment-drawer-shadow: rgba(0, 0, 0, 0.5);
+
+  --comment-header-background: rgba(45, 45, 45, 0.95);
+  --comment-header-border: rgba(255, 255, 255, 0.1);
+  --comment-header-text: #e2e8f0;
+
+  --comment-list-background: #2d2d2d;
+  --comment-item-background: #2d2d2d;
+  --comment-item-hover: #383838;
+
+  --comment-input-background: rgba(45, 45, 45, 0.95);
+  --comment-input-border: rgba(255, 255, 255, 0.1);
+  --comment-input-text: #e2e8f0;
+  --comment-input-placeholder: #94a3b8;
+
+  --emoji-picker-background: #2d2d2d;
+  --emoji-picker-border: rgba(255, 255, 255, 0.1);
+  --emoji-picker-shadow: rgba(0, 0, 0, 0.3);
+
+  --comment-text-color: #e2e8f0;
+  --comment-username-color: #ffffff;
+  --comment-time-color: #94a3b8;
+  --comment-action-color: #94a3b8;
+  --comment-action-hover-color: #40a9ff;
+  --comment-delete-hover-color: #ff4d4f;
+  --comment-reply-color: #94a3b8;
+  --comment-reply-username-color: #40a9ff;
+  --comment-reply-hover-color: #40a9ff;
+  --comment-divider-color: #404040;
+  --comment-avatar-border: #404040;
+
+  --header-background: rgba(29, 29, 31, 0.75);
+  --header-text: #e2e8f0;
+  --header-border: rgba(255, 255, 255, 0.1);
+  --header-shadow: rgba(0, 0, 0, 0.2);
+  --nav-item-hover: rgba(255, 255, 255, 0.1);
+  --nav-item-active: rgba(59, 130, 246, 0.2);
+  --nav-item-active-text: #3b82f6;
+  --search-btn-bg: rgba(255, 255, 255, 0.1);
+  --search-btn-border: rgba(255, 255, 255, 0.1);
+  --user-menu-bg: rgba(29, 29, 31, 0.95);
+  --user-menu-shadow: rgba(0, 0, 0, 0.3);
+  --user-menu-hover: rgba(59, 130, 246, 0.15);
+  --user-menu-text: #e2e8f0;
+  --user-menu-hover-text: #3b82f6;
+
+  --post-background: #1a1a1a;
+  --post-content-background: #2d2d2d;
+  --post-title-color: #e2e8f0;
+  --post-text-color: #cbd5e1;
+  --author-card-background: linear-gradient(145deg, #2d2d2d, #262626);
+  --author-name-color: #e2e8f0;
+  --author-time-color: #94a3b8;
+  --code-background: #98afd2;
+  --blockquote-background: #7189a9;
+  --blockquote-border: #404040;
+  --link-color: #40a9ff;
+  --link-hover-color: #69c0ff;
+  --table-border: #404040;
+  --table-header-background: #2d2d2d;
+  --table-row-even-background: #2d2d2d;
+
+  .post-detail-page {
+    background: var(--post-background);
+    color: var(--text-primary);
+
+    .post-content-wrapper {
+      background: var(--post-content-background);
+    }
+
+    .post-main {
+      background: var(--post-content-background);
+    }
+
+    .post-header {
+      background: var(--post-content-background);
+      border-color: var(--border-color);
+
+      .title {
+        color: var(--post-title-color);
+      }
+    }
+
+    .post-content {
+      color: var(--post-text-color) !important;
+      background: var(--post-content-background) !important;
+
+      p,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      li,
+      ul,
+      ol {
+        color: var(--post-text-color);
+      }
+
+      pre,
+      code {
+        background: var(--code-background);
+        color: #e6e6e6;
+      }
+
+      blockquote {
+        background: var(--blockquote-background);
+        border-left-color: var(--blockquote-border);
+        color: #e6e6e6;
+      }
+
+      a {
+        color: var(--link-color);
+
+        &:hover {
+          color: var(--link-hover-color);
+        }
+      }
+
+      table {
+        border-color: var(--table-border);
+
+        th,
+        td {
+          border-color: var(--table-border);
+          color: var(--post-text-color);
+        }
+
+        th {
+          background: var(--table-header-background);
+        }
+
+        tr:nth-child(even) {
+          background: var(--table-row-even-background);
+        }
+      }
+    }
+
+    .author-card {
+      background: var(--author-card-background);
+
+      .name {
+        color: var(--author-name-color);
+      }
+
+      .time {
+        color: var(--author-time-color);
+      }
+    }
+
+    .comments-list {
+      background: var(--post-content-background);
+
+      .comment-item {
+        background: var(--card-background);
+        border-color: var(--border-color);
+
+        .comment-header {
+          .username {
+            color: var(--post-text-color);
+          }
+
+          .time {
+            color: var(--text-secondary);
+          }
+        }
+
+        .comment-content {
+          color: var(--post-text-color);
+        }
+
+        .comment-actions {
+          button {
+            color: var(--text-secondary);
+
+            &:hover {
+              color: var(--link-color);
+            }
+          }
+        }
+      }
+    }
+
+    .input-box {
+      background: var(--card-background);
+      border-color: var(--border-color);
+
+      textarea {
+        background: var(--card-background);
+        color: var(--post-text-color);
+
+        &::placeholder {
+          color: var(--text-secondary);
+        }
+      }
+
+      .emoji-btn {
+        color: var(--post-text-color);
+
+        &:hover {
+          background: var(--hover-background);
+        }
+      }
+    }
+
+    .post-sidebar {
+      background: var(--card-background);
+      border-color: var(--border-color);
+
+      .interaction-bar {
+        .action-item {
+          background: var(--post-background);
+          color: var(--post-text-color);
+
+          &:hover {
+            background: var(--hover-background);
+          }
+
+          &.active {
+            background: rgba(24, 144, 255, 0.2);
+          }
+        }
+      }
+    }
+  }
+
+  --markdown-bg: #1e1e1e;
+  --markdown-text: #f1f5f9;
+  --markdown-border: rgba(255, 255, 255, 0.15);
+  --markdown-heading-text: #f8fafc;
+  --markdown-heading-green-bg: rgba(34, 197, 94, 0.15);
+  --markdown-heading-green-border: #4ade80;
+  --markdown-heading-pink-bg: rgba(236, 72, 153, 0.15);
+  --markdown-heading-pink-border: #f472b6;
+  --markdown-heading-yellow-bg: rgba(234, 179, 8, 0.15);
+  --markdown-heading-yellow-border: #facc15;
+  --markdown-heading-blue-bg: rgba(59, 130, 246, 0.15);
+  --markdown-heading-blue-border: #60a5fa;
+  --markdown-code-bg: #2d3748;
+  --markdown-code-text: #93c5fd;
+  --markdown-blockquote-bg: #2d3748;
+  --markdown-blockquote-text: #e2e8f0;
+  --markdown-blockquote-border: #60a5fa;
+  --markdown-link-text: #93c5fd;
+  --markdown-table-bg: #1e1e1e;
+  --markdown-table-border: rgba(255, 255, 255, 0.15);
+  --markdown-table-header-bg: #374151;
+  --markdown-shadow: rgba(0, 0, 0, 0.3);
+
+  --comment-background: #2d2d2d;
+  --comment-hover-background: #383838;
+  --comment-text-color: #e1e1e1;
+  --comment-username-color: #ffffff;
+  --comment-time-color: #999999;
+  --comment-action-color: #808080;
+  --comment-action-hover-color: #40a9ff;
+  --comment-delete-hover-color: #ff4d4f;
+  --comment-reply-color: #808080;
+  --comment-reply-username-color: #40a9ff;
+  --comment-reply-hover-color: #40a9ff;
+  --comment-divider-color: #404040;
+  --comment-avatar-border: #404040;
+
+  --chat-background: #1a1a1a;
+  --chat-header-background: rgba(29, 29, 31, 0.95);
+  --chat-header-border: rgba(255, 255, 255, 0.1);
+  --chat-header-text: #e2e8f0;
+
+  --chat-message-background: #2d2d2d;
+  --chat-message-text: #e2e8f0;
+  --chat-message-time: #94a3b8;
+  --chat-message-sender-background: #1e3a8a;
+  --chat-message-sender-text: #e2e8f0;
+  --ai-avatar-background: #52c41a;
+  --ai-avatar-text: #ffffff;
+
+  --chat-input-background: #2d2d2d;
+  --chat-input-border: rgba(255, 255, 255, 0.1);
+  --chat-input-text: #e2e8f0;
+  --chat-input-placeholder: #94a3b8;
+
+  --chat-toolbar-background: rgba(29, 29, 31, 0.95);
+  --chat-toolbar-border: rgba(255, 255, 255, 0.1);
+  --chat-toolbar-icon: #94a3b8;
+  --chat-toolbar-icon-hover: #e2e8f0;
+
+  /* Apple-inspired iOS Components (Dark) */
+  --ios-bg-blur: rgba(28, 28, 30, 0.85);
+  --ios-header-border: rgba(255, 255, 255, 0.1);
+  --ios-tab-bg: #2c2c2e;
+  --ios-tab-text: #8e8e93;
+  --ios-search-bg: #1c1c1e;
+  --ios-search-focus-bg: #2c2c2e;
+  --ios-modal-bg: rgba(30, 30, 32, 0.9);
+  --ios-modal-divider: rgba(255, 255, 255, 0.15);
+  --ios-card-bg: #1c1c1e;
+  --ios-card-shadow: rgba(0, 0, 0, 0.3);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: var(--theme-transition);
+}
+
+.theme-switch {
+  position: relative;
+  z-index: 1000;
+
+  .pull-cord {
+    cursor: pointer;
+    position: relative;
+    height: 80px;
+    width: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .bulb {
+      position: relative;
+      width: 24px;
+      height: 32px;
+      transform-origin: top center;
+      animation: sway 2s ease-in-out infinite;
+
+      .light {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffd700;
+        box-shadow: 0 0 20px #ffd700;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .bulb-top {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 8px;
+        height: 4px;
+        background: #808080;
+        border-radius: 5px 5px 0 0;
+      }
+
+      .bulb-middle {
+        position: absolute;
+        top: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .bulb-bottom {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 8px;
+        height: 4px;
+        background: #808080;
+        border-radius: 0 0 5px 5px;
+      }
+    }
+
+    .cord {
+      width: 3px;
+      height: 40px;
+      background: #333;
+      position: relative;
+      transform-origin: top center;
+
+      .cord-end {
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 8px;
+        height: 8px;
+        background: #808080;
+        border-radius: 50%;
+      }
+    }
+  }
+
+  &.dark {
+    .bulb {
+      .light {
+        opacity: 1;
+      }
+
+      .bulb-middle {
+        background: rgba(255, 215, 0, 0.9);
+      }
+    }
+  }
+
+  &.animating {
+    .bulb {
+      animation: pull 1s ease-in-out;
+    }
+
+    .cord {
+      animation: stretch 1s ease-in-out;
+    }
+  }
+}
+
+@keyframes sway {
+
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes pull {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(10px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes stretch {
+  0% {
+    height: 40px;
+  }
+
+  50% {
+    height: 50px;
+  }
+
+  100% {
+    height: 40px;
+  }
+}
+
+* {
+  font-family: var(--font-family-base);
+}
+
+code,
+pre,
+.code-font {
+  font-family: Consolas, Monaco, "Courier New", monospace !important;
+}
+
+/*!* 自定义字体声明 *!*/
+/*@font-face {*/
+/*  font-family: 'Muyao-Softbrush';*/
+/*  src: url('../assets/fonts/2.woff2') format('woff2');*/
+/*  font-weight: normal;*/
+/*  font-style: normal;*/
+/*  font-display: swap;*/
+/*}*/

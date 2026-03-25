@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.FriendLinkMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.FriendLink">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="siteName" column="siteName" jdbcType="VARCHAR"/>
+        <result property="siteUrl" column="siteUrl" jdbcType="VARCHAR"/>
+        <result property="siteLogo" column="siteLogo" jdbcType="VARCHAR"/>
+        <result property="siteDesc" column="siteDesc" jdbcType="VARCHAR"/>
+        <result property="ownerName" column="ownerName" jdbcType="VARCHAR"/>
+        <result property="ownerContact" column="ownerContact" jdbcType="VARCHAR"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="siteType" column="siteType" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="reviewMessage" column="reviewMessage" jdbcType="VARCHAR"/>
+        <result property="viewCount" column="viewCount" jdbcType="BIGINT"/>
+        <result property="clickCount" column="clickCount" jdbcType="BIGINT"/>
+        <result property="weight" column="weight" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,siteName,siteUrl,siteLogo,
+        siteDesc,ownerName,ownerContact,userId,
+        siteType,status,reviewMessage,viewCount,
+        clickCount,weight,createTime,updateTime,
+        isDelete
+    </sql>
+
+    <update id="increaseViewCount">
+        update friend_link
+        set viewCount = viewCount + 1
+        where id = #{id}
+    </update>
+
+    <update id="increaseClickCount">
+        update friend_link
+        set clickCount = clickCount + 1
+        where id = #{id}
+    </update>
+</mapper> 

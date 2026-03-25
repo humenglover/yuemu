@@ -1,0 +1,202 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0.21
+    container_name: mysql_service
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - /usr/local/mysql/conf:/etc/mysql/conf.d
+      - /usr/local/mysql/data:/var/lib/mysql
+      - /usr/local/mysql/init:/docker-entrypoint-initdb.d
+      - /usr/local/mysql/log:/var/log/mysql
+      - /usr/local/mysql/bin:/var/bin/mysql
+      - /usr/local/mysql/lib:/var/lib
+    networks:
+      - yuemutuku_net
+    healthcheck:
+      start_period: 45s
+      test: ["CMD", "mysql", "-uroot", "-p${MYSQL_ROOT_PASSWORD}", "-e", "SELECT 1"]
+      interval: 12s
+      timeout: 7s
+      retries: 12
+    restart: unless-stopped
+    mem_limit: 1000m
+    mem_reservation: 500m
+    cpus: 0.6
+
+  redis:
+    image: redis:6.2.0
+    container_name: redis_service
+    ports:
+      - "6379:6379"
+    volumes:
+      - /usr/local/redis/conf/redis.conf:/etc/redis/redis.conf
+      - /usr/local/redis/data:/data
+      - /usr/local/redis/logs:/logs
+    command:
+      - redis-server
+      - /etc/redis/redis.conf
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+    networks:
+      - yuemutuku_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 7s
+      timeout: 4s
+      retries: 8
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 500m
+    mem_reservation: 200m
+    cpus: 0.4
+
+  elasticsearch:
+    image: elasticsearch:7.17.23
+    container_name: elasticsearch_service
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - TZ=Asia/Shanghai
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - /usr/local/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - /usr/local/elasticsearch/data:/usr/share/elasticsearch/data
+      - /usr/local/elasticsearch/logs:/usr/share/elasticsearch/logs
+      - /usr/local/elasticsearch/plugins:/usr/share/elasticsearch/plugins
+    networks:
+      - yuemutuku_net
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD", "curl", "-u", "elastic:${ELASTIC_PASSWORD}", "-sf", "http://localhost:9200/"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 120s
+    restart: unless-stopped
+    mem_limit: 1024m
+    mem_reservation: 768m
+    cpus: 1.0
+
+  yuemu-picture-backend:
+    build:
+      context: ./java-service
+      dockerfile: Dockerfile
+    container_name: yuemu-picture-backend_service
+    ports:
+      - "8080:8080"
+    image: yuemutuku-java:latest
+    networks:
+      - yuemutuku_net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    command: ["java", "-jar", "-Duser.timezone=Asia/Shanghai", "/app.jar"]
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    volumes:
+      - /usr/local/projects/yuemutuku/data-persistence/java/logs:/logs
+      - /usr/local/projects/yuemutuku/data-persistence/java/upload:/upload
+    restart: unless-stopped
+    mem_limit: 1000m
+    mem_reservation: 600m
+    cpus: 1.0
+  yuemu-rag-backend:
+    build:
+      context: ./python-rag-service
+      dockerfile: Dockerfile
+    container_name: yuemu-rag-backend_service
+    ports:
+      - "8001:8001"
+    image: yuemutuku-python:latest
+    networks:
+      - yuemutuku_net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - PYTHONUNBUFFERED=1
+      - FASTAPI_HOST=0.0.0.0
+      - FASTAPI_PORT=8001
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /usr/local/projects/yuemutuku/data-persistence/python/chroma_data:/app/src/chroma_data
+      - /usr/local/projects/yuemutuku/data-persistence/python/logs:/app/src/logs
+      - /usr/local/projects/yuemutuku/data-persistence/python/knowledge:/app/src/knowledge
+      - /usr/local/projects/yuemutuku/data-persistence/python/md5:/app/src/md5
+      - /usr/local/projects/yuemutuku/python-rag-service/src/config:/app/src/config
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8001/"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 1200m
+    mem_reservation: 600m
+    cpus: 1.0
+
+  nginx:
+    image: nginx
+    container_name: yuemu_nginx_service
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /usr/local/nginx/conf/yuemutuku/nginx.conf:/etc/nginx/nginx.conf
+      - /usr/local/nginx/html/yuemutuku:/usr/share/nginx/html
+      - /usr/local/nginx/logs/yuemutuku:/var/log/nginx
+      - /usr/local/nginx/ssl:/etc/ssl
+    networks:
+      - yuemutuku_net
+    depends_on:
+      yuemu-picture-backend:
+        condition: service_started
+      yuemu-rag-backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 300m
+    mem_reservation: 100m
+    cpus: 0.4
+
+networks:
+  yuemutuku_net:
+    name: yuemutuku_net
+    driver: bridge

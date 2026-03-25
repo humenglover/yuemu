@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.LoveBoardMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.LoveBoard">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="bgCover" column="bgCover" jdbcType="VARCHAR"/>
+        <result property="manCover" column="manCover" jdbcType="VARCHAR"/>
+        <result property="womanCover" column="womanCover" jdbcType="VARCHAR"/>
+        <result property="manName" column="manName" jdbcType="VARCHAR"/>
+        <result property="womanName" column="womanName" jdbcType="VARCHAR"/>
+        <result property="timing" column="timing" jdbcType="VARCHAR"/>
+        <result property="countdownTitle" column="countdownTitle" jdbcType="VARCHAR"/>
+        <result property="countdownTime" column="countdownTime" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="TINYINT"/>
+        <result property="familyInfo" column="familyInfo" jdbcType="VARCHAR"/>
+        <result property="likeCount" column="likeCount" jdbcType="BIGINT"/>
+        <result property="viewCount" column="viewCount" jdbcType="BIGINT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,bgCover,manCover,
+        womanCover,manName,womanName,timing,
+        countdownTitle,countdownTime,status,familyInfo,
+        likeCount,viewCount,createTime,updateTime,isDelete
+    </sql>
+</mapper>

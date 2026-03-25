@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.KnowledgeFileMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.KnowledgeFile">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="originalName" column="originalName" jdbcType="VARCHAR"/>
+            <result property="storedName" column="storedName" jdbcType="VARCHAR"/>
+            <result property="fileUrl" column="fileUrl" jdbcType="VARCHAR"/>
+            <result property="fileSize" column="fileSize" jdbcType="BIGINT"/>
+            <result property="fileType" column="fileType" jdbcType="VARCHAR"/>
+            <result property="uploadTime" column="uploadTime" jdbcType="TIMESTAMP"/>
+            <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="md5Hash" column="md5Hash" jdbcType="VARCHAR"/>
+            <result property="vectorCount" column="vectorCount" jdbcType="INTEGER"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,originalName,storedName,fileUrl,fileSize,fileType,uploadTime,
+        userId,md5Hash,vectorCount,createTime,updateTime,isDelete
+    </sql>
+
+</mapper>

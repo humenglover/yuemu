@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.LoveBoardMusicAlbumMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.LoveBoardMusicAlbum">
+        <id column="id" property="id"/>
+        <result column="userId" property="userId"/>
+        <result column="loveBoardId" property="loveBoardId"/>
+        <result column="albumName" property="albumName"/>
+        <result column="coverUrl" property="coverUrl"/>
+        <result column="description" property="description"/>
+        <result column="isPublic" property="isPublic"/>
+        <result column="password" property="password"/>
+        <result column="createTime" property="createTime"/>
+        <result column="updateTime" property="updateTime"/>
+        <result column="isDelete" property="isDelete"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,loveBoardId,albumName,coverUrl,description,isPublic,password,
+        createTime,updateTime,isDelete
+    </sql>
+
+</mapper> 

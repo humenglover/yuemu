@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.RagUserSessionMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.RagUserSession">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="sessionName" column="sessionName" jdbcType="VARCHAR"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isActive" column="isActive" jdbcType="TINYINT"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,sessionName,createTime,updateTime,isActive,isDelete
+    </sql>
+    
+    <!-- 查询用户活跃会话 -->
+    <select id="selectActiveSessionByUserId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM rag_user_session
+        WHERE userId = #{userId} AND isActive = 1 AND isDelete = 0
+        LIMIT 1
+    </select>
+    
+    <!-- 查询用户会话列表 -->
+    <select id="selectSessionListByUserId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM rag_user_session
+        WHERE userId = #{userId} AND isDelete = 0
+        ORDER BY updateTime DESC
+    </select>
+    
+    <!-- 更新用户所有会话为非活跃 -->
+    <update id="updateAllInactiveByUserId">
+        UPDATE rag_user_session
+        SET isActive = 0
+        WHERE userId = #{userId} AND isActive = 1
+    </update>
+    
+    <!-- 获取用户最近的会话 -->
+    <select id="selectLatestSessionByUserId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM rag_user_session
+        WHERE userId = #{userId} AND isDelete = 0
+        ORDER BY updateTime DESC
+        LIMIT 1
+    </select>
+</mapper>

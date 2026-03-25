@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.ShareRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.ShareRecord">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="targetId" column="targetId" jdbcType="BIGINT"/>
+        <result property="targetType" column="targetType" jdbcType="TINYINT"/>
+        <result property="targetUserId" column="targetUserId" jdbcType="BIGINT"/>
+        <result property="shareTime" column="shareTime" jdbcType="TIMESTAMP"/>
+        <result property="isRead" column="isRead" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,targetId,targetType,
+        targetUserId,shareTime,isRead
+    </sql>
+</mapper>

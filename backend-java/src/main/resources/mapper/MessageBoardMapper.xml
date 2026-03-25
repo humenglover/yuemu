@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.MessageBoardMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.MessageBoard">
+        <id column="id" property="id"/>
+        <result column="userId" property="userId"/>
+        <result column="ownerId" property="ownerId"/>
+        <result column="nickname" property="nickname"/>
+        <result column="content" property="content"/>
+        <result column="qq" property="qq"/>
+        <result column="location" property="location"/>
+        <result column="browser" property="browser"/>
+        <result column="os" property="os"/>
+        <result column="ipAddress" property="ipAddress"/>
+        <result column="likeCount" property="likeCount"/>
+        <result column="status" property="status"/>
+        <result column="createTime" property="createTime"/>
+        <result column="updateTime" property="updateTime"/>
+        <result column="isDelete" property="isDelete"/>
+    </resultMap>
+
+</mapper>

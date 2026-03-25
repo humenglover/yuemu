@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.BugReportMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.BugReport">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="userId" jdbcType="BIGINT" property="userId" />
+        <result column="title" jdbcType="VARCHAR" property="title" />
+        <result column="description" jdbcType="LONGVARCHAR" property="description" />
+        <result column="bugType" jdbcType="INTEGER" property="bugType" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="screenshotUrls" jdbcType="VARCHAR" property="screenshotUrls" />
+        <result column="websiteUrl" jdbcType="VARCHAR" property="websiteUrl" />
+        <result column="resolvedTime" jdbcType="TIMESTAMP" property="resolvedTime" />
+        <result column="resolution" jdbcType="VARCHAR" property="resolution" />
+        <result column="createTime" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="updateTime" jdbcType="TIMESTAMP" property="updateTime" />
+        <result column="isDelete" jdbcType="TINYINT" property="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,title,description,bugType,status,
+        screenshotUrls,websiteUrl,resolvedTime,resolution,createTime,updateTime,
+        isDelete
+    </sql>
+
+    <!-- 分页查询未删除的bug报告 -->
+    <select id="selectPageByCondition" resultType="com.lumenglover.yuemupicturebackend.model.entity.BugReport">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM bug_report
+        WHERE isDelete = 0
+        <if test="condition.title != null and condition.title != ''">
+            AND title LIKE CONCAT('%', #{condition.title}, '%')
+        </if>
+        <if test="condition.userId != null">
+            AND userId = #{condition.userId}
+        </if>
+        <if test="condition.bugType != null">
+            AND bugType = #{condition.bugType}
+        </if>
+        <if test="condition.status != null">
+            AND status = #{condition.status}
+        </if>
+        <if test="condition.websiteUrl != null and condition.websiteUrl != ''">
+            AND websiteUrl LIKE CONCAT('%', #{condition.websiteUrl}, '%')
+        </if>
+        ORDER BY createTime DESC
+    </select>
+
+</mapper>

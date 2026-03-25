@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.AudioFileMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.AudioFile">
+        <id column="id" property="id"/>
+        <result column="userId" property="userId"/>
+        <result column="fileName" property="fileName"/>
+        <result column="fileUrl" property="fileUrl"/>
+        <result column="filePath" property="filePath"/>
+        <result column="fileSize" property="fileSize"/>
+        <result column="duration" property="duration"/>
+        <result column="mimeType" property="mimeType"/>
+        <result column="md5" property="md5"/>
+        <result column="coverUrl" property="coverUrl"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="artist" property="artist"/>
+        <result column="album" property="album"/>
+        <result column="genre" property="genre"/>
+        <result column="spaceId" property="spaceId"/>
+        <result column="viewCount" property="viewCount"/>
+        <result column="likeCount" property="likeCount"/>
+        <result column="createTime" property="createTime"/>
+        <result column="updateTime" property="updateTime"/>
+        <result column="isDelete" property="isDelete"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,fileName,fileUrl,filePath,fileSize,duration,mimeType,md5,coverUrl,
+        title,description,artist,album,genre,spaceId,viewCount,likeCount,
+        createTime,updateTime,isDelete
+    </sql>
+
+</mapper>

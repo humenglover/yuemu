@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.PrivateChatMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.PrivateChat">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="targetUserId" column="targetUserId" jdbcType="BIGINT"/>
+            <result property="lastMessage" column="lastMessage" jdbcType="VARCHAR"/>
+            <result property="lastMessageTime" column="lastMessageTime" jdbcType="TIMESTAMP"/>
+            <result property="userUnreadCount" column="userUnreadCount" jdbcType="INTEGER"/>
+            <result property="targetUserUnreadCount" column="targetUserUnreadCount" jdbcType="INTEGER"/>
+            <result property="userChatName" column="userChatName" jdbcType="VARCHAR"/>
+            <result property="targetUserChatName" column="targetUserChatName" jdbcType="VARCHAR"/>
+            <result property="chatType" column="chatType" jdbcType="TINYINT"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userId,targetUserId,
+        lastMessage,lastMessageTime,userUnreadCount,
+        targetUserUnreadCount,userChatName,targetUserChatName,
+        chatType,createTime,updateTime,
+        isDelete
+    </sql>
+</mapper>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.RagSessionMessageMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.RagSessionMessage">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="sessionId" column="sessionId" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="messageType" column="messageType" jdbcType="TINYINT"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,sessionId,userId,messageType,content,createTime,isDelete
+    </sql>
+    
+    <!-- 查询会话消息列表 -->
+    <select id="selectMessageListBySessionId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM rag_session_message
+        WHERE sessionId = #{sessionId} AND isDelete = 0
+        ORDER BY createTime ASC
+    </select>
+    
+    <!-- 查询会话最近消息 -->
+    <select id="selectRecentMessagesBySessionId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM rag_session_message
+        WHERE sessionId = #{sessionId} AND isDelete = 0
+        ORDER BY createTime DESC
+        LIMIT #{limit}
+    </select>
+    
+    <!-- 批量删除会话消息 -->
+    <update id="batchDeleteBySessionId">
+        UPDATE rag_session_message
+        SET isDelete = 1
+        WHERE sessionId = #{sessionId}
+    </update>
+</mapper>

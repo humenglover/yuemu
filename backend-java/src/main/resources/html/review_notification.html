@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>悦木内容审核通知</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .main {
+            margin: 0 auto;
+            max-width: 800px;
+            width: 100%;
+            border-top: 4px solid #FF9800;
+            padding: 32px 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+        .title {
+            margin: 32px auto;
+            font-size: 32px;
+            font-weight: 600;
+            text-align: center;
+            color: #333;
+            line-height: 1.4;
+        }
+        .count {
+            margin: 24px 0;
+            font-size: 18px;
+            color: #666;
+            text-align: center;
+            padding: 16px;
+            background: rgba(255, 152, 0, 0.05);
+            border-radius: 8px;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        th {
+            background-color: #FFF3E0;
+            color: #E65100;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        tr:nth-child(even) {
+            background-color: #FAFAFA;
+        }
+        tr:hover {
+            background-color: #FFF8E1;
+        }
+        .type {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        .picture {
+            background-color: #E3F2FD;
+            color: #1976D2;
+        }
+        .post {
+            background-color: #E8F5E9;
+            color: #2E7D32;
+        }
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            padding: 24px 0;
+            border-top: 1px solid #eee;
+        }
+        .footer a {
+            color: #FF9800;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .footer a:hover {
+            color: #F57C00;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .main {
+                padding: 20px 16px;
+            }
+            .title {
+                font-size: 24px;
+                margin: 24px auto;
+            }
+            .count {
+                font-size: 16px;
+                padding: 12px;
+            }
+            th, td {
+                padding: 12px;
+                font-size: 13px;
+            }
+            .type {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="main">
+    <div class="title">悦木内容审核通知</div>
+    <div class="count">共有 :count 条内容待审核</div>
+    <div class="table-container">
+        <table>
+            <thead>
+            <tr>
+                <th>用户ID</th>
+                <th>用户邮箱</th>
+                <th>内容ID</th>
+                <th>内容标题</th>
+                <th>类型</th>
+                <th>创建时间</th>
+            </tr>
+            </thead>
+            <tbody>
+            :table_content
+            </tbody>
+        </table>
+    </div>
+    <div class="footer">
+        <a href="https://lumenglover.com" target="_blank">悦木</a> - 记录学习生活的每一分钟
+    </div>
+</div>
+</body>
+</html>

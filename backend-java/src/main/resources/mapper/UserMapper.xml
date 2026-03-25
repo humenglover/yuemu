@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.UserMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.User">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userAccount" column="userAccount" jdbcType="VARCHAR"/>
+        <result property="email" column="email" jdbcType="VARCHAR"/>
+        <result property="userPassword" column="userPassword" jdbcType="VARCHAR"/>
+        <result property="userName" column="userName" jdbcType="VARCHAR"/>
+        <result property="userAvatar" column="userAvatar" jdbcType="VARCHAR"/>
+        <result property="userProfile" column="userProfile" jdbcType="VARCHAR"/>
+        <result property="userRole" column="userRole" jdbcType="VARCHAR"/>
+        <result property="gender" column="gender" jdbcType="VARCHAR"/>
+        <result property="region" column="region" jdbcType="VARCHAR"/>
+        <result property="birthday" column="birthday" jdbcType="DATE"/>
+        <result property="userTags" column="userTags" jdbcType="VARCHAR"/>
+        <result property="homepageBg" column="homepageBg" jdbcType="VARCHAR"/>
+        <result property="personalSign" column="personalSign" jdbcType="VARCHAR"/>
+        <result property="themePreference" column="themePreference" jdbcType="VARCHAR"/>
+        <result property="visibilitySetting" column="visibilitySetting" jdbcType="VARCHAR"/>
+        <result property="interestField" column="interestField" jdbcType="VARCHAR"/>
+        <result property="lastActiveTime" column="lastActiveTime" jdbcType="TIMESTAMP"/>
+        <result property="editTime" column="editTime" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+        <result property="allowPrivateChat" column="allowPrivateChat" jdbcType="TINYINT"/>
+        <result property="allowFollow" column="allowFollow" jdbcType="TINYINT"/>
+        <result property="showFollowList" column="showFollowList" jdbcType="TINYINT"/>
+        <result property="showFansList" column="showFansList" jdbcType="TINYINT"/>
+        <result property="allowMultiDeviceLogin" column="allowMultiDeviceLogin" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,userAccount,email,userPassword,
+        userName,userAvatar,userProfile,
+        userRole,gender,region,birthday,
+        userTags,homepageBg,personalSign,
+        themePreference,visibilitySetting,interestField,
+        lastActiveTime,editTime,createTime,
+        updateTime,isDelete,
+        allowPrivateChat,allowFollow,showFollowList,showFansList,allowMultiDeviceLogin
+    </sql>
+
+    <!-- 查询已删除的用户（绕过逻辑删除） -->
+    <select id="selectDeletedUsersByUpdateTime" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM user
+        WHERE isDelete = 1
+        AND updateTime >= #{updateTime}
+    </select>
+
+    <!-- 查询所有已删除的用户（绕过逻辑删除） -->
+    <select id="selectAllDeletedUsers" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM user
+        WHERE isDelete = 1
+    </select>
+
+
+    <!-- 更新用户多设备登录设置 -->
+    <update id="updateAllowMultiDeviceLogin">
+        UPDATE user SET
+                        allowMultiDeviceLogin = #{arg1},
+                        updateTime = NOW()
+        WHERE id = #{arg0}
+    </update>
+
+    <!-- 获取用户多设备登录设置 -->
+    <select id="getAllowMultiDeviceLogin" resultType="java.lang.Integer">
+        SELECT allowMultiDeviceLogin
+        FROM user
+        WHERE id = #{arg0} AND isDelete = 0
+    </select>
+</mapper>

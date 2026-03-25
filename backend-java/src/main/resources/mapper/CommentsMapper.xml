@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.CommentsMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.Comments">
+        <id property="commentId" column="commentId" jdbcType="BIGINT"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="targetId" column="targetId" jdbcType="BIGINT"/>
+        <result property="targetType" column="targetType" jdbcType="TINYINT"/>
+        <result property="targetUserId" column="targetUserId" jdbcType="BIGINT"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="parentCommentId" column="parentCommentId" jdbcType="BIGINT"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+        <result property="likeCount" column="likeCount" jdbcType="BIGINT"/>
+        <result property="dislikeCount" column="dislikeCount" jdbcType="BIGINT"/>
+        <result property="isRead" column="isRead" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        commentId,userId,targetId,
+        targetType,targetUserId,content,
+        createTime,parentCommentId,isDelete,
+        likeCount,dislikeCount,isRead
+    </sql>
+</mapper>

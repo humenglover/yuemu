@@ -1,0 +1,11 @@
+# 千问模型配置（请自行填写你的 API Key）
+chat_model_name: qwen3-max
+embedding_model_name: text-embedding-v4
+qwen_api_key: your_qwen_api_key_here
+qwen_temperature: 0.7
+qwen_max_tokens: 2048
+
+# FastAPI配置（Java联调专用）
+fastapi_host: 0.0.0.0
+fastapi_port: 8001
+# 备注：无上下文相关配置，会话全由Java侧Redis/MySQL管理，仅适配Python 3.10，绑定到本地回环地址

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.UserfollowsMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.Userfollows">
+            <id property="followId" column="followId" jdbcType="BIGINT"/>
+            <result property="followerId" column="followerId" jdbcType="BIGINT"/>
+            <result property="followingId" column="followingId" jdbcType="BIGINT"/>
+            <result property="followStatus" column="followStatus" jdbcType="TINYINT"/>
+            <result property="isMutual" column="isMutual" jdbcType="TINYINT"/>
+            <result property="lastInteractionTime" column="lastInteractionTime" jdbcType="TIMESTAMP"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="editTime" column="editTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        followId,followerId,followingId,
+        followStatus,isMutual,lastInteractionTime,
+        createTime,editTime,updateTime,
+        isDelete
+    </sql>
+</mapper>

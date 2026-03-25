@@ -1,0 +1,111 @@
+spring:
+  profiles:
+    active: prod
+
+# Sa-Token配置
+sa-token:
+  # token名称 (同时也是cookie名称)
+  token-name: satoken
+  # token有效期，单位s 默认30天, -1代表永久有效
+  timeout: 2592000
+  # token临时有效期 (指定时间内无操作就视为token过期) 单位: 秒
+  active-timeout: -1
+  # 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建一个token)
+  is-share: false
+  # token风格
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: false
+  # 启用自动配置
+  auto-config: true
+
+app:
+  upload:
+    path: ${user.dir}/upload/app  # 使用项目根目录下的 upload/app 目录
+
+common:
+  default-user-name: "无名"
+  default-password: "your_default_password"
+  default-salt: "your_custom_salt"
+
+# 推荐分数配置（完全移除随机化）
+recommend:
+  # 增量更新限流配置
+  increment:
+    max-size: 500  # 单次增量处理最大数量，避免过载
+  # 新图片优先级配置
+  new:
+    picture:
+      hours: 24  # 24小时内的新图片优先更新
+  # 核心权重配置（无随机）
+  score:
+    view: 0.10
+    like: 0.10
+    comment: 0.10
+    share: 0.05
+    time-weight: 0.55  # 提升时间权重，强化新内容优先级
+    time-decay: 0.02   # 时间衰减率，越小分数越稳定
+    smooth:
+      alpha: 0.7       # 分数平滑系数（旧分数权重）
+    new-bonus: 1.8     # 新图片额外加分倍数
+
+
+# RAG基础配置
+rag:
+  # 检索配置
+  retrieval:
+    # 检索TOP数量
+    top-k: 3
+    # 相似度阈值
+    similarity-threshold: 0.7
+  # 增强配置
+  augmentation:
+    # 最大上下文轮数
+    max-context-rounds: 8
+    # Prompt最大字符数
+    max-prompt-length: 3000
+  # 生成配置
+  generation:
+    temperature: 0.6
+    max-tokens: 3000
+  # Python RAG服务配置
+  python-service:
+    enabled: true  # 是否启用Python RAG服务
+    base-url: "http://127.0.0.1:8001"  # Python RAG服务基础URL
+    timeout: 300000  # 请求超时时间（毫秒）
+    # RAG接口
+    sync-endpoint: "/api/rag/sync"  # 同步接口端点
+    stream-endpoint: "/api/rag/stream"  # 流式接口端点
+    summarize-endpoint: "/api/rag/summarize"  # 摘要生成端点
+    # 知识库管理接口
+    knowledge:
+      upload-endpoint: "/api/knowledge/upload"  # 知识库文件上传接口
+      list-endpoint: "/api/knowledge/list"  # 获取知识库文件列表接口
+      delete-endpoint: "/api/knowledge/delete"  # 删除知识库文件接口
+      clear-all-endpoint: "/api/knowledge/clear-all"  # 清空所有知识库文件接口
+      max-files: 25  # 知识库最大文件数量限制
+    # YOLO接口
+    yolo:
+      detect-endpoint: "/api/yolo/detect"
+      detect-url-endpoint: "/api/yolo/detect-url"
+    # 通用AI扩展接口
+    ai:
+      remove-bg-endpoint: "/api/ai/remove_bg"
+      face-blur-endpoint: "/api/ai/face_blur"
+      change-background-endpoint: "/api/ai/change_background"
+
+mybatis-plus:
+  configuration:
+    # 关闭驼峰转下划线
+    map-underscore-to-camel-case: false
+
+# 限流配置
+rate-limit:
+  # 匿名用户（未登录用户）的限流阈值（每分钟）
+  anonymous-limit: 512
+  # 默认限流配置（当未指定时使用）
+  default:
+    time: 60
+    count: 15

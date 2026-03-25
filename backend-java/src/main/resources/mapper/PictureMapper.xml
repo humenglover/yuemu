@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lumenglover.yuemupicturebackend.mapper.PictureMapper">
+
+    <resultMap id="BaseResultMap" type="com.lumenglover.yuemupicturebackend.model.entity.Picture">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="url" column="url" jdbcType="VARCHAR"/>
+        <result property="thumbnailUrl" column="thumbnailUrl" jdbcType="VARCHAR"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="introduction" column="introduction" jdbcType="VARCHAR"/>
+        <result property="category" column="category" jdbcType="VARCHAR"/>
+        <result property="tags" column="tags" jdbcType="VARCHAR"/>
+        <result property="picSize" column="picSize" jdbcType="BIGINT"/>
+        <result property="picWidth" column="picWidth" jdbcType="INTEGER"/>
+        <result property="picHeight" column="picHeight" jdbcType="INTEGER"/>
+        <result property="picScale" column="picScale" jdbcType="DOUBLE"/>
+        <result property="picFormat" column="picFormat" jdbcType="VARCHAR"/>
+        <result property="picColor" column="picColor" jdbcType="VARCHAR"/>
+        <result property="userId" column="userId" jdbcType="BIGINT"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="editTime" column="editTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+        <result property="reviewStatus" column="reviewStatus" jdbcType="INTEGER"/>
+        <result property="reviewMessage" column="reviewMessage" jdbcType="VARCHAR"/>
+        <result property="reviewerId" column="reviewerId" jdbcType="BIGINT"/>
+        <result property="reviewTime" column="reviewTime" jdbcType="TIMESTAMP"/>
+        <result property="spaceId" column="spaceId" jdbcType="BIGINT"/>
+        <result property="commentCount" column="commentCount" jdbcType="BIGINT"/>
+        <result property="likeCount" column="likeCount" jdbcType="BIGINT"/>
+        <result property="shareCount" column="shareCount" jdbcType="BIGINT"/>
+        <result property="viewCount" column="viewCount" jdbcType="BIGINT"/>
+        <result property="isDraft" column="isDraft" jdbcType="TINYINT"/>
+        <result property="isFeature" column="IsFeature" jdbcType="TINYINT"/>
+        <result property="isDownload" column="IsDownload" jdbcType="TINYINT"/>
+        <result property="recommendScore" column="recommendScore" jdbcType="DOUBLE"/>
+        <result property="hotScore" column="hotScore" jdbcType="DOUBLE"/>
+        <result property="allowCollect" column="allowCollect" jdbcType="TINYINT"/>
+        <result property="allowLike" column="allowLike" jdbcType="TINYINT"/>
+        <result property="allowComment" column="allowComment" jdbcType="TINYINT"/>
+        <result property="allowShare" column="allowShare" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,url,thumbnailUrl,name,
+        introduction,category,tags,
+        picSize,picWidth,picHeight,
+        picScale,picFormat,userId,
+        createTime,editTime,updateTime,
+        isDelete,reviewStatus,reviewMessage,
+        reviewerId,reviewTime,spaceId,
+        commentCount,likeCount,shareCount,
+        viewCount,isDraft,IsFeature,IsDownload,recommendScore,hotScore,
+        allowCollect,allowLike,allowComment,allowShare
+    </sql>
+
+    <select id="getTop100PictureByYear" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 0 AND spaceId IS NULL AND reviewStatus = 1
+        AND createTime >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+        ORDER BY recommendScore DESC, createTime DESC
+        LIMIT 100
+    </select>
+
+    <select id="getTop100PictureByMonth" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 0 AND spaceId IS NULL AND reviewStatus = 1
+        AND createTime >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+        ORDER BY recommendScore DESC, createTime DESC
+        LIMIT 100
+    </select>
+
+    <select id="getTop100PictureByWeek" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 0 AND spaceId IS NULL AND reviewStatus = 1
+        AND createTime >= DATE_SUB(CURDATE(), INTERVAL 1 WEEK)
+        ORDER BY recommendScore DESC, createTime DESC
+        LIMIT 100
+    </select>
+
+    <!-- 获取用户的所有草稿图片 -->
+    <select id="getAllDrafts" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+
+        WHERE userId = #{userId} AND isDraft = 1 AND isDelete = 0 AND spaceId IS NULL
+
+        ORDER BY createTime DESC
+    </select>
+
+    <!-- 获取用户的最新草稿图片 -->
+    <select id="getLatestDraft" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+
+        WHERE userId = #{userId} AND isDraft = 1 AND isDelete = 0 AND spaceId IS NULL
+
+        ORDER BY createTime DESC
+        LIMIT 1
+    </select>
+
+    <!-- 分页查询用于计算分数的图片数据 -->
+    <select id="selectPictureScoreData" resultType="com.lumenglover.yuemupicturebackend.model.dto.picture.PictureHotScoreDto">
+        SELECT
+            id,
+            COALESCE(viewCount, 0) AS viewCount,
+            COALESCE(likeCount, 0) AS likeCount,
+            COALESCE(commentCount, 0) AS commentCount,
+            COALESCE(shareCount, 0) AS shareCount
+        FROM picture
+        WHERE isDelete = 0 AND reviewStatus = 1 AND isDraft = 0
+        ORDER BY id
+        LIMIT #{param2} OFFSET #{param1}
+    </select>
+
+    <!-- 分页查询用于计算分数的图片数据（带过滤条件：公共空间、审核通过、非草稿） -->
+    <select id="selectPictureScoreDataWithFilters" resultType="com.lumenglover.yuemupicturebackend.model.dto.picture.PictureHotScoreDto">
+        SELECT
+            id,
+            COALESCE(viewCount, 0) AS viewCount,
+            COALESCE(likeCount, 0) AS likeCount,
+            COALESCE(commentCount, 0) AS commentCount,
+            COALESCE(shareCount, 0) AS shareCount
+        FROM picture
+        WHERE isDelete = 0 AND reviewStatus = 1 AND isDraft = 0 AND spaceId IS NULL
+        ORDER BY id
+        LIMIT #{param2} OFFSET #{param1}
+    </select>
+
+    <!-- 统计可用于计算分数的图片总数 -->
+    <select id="countPictureScoreData" resultType="long">
+        SELECT COUNT(*)
+        FROM picture
+        WHERE isDelete = 0 AND reviewStatus = 1 AND isDraft = 0 AND spaceId IS NULL
+    </select>
+
+    <!-- 查询最大的图片ID -->
+    <select id="selectMaxPictureId" resultType="java.lang.Long">
+        SELECT MAX(id)
+        FROM picture
+        WHERE isDelete = 0 AND reviewStatus = 1 AND isDraft = 0
+    </select>
+
+    <!-- 按ID范围分页查询用于计算分数的图片数据 -->
+    <select id="selectPictureScoreDataInRange" resultType="com.lumenglover.yuemupicturebackend.model.dto.picture.PictureHotScoreDto">
+        SELECT
+            id,
+            COALESCE(viewCount, 0) AS viewCount,
+            COALESCE(likeCount, 0) AS likeCount,
+            COALESCE(commentCount, 0) AS commentCount,
+            COALESCE(shareCount, 0) AS shareCount
+        FROM picture
+        WHERE isDelete = 0 AND reviewStatus = 1 AND isDraft = 0
+          AND id BETWEEN #{minId} AND #{maxId}
+        ORDER BY id
+        LIMIT #{param4} OFFSET #{param3}
+    </select>
+
+    <!-- 按ID范围分页查询用于计算分数的图片数据（带过滤条件：公共空间、审核通过、非草稿） -->
+    <select id="selectPictureScoreDataInRangeWithFilters" resultType="com.lumenglover.yuemupicturebackend.model.dto.picture.PictureHotScoreDto">
+        SELECT
+            id,
+            COALESCE(viewCount, 0) AS viewCount,
+            COALESCE(likeCount, 0) AS likeCount,
+            COALESCE(commentCount, 0) AS commentCount,
+            COALESCE(shareCount, 0) AS shareCount
+        FROM picture
+        WHERE isDelete = 0 AND reviewStatus = 1 AND isDraft = 0 AND spaceId IS NULL
+          AND id BETWEEN #{minId} AND #{maxId}
+        ORDER BY id
+        LIMIT #{param4} OFFSET #{param3}
+    </select>
+
+    <!-- 查询已删除的图片（绕过逻辑删除） -->
+    <select id="selectDeletedPicturesByUpdateTime" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 1
+        AND updateTime >= #{updateTime}
+    </select>
+
+    <!-- 查询所有已删除的图片（绕过逻辑删除） -->
+    <select id="selectAllDeletedPictures" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 1
+    </select>
+
+    <!-- 游标分页查询图片列表（公共图库） -->
+    <select id="cursorPagePublicPictures" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 0
+        AND isDraft = 0
+        AND reviewStatus = 1
+        AND spaceId IS NULL
+        <if test="cursorCreateTime != null">
+            AND (createTime &lt; #{cursorCreateTime} OR (createTime = #{cursorCreateTime} AND id &lt; #{cursorId}))
+        </if>
+        ORDER BY createTime DESC, id DESC
+        LIMIT #{pageSize}
+    </select>
+
+    <!-- 游标分页查询图片列表（空间内） -->
+    <select id="cursorPageSpacePictures" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 0
+        AND isDraft = 0
+        AND reviewStatus = 1
+        AND spaceId = #{spaceId}
+        <if test="cursorCreateTime != null">
+            AND (createTime &lt; #{cursorCreateTime} OR (createTime = #{cursorCreateTime} AND id &lt; #{cursorId}))
+        </if>
+        ORDER BY createTime DESC, id DESC
+        LIMIT #{pageSize}
+    </select>
+
+    <!-- 游标分页查询图片列表（用户） -->
+    <select id="cursorPageUserPictures" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 0
+        AND userId = #{userId}
+        <if test="cursorCreateTime != null">
+            AND (createTime &lt; #{cursorCreateTime} OR (createTime = #{cursorCreateTime} AND id &lt; #{cursorId}))
+        </if>
+        ORDER BY createTime DESC, id DESC
+        LIMIT #{pageSize}
+    </select>
+
+    <!-- 搜索图片（优化版） -->
+    <select id="searchPicturesOptimized" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM picture
+        WHERE isDelete = 0
+        AND isDraft = 0
+        AND reviewStatus = 1
+        <if test="spaceId != null">
+            AND spaceId = #{spaceId}
+        </if>
+        <if test="userId != null">
+            AND userId = #{userId}
+        </if>
+        <if test="category != null and category != ''">
+            AND category = #{category}
+        </if>
+        <if test="tags != null and tags != ''">
+            AND tags LIKE CONCAT('%', #{tags}, '%')
+        </if>
+        <if test="searchText != null and searchText != ''">
+            AND (
+            name LIKE CONCAT('%', #{searchText}, '%')
+            OR introduction LIKE CONCAT('%', #{searchText}, '%')
+            )
+        </if>
+        ORDER BY createTime DESC, id DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+</mapper>
