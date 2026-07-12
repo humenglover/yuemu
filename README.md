@@ -1,5 +1,18 @@
 # 悦木图库 (Yuemu Tuku) - 发现、分享、创造美好瞬间
 
+> ⚠️ **重要通知（2026-07-12）**
+> 
+> 本项目已拆分为四个独立仓库，后续所有代码更新均在各子仓库中进行：
+> 
+> | 仓库 | 说明 |
+> |------|------|
+> | [yuemu-picture-backend](https://github.com/humenglover/yuemu-picture-backend) | Java 后端服务（Spring Boot） |
+> | [yuemu-picture-frontend](https://github.com/humenglover/yuemu-picture-frontend) | Web 前端（Vue） |
+> | [yuemu-picture-ai-service](https://github.com/humenglover/yuemu-picture-ai-service) | Python AI 服务（FastAPI + LangChain） |
+> | [yuemu-picture-official-docs](https://github.com/humenglover/yuemu-picture-official-docs) | 官方文档站（VitePress） |
+> 
+> 本文档保留作为项目整体参考，不再更新代码相关内容。
+
 <p align=center>
   <a href="https://www.yuemutuku.com/home" style="border-radius: 50%;width: 100px;height: 100px">
     <img src="pictures/logo.png" alt="悦木图库" width="120">
