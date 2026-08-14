@@ -1,7 +1,9 @@
-# 悦木 Python AI 服务
+# 悦目 Python AI 服务
+
+> 曾用名：悦木图库
 
 ## 项目介绍
-悦木图片管理系统的 Python AI 子服务，基于 FastAPI 构建。提供 RAG 智能客服问答、知识库管理、YOLO 目标检测、AI 图像处理（去背景、人脸模糊、换背景）等能力，作为 Java 后端的 AI 引擎层独立部署运行。
+悦目图片管理系统的 Python AI 子服务，基于 FastAPI 构建。提供 RAG 智能客服问答、知识库管理、YOLO 目标检测、AI 图像处理（去背景、人脸模糊、换背景）等能力，作为 Java 后端的 AI 引擎层独立部署运行。
 
 ## 技术栈
 - **Web 框架**：FastAPI + Uvicorn

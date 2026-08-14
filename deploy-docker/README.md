@@ -1,4 +1,6 @@
-# 悦木图库项目部署
+# 悦目图库项目部署
+
+> 曾用名：悦木图库
 
 1. 将后端打包好的jar报放到与docker-compose.yml和Dockerfile同级目录下
 
