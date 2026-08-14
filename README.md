@@ -1,4 +1,6 @@
-# 悦木图库 (Yuemu Tuku) - 发现、分享、创造美好瞬间
+# 悦目图库 (Yuemu Tuku) - 发现、分享、创造美好瞬间
+
+> 曾用名：悦木图库
 
 > ⚠️ **重要通知（2026-07-12）**
 > 
@@ -15,7 +17,7 @@
 
 <p align=center>
   <a href="https://www.yuemutuku.com/home" style="border-radius: 50%;width: 100px;height: 100px">
-    <img src="pictures/logo.png" alt="悦木图库" width="120">
+    <img src="pictures/logo.png" alt="悦目图库" width="120">
   </a>
 </p>
 
@@ -37,9 +39,9 @@
 
 ## 🔗 在线地址
 
-**项目官网：** [悦木 图库](https://www.yuemutuku.com)
+**项目官网：** [悦目 图库](https://www.yuemutuku.com)
 
-**官方文档：** [悦木文档指南](https://official.yuemutuku.com/)
+**官方文档：** [悦目文档指南](https://official.yuemutuku.com/)
 
 **项目源码：** [GitHub 仓库](https://github.com/humenglover/yuemu) | [Gitee 仓库](https://gitee.com/lumenglover/yuemu)
 
@@ -65,7 +67,7 @@ yuemu
 
 ## 🌟 项目简介
 
-**悦木图库 (Yuemu Tuku)** 是一个汇聚海量素材、注重创意分享的综合性社区平台。它不仅提供**专业级的图片生命周期管理**与**深度协作空间**，更集成了**动态交流广场**、**实用工具箱**以及**内置小游戏中心**。通过 Java 异步并发架构与 Python AI 智能引擎的深度融合，为创作者提供发现、分享与创造美好瞬间的极致体验。
+**悦目图库 (Yuemu Tuku)** 是一个汇聚海量素材、注重创意分享的综合性社区平台。它不仅提供**专业级的图片生命周期管理**与**深度协作空间**，更集成了**动态交流广场**、**实用工具箱**以及**内置小游戏中心**。通过 Java 异步并发架构与 Python AI 智能引擎的深度融合，为创作者提供发现、分享与创造美好瞬间的极致体验。
 
 ---
 
@@ -102,7 +104,7 @@ yuemu
 
 ## 🏗️ 技术架构
 
-悦木采用 **"Front-Biz-AI"** 三维分层架构：
+悦目采用 **"Front-Biz-AI"** 三维分层架构：
 
 - **🎨 全栈前端**: Vue 3 + Vite 5 + Ant Design Vue / Vant UI，支持多端自适应。
 - **⚙️ 业务中台**: Spring Boot 2.6 + Sa-Token + Disruptor + ShardingSphere。
@@ -159,4 +161,4 @@ yuemu
 - **联系邮箱**: 109484028@qq.com
 
 ---
-**悦木图库 - 致力于创造极致的视觉分享体验。**
+**悦目图库 - 致力于创造极致的视觉分享体验。**
